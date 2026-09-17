@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>SedayaClick — Karyawan</title>
+  <meta name="theme-color" content="#2563EB" />
+  <link rel="manifest" href="/manifest.json" />
+  <!-- Google Font: Plus Jakarta Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8'
+            },
+            emerald: {
+              500: '#10b981',
+              600: '#059669'
+            },
+            rose: {
+              50: '#fff1f2',
+              500: '#f43f5e',
+              600: '#e11d48'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    video { transform: scaleX(-1); }
+    
+    /* Glass Dock Styling */
+    .glass-dock {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 16px 36px -10px rgba(37, 99, 235, 0.18), 0 6px 20px -4px rgba(0, 0, 0, 0.08);
+    }
+    .nav-btn {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-btn.active {
+      color: #2563eb;
+      background-color: rgba(37, 99, 235, 0.1);
+      box-shadow: 0 2px 10px -2px rgba(37, 99, 235, 0.25);
+    }
+    .nav-btn.active svg {
+      stroke: #2563eb;
+      transform: scale(1.1);
+    }
+    .reticle-corner { position: absolute; width: 20px; height: 20px; border-color: #10b981; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 pb-28 text-slate-800 antialiased flex justify-center items-center">
+
+  <!-- Responsive Container -->
+  <div class="w-full max-w-[420px] sm:max-w-[500px] lg:max-w-[600px] bg-slate-50 min-h-screen border-x border-slate-200/80 shadow-2xl relative flex flex-col">
+
+    <!-- Header Section (Sleek Glassmorphic Navbar with Logout at Top Right) -->
+    <header class="bg-white/85 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/60 px-5 py-4 shadow-xs">
+      <div class="flex items-center justify-between w-full">
+        <!-- User Profile Metadata -->
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span class="text-xs text-slate-400 font-medium">Selamat datang,</span>
+            <span class="bg-brand-50 text-brand-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-brand-200/60 tracking-wider">PRO</span>
+          </div>
+          <h1 id="employee-name" class="font-bold text-slate-900 text-lg sm:text-xl leading-snug">Memuat...</h1>
+          <p id="header-role" class="text-xs text-slate-500 font-semibold tracking-wide truncate max-w-[220px] sm:max-w-[320px]">Memuat data...</p>
+        </div>
+
+        <!-- Top Right Logout Action Button -->
+        <div class="flex items-center">
+          <button id="btn-logout" class="p-2.5 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 border border-rose-200/60 shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5" title="Keluar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="px-4 sm:px-5 py-4 sm:py-5 flex-1">
+
+      <!-- Alert Box -->
+      <div id="alert-box" class="hidden mb-4 text-xs font-semibold rounded-xl px-4 py-3 shadow-sm border"></div>
+
+      <!-- ================= TAB 1: BERANDA ================= -->
+      <section id="panel-beranda" class="space-y-5">
+        
+        <!-- Live Clock Widget -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 sm:-right-6 sm:-bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <p class="text-xs sm:text-sm font-medium text-slate-300 flex items-center gap-1.5 sm:gap-2" id="live-clock-date">-</p>
+            <span class="text-[9px] sm:text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 sm:gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              NTP Satelit
+            </span>
+          </div>
+          <p class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white tabular-nums" id="live-clock-time">00.00.00 WIB</p>
+          <p class="text-[9px] sm:text-[11px] text-slate-400 mt-1 sm:mt-2">Presisi Waktu Terverifikasi Server</p>
+        </div>
+
+        <!-- Today Status Widget -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm">
+          <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <div class="p-2 sm:p-2.5 bg-brand-50 text-brand-600 rounded-xl">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <h2 class="font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider">Status Kehadiran</h2>
+            </div>
+            <span id="status-badge" class="text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-slate-100 text-slate-500">Belum Absen</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4">
+            <div class="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+              <p class="text-slate-400 text-[10px] sm:text-[11px] uppercase font-bold tracking-wider mb-0.5 sm:mb-0.75">Clock In</p>
+              <p class="font-bold text-slate-800 text-sm sm:text-base" id="display-clock-in">-</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+              <p class="text-slate-400 text-[10px] sm:text-[11px] uppercase font-bold tracking-wider mb-0.5 sm:mb-0.75">Clock Out</p>
+              <p class="font-bold text-slate-800 text-sm sm:text-base" id="display-clock-out">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera Area -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4 sm:mb-5">
+            <h2 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2 sm:gap-3" id="camera-title">Clock In</h2>
+            <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded">AES SHA-256</span>
+          </div>
+
+          <!-- Camera Viewfinder -->
+          <div class="relative rounded-2xl overflow-hidden bg-slate-950 aspect-square mb-4 shadow-inner border border-slate-800 flex items-center justify-center">
+            <video id="camera-preview" class="w-full h-full object-cover" autoplay playsinline muted></video>
+
+            
+            <!-- Placeholder Screen -->
+            <div id="camera-placeholder" class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center text-slate-400 text-xs text-center px-6 gap-2">
+              <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 mb-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </div>
+              <span>Tekan tombol di bawah untuk mengaktifkan Kamera & Verifikasi GPS Satelit</span>
+            </div>
+          </div>
+
+          <!-- GPS Validation Pill -->
+          <div id="gps-status" class="flex items-center gap-2 sm:gap-3 text-sm mb-4 sm:mb-5 bg-slate-50 border border-slate-200/60 p-2.5 sm:p-3 rounded-xl text-slate-600">
+            <span class="w-2 h-2.5 sm:w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0" id="gps-dot"></span>
+            <span id="gps-text" class="truncate font-medium">Lokasi belum dikunci</span>
+          </div>
+
+          <!-- Note Area -->
+          <div id="note-wrapper" class="mb-4 sm:mb-5">
+            <label class="block text-sm font-bold text-slate-700 mb-1 sm:mb-1.5">Catatan (opsional)</label>
+            <textarea id="attendance-note" rows="2" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" placeholder="Tuliskan catatan absensi jika ada..."></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-1 gap-2 sm:gap-3">
+            <button id="btn-start-camera" class="bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-500/20 text-white text-sm font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 sm:gap-3 transition-all duration-200 active:scale-[0.99]">
+              ABSEN MASUK (Aktifkan Kamera)
+            </button>
+            <button id="btn-capture" class="hidden bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/20 text-white text-sm font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 sm:gap-3 transition-all duration-200 active:scale-[0.99] disabled:opacity-50">
+              Konfirmasi Absen Masuk
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= TAB 2: PENGAJUAN ================= -->
+      <section id="panel-pengajuan" class="hidden space-y-5">
+        <div class="bg-gradient-to-r from-brand-600 to-brand-700 rounded-2xl p-4 sm:p-5 text-white shadow-md flex justify-between items-center">
+          <div>
+            <p class="text-[10px] sm:text-[11px] text-brand-100 font-medium">Informasi Cuti</p>
+            <p class="text-base sm:text-lg font-bold">Formulir Pengajuan Baru</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+          <form id="form-submission" class="space-y-5">
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Jenis Pengajuan</label>
+              <select id="sub-type" required class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                <option value="izin">Izin Khusus</option>
+                <option value="cuti">Cuti Tahunan</option>
+                <option value="sakit">Sakit</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Tanggal Mulai</label>
+                <input required type="date" id="sub-start" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Tanggal Selesai</label>
+                <input required type="date" id="sub-end" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Alasan / Keterangan Detail</label>
+              <textarea required id="sub-reason" rows="3" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" placeholder="Tuliskan alasan pengajuan secara lengkap..."></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Bukti File / Surat Dokter (opsional)</label>
+              <input type="file" id="sub-attachment" accept="image/*,.pdf" class="w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
+            </div>
+
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl py-3.5 sm:py-4 shadow-md shadow-brand-500/20 active:scale-[0.99] transition">
+              Kirim Pengajuan
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm">
+          <h2 class="font-bold text-slate-800 text-sm sm:text-base uppercase tracking-wider mb-3 sm:mb-4">Riwayat Pengajuan Saya</h2>
+          <div id="submission-list" class="space-y-3 sm:space-y-4 text-sm">Memuat...</div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: PROFIL ================= -->
+      <section id="panel-profil" class="hidden space-y-5">
+        <div class="bg-white rounded-2xl border border-slate-100 p-5 sm:p-6 shadow-sm">
+          <h2 class="font-bold text-slate-800 text-sm sm:text-base mb-4 sm:mb-5 pb-2 sm:pb-3 border-b border-slate-100">Profil Karyawan</h2>
+          
+          <form id="form-profile" class="space-y-4">
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Nama Lengkap</label>
+              <input required type="text" id="profile-name" value="" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Jabatan</label>
+              <input required type="text" id="profile-position" value="" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Divisi / Departemen</label>
+              <input required type="text" id="profile-division" value="" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Nomor WhatsApp</label>
+              <input required type="tel" id="profile-whatsapp" value="" placeholder="08xxxxxxxxxx" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-1">Alamat Tempat Tinggal</label>
+              <textarea required id="profile-address" rows="3" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" placeholder="Tuliskan alamat lengkap..."></textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl py-3.5 sm:py-4 shadow-md shadow-brand-500/20 active:scale-[0.99] transition">
+              Simpan Perubahan
+            </button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Glass Dock Bottom Navigation Bar (3 Menu) -->
+    <div class="fixed bottom-4 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none">
+      <nav class="glass-dock pointer-events-auto w-full max-w-[360px] sm:max-w-[440px] rounded-full px-2.5 py-2 flex items-center justify-around">
+        <button data-nav="beranda" class="nav-btn active flex items-center gap-2 px-4 py-2 rounded-full text-brand-600 font-bold text-xs">
+          <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Beranda</span>
+        </button>
+
+        <button data-nav="pengajuan" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full text-slate-500 hover:text-slate-800 font-semibold text-xs">
+          <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>Pengajuan</span>
+        </button>
+
+        <button data-nav="profil" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full text-slate-500 hover:text-slate-800 font-semibold text-xs">
+          <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span>Profil</span>
+        </button>
+      </nav>
+    </div>
+
+  </div>
+
+  <script type="module" src="/js/pwa-register.js"></script>
+  <script type="module" src="/employee/js/employee.js"></script>
+</body>
+</html>

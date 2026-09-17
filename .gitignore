@@ -1,0 +1,8 @@
+node_modules/
+.env
+uploads/attendance/*
+uploads/submissions/*
+!uploads/attendance/.gitkeep
+!uploads/submissions/.gitkeep
+npm-debug.log*
+.DS_Store

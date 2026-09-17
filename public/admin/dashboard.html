@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SedayaClick — Admin Manager</title>
+<meta name="theme-color" content="#4338CA" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/icon-192.png" />
+<!-- Google Font: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          brand: {
+            50: '#eff6ff',
+            100: '#dbeafe',
+            500: '#3b82f6',
+            600: '#2563eb',
+            700: '#1d4ed8'
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  
+  /* Glass Dock Styling */
+  .glass-dock {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 16px 36px -10px rgba(37, 99, 235, 0.18), 0 6px 20px -4px rgba(0, 0, 0, 0.08);
+  }
+  .tab-btn {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tab-btn.active {
+    color: #2563eb;
+    background-color: rgba(37, 99, 235, 0.1);
+    box-shadow: 0 2px 10px -2px rgba(37, 99, 235, 0.25);
+  }
+  .tab-btn.active svg {
+    stroke: #2563eb;
+    transform: scale(1.1);
+  }
+</style>
+</head>
+<body class="min-h-screen bg-slate-100 pb-28 text-slate-800 antialiased flex justify-center items-center">
+
+  <!-- Responsive Mobile-App Container -->
+  <div class="w-full max-w-[420px] sm:max-w-[500px] lg:max-w-[600px] bg-slate-50 min-h-screen border-x border-slate-200/80 shadow-2xl relative flex flex-col">
+
+    <!-- Header Section (Glassmorphic Navbar with Logout at Top Right) -->
+    <header class="bg-white/85 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/60 px-5 py-4 shadow-xs">
+      <div class="flex items-center justify-between w-full">
+        <!-- Admin Profile Info -->
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span class="text-xs text-slate-400 font-medium">Selamat datang,</span>
+            <span class="bg-brand-50 text-brand-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-brand-200/60 tracking-wider">ADMIN MANAGER</span>
+          </div>
+          <h1 id="admin-name" class="font-bold text-slate-900 text-lg sm:text-xl leading-snug">Memuat...</h1>
+          <p id="admin-role-info" class="text-xs text-slate-500 font-semibold tracking-wide truncate max-w-[220px] sm:max-w-[320px]">Persetujuan Pengajuan Divisi</p>
+        </div>
+
+        <!-- Top Right Logout Action Button -->
+        <div class="flex items-center">
+          <button id="btn-logout" class="p-2.5 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 border border-rose-200/60 shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5" title="Keluar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="px-4 sm:px-5 py-4 sm:py-5 flex-1">
+      <!-- Alert Box -->
+      <div id="alert-box" class="hidden mb-4 text-xs font-semibold rounded-2xl px-4 py-3 shadow-xs border flex items-center justify-between gap-3">
+        <span id="alert-msg"></span>
+        <button id="btn-close-alert" type="button" class="text-base font-bold leading-none px-2 py-0.5 rounded-lg hover:bg-black/10 focus:outline-none transition-colors" title="Tutup Notifikasi">&times;</button>
+      </div>
+
+      <!-- TAB 1: PENGAJUAN MASUK -->
+      <section id="panel-pending" class="space-y-4">
+        <div class="bg-gradient-to-r from-brand-600 to-indigo-700 rounded-2xl p-4 sm:p-5 text-white shadow-md flex justify-between items-center">
+          <div>
+            <p class="text-[10px] sm:text-[11px] text-brand-100 font-medium uppercase tracking-wider">Verifikasi Tim</p>
+            <p class="text-base sm:text-lg font-bold">Pengajuan Menunggu Persetujuan</p>
+          </div>
+        </div>
+
+        <div id="pending-list" class="space-y-3.5 text-sm text-slate-500">Memuat data...</div>
+      </section>
+
+      <!-- TAB 2: RIWAYAT PERSETUJUAN -->
+      <section id="panel-history" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm flex justify-between items-center">
+          <div>
+            <h2 class="font-bold text-slate-800 text-sm sm:text-base">Riwayat Persetujuan Divisi</h2>
+            <p class="text-xs text-slate-400">Daftar keputusan pengajuan yang telah diproses</p>
+          </div>
+        </div>
+
+        <div id="history-list" class="space-y-3.5 text-sm text-slate-500">Memuat data...</div>
+      </section>
+    </main>
+
+    <!-- Floating Glass Dock Bottom Navigation Bar (2 Menu) -->
+    <div class="fixed bottom-4 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none">
+      <nav class="glass-dock pointer-events-auto w-full max-w-[340px] sm:max-w-[400px] rounded-full px-2.5 py-2 flex items-center justify-around">
+        <button data-tab="pending" class="tab-btn active flex items-center gap-2 px-5 py-2.5 rounded-full text-brand-600 font-bold text-xs">
+          <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>Pengajuan Masuk</span>
+        </button>
+
+        <button data-tab="history" class="tab-btn flex items-center gap-2 px-5 py-2.5 rounded-full text-slate-500 hover:text-slate-800 font-semibold text-xs">
+          <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Riwayat</span>
+        </button>
+      </nav>
+    </div>
+
+  </div>
+
+  <!-- Modal Approve/Reject (Keputusan) -->
+  <div id="decision-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 space-y-4">
+      <div>
+        <h3 id="decision-title" class="font-bold text-slate-900 text-base mb-1">Keputusan Pengajuan</h3>
+        <p class="text-xs text-slate-400">Berikan catatan alasan persetujuan atau penolakan pengajuan ini.</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1.5">Catatan Alasan (Wajib)</label>
+        <textarea id="decision-note" rows="3" class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" placeholder="Tuliskan catatan untuk karyawan..."></textarea>
+      </div>
+
+      <div class="flex gap-2.5 pt-1">
+        <button id="btn-cancel-decision" class="flex-1 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold rounded-full py-3 transition-colors">Batal</button>
+        <button id="btn-confirm-decision" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-full py-3 shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">Konfirmasi</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/pwa-register.js"></script>
+  <script type="module" src="/admin/js/admin.js"></script>
+</body>
+</html>
