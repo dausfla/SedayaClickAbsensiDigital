@@ -275,28 +275,48 @@ document.getElementById('form-submission').addEventListener('submit', async (e) 
   }
 });
 
-async function loadSubmissions() {
+let lastEmpSubHash = '';
+
+async function loadSubmissions(silent = false) {
   const container = document.getElementById('submission-list');
+  if (!container) return;
   try {
     const { submissions } = await apiGet('/submissions/mine');
+    const newHash = JSON.stringify(submissions);
+    if (silent && lastEmpSubHash === newHash) return;
+    lastEmpSubHash = newHash;
+
     if (!submissions || submissions.length === 0) {
       container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Belum ada riwayat pengajuan.</p>';
       return;
     }
+    const STATUS_MAP = {
+      approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+      pending: 'bg-amber-50 text-amber-700 border-amber-200'
+    };
+    const STATUS_TEXT = { approved: 'Disetujui', rejected: 'Ditolak', pending: 'Menunggu Review' };
+
     container.innerHTML = submissions.map((s) => `
-      <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
-        <div class="flex items-center justify-between mb-1">
-          <span class="font-bold text-slate-800 text-xs uppercase">${s.type}</span>
-          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-slate-100">${s.status}</span>
+      <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">${s.type}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_MAP[s.status] || 'bg-slate-100 text-slate-600'}">${STATUS_TEXT[s.status] || s.status}</span>
         </div>
-        <p class="text-[11px] text-slate-500 mb-1">${s.start_date} s/d ${s.end_date}</p>
-        <p class="text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">${s.reason}</p>
+        <p class="text-[11px] text-slate-500 font-medium">Periode: ${s.start_date} s/d ${s.end_date}</p>
+        <p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">${s.reason}</p>
+        ${s.review_note ? `<p class="text-[11px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-100"><span class="font-semibold not-italic text-slate-700">Catatan Admin:</span> ${s.review_note}</p>` : ''}
       </div>
     `).join('');
   } catch (err) {
-    container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Belum ada riwayat pengajuan.</p>';
+    if (!silent) container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Belum ada riwayat pengajuan.</p>';
   }
 }
+
+// Real-time polling untuk Karyawan (tiap 4 detik)
+setInterval(() => {
+  loadSubmissions(true);
+}, 4000);
 
 /* ---------------------------------------------------------
    Profile Update

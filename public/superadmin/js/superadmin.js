@@ -54,17 +54,50 @@ document.getElementById('btn-logout-mobile').addEventListener('click', doLogout)
    Navigasi sidebar
 --------------------------------------------------------- */
 const navButtons = document.querySelectorAll('.nav-btn');
-const navPanels = { dashboard: 'panel-dashboard', users: 'panel-users', submissions: 'panel-submissions', master: 'panel-master', reports: 'panel-reports' };
+const navPanels = {
+  dashboard: 'panel-dashboard',
+  users: 'panel-users',
+  submissions: 'panel-submissions',
+  master: 'panel-master',
+  reports: 'panel-reports'
+};
+
+let currentNav = 'dashboard';
+let superSubmissionsTimer = null;
+
+export function startSubmissionsPolling() {
+  stopSubmissionsPolling();
+  superSubmissionsTimer = setInterval(() => {
+    if (currentNav === 'submissions') {
+      loadSubmissionsData(true);
+    }
+  }, 10000);
+}
+
+export function stopSubmissionsPolling() {
+  if (superSubmissionsTimer) {
+    clearInterval(superSubmissionsTimer);
+    superSubmissionsTimer = null;
+  }
+}
+
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
+    currentNav = btn.dataset.nav;
     document.querySelectorAll(`[data-nav="${btn.dataset.nav}"]`).forEach((b) => b.classList.add('active'));
     document.querySelectorAll(`.nav-btn:not([data-nav="${btn.dataset.nav}"])`).forEach((b) => b.classList.remove('active'));
     Object.entries(navPanels).forEach(([key, id]) => {
       document.getElementById(id).classList.toggle('hidden', key !== btn.dataset.nav);
     });
+
+    stopSubmissionsPolling();
+
     if (btn.dataset.nav === 'dashboard') loadDashboard();
     if (btn.dataset.nav === 'users') loadUsers('pending');
-    if (btn.dataset.nav === 'submissions') loadSubmissionsNav();
+    if (btn.dataset.nav === 'submissions') {
+      loadSubmissionsNav();
+      startSubmissionsPolling();
+    }
     if (btn.dataset.nav === 'master') { loadDivisions(); loadPositions(); loadShifts(); }
     if (btn.dataset.nav === 'reports') loadReport();
   });
@@ -570,6 +603,9 @@ detailModal.addEventListener('click', (e) => {
 --------------------------------------------------------- */
 let currentSubmissionsTab = 'pending';
 let submissionsDivisionsLoaded = false;
+let lastSuperPendingHash = '';
+let lastSuperHistoryHash = '';
+
 const TYPE_LABEL = { izin: 'Izin', cuti: 'Cuti', sakit: 'Sakit' };
 const STATUS_STYLE = { approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700' };
 const STATUS_LABEL = { approved: 'Disetujui', rejected: 'Ditolak' };
@@ -588,7 +624,11 @@ async function loadSubmissionsNav() {
   loadSubmissionsData();
 }
 
+// Polling interval managed via startSubmissionsPolling() & stopSubmissionsPolling()
+
 document.getElementById('submission-division-filter').addEventListener('change', () => {
+  lastSuperPendingHash = '';
+  lastSuperHistoryHash = '';
   loadSubmissionsData();
 });
 
@@ -603,75 +643,95 @@ document.querySelectorAll('[data-submissionstab]').forEach((btn) => {
   });
 });
 
-function loadSubmissionsData() {
+function loadSubmissionsData(silent = false) {
   if (currentSubmissionsTab === 'pending') {
-    loadSubmissionsPending();
+    loadSubmissionsPending(silent);
   } else {
-    loadSubmissionsHistory();
+    loadSubmissionsHistory(silent);
   }
 }
 
-async function loadSubmissionsPending() {
+async function loadSubmissionsPending(silent = false) {
   const container = document.getElementById('submission-pending-list');
-  container.innerHTML = 'Memuat...';
+  if (!container) return;
   const divisionId = document.getElementById('submission-division-filter').value;
   const params = {};
   if (divisionId) params.division_id = divisionId;
 
   try {
     const { submissions } = await apiGet('/admin/submissions/pending', params);
+    const newHash = JSON.stringify(submissions);
+    if (silent && lastSuperPendingHash === newHash) return;
+    lastSuperPendingHash = newHash;
+
     if (submissions.length === 0) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Tidak ada pengajuan yang menunggu persetujuan.</p>';
       return;
     }
     container.innerHTML = submissions.map((s) => `
-      <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
         <div class="flex items-center justify-between mb-1">
           <span class="font-semibold text-slate-800">${s.full_name} <span class="text-xs font-normal text-slate-400">(${s.division_name || '-'})</span></span>
           <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">${TYPE_LABEL[s.type] || s.type}</span>
         </div>
-        <p class="text-xs text-slate-400 mb-2">${s.position_name || '-'} · ${s.start_date} s/d ${s.end_date}</p>
-        <p class="text-sm text-slate-600 mb-3">${s.reason}</p>
-        ${s.attachment ? `<a href="${s.attachment}" target="_blank" class="text-xs text-brand-600 underline mb-3 inline-block">Lihat lampiran</a><br/>` : ''}
-        <div class="flex gap-2">
+        <p class="text-xs text-slate-400 mb-1">${s.position_name || '-'} · ${s.start_date} s/d ${s.end_date}</p>
+        <p class="text-sm text-slate-600 mb-2">${s.reason}</p>
+        ${s.attachment ? `<a href="${s.attachment}" target="_blank" class="text-xs text-brand-600 underline mb-2 inline-block">Lihat lampiran</a><br/>` : ''}
+        <div class="flex flex-wrap gap-2 pt-1">
           <button class="btn-sub-approve flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Setujui</button>
           <button class="btn-sub-reject flex-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Tolak</button>
+          <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
+          <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}">Hapus</button>
         </div>
       </div>
     `).join('');
 
     container.querySelectorAll('.btn-sub-approve').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'approved')));
     container.querySelectorAll('.btn-sub-reject').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'rejected')));
+    container.querySelectorAll('.btn-super-edit-sub').forEach((b) => b.addEventListener('click', () => openSuperSubModal(JSON.parse(b.dataset.sub))));
+    container.querySelectorAll('.btn-super-del-sub').forEach((b) => b.addEventListener('click', () => deleteSuperSubmission(b.dataset.id)));
   } catch (err) {
-    container.innerHTML = `<p class="text-red-500 text-center py-4">${err.message}</p>`;
+    if (!silent) container.innerHTML = `<p class="text-red-500 text-center py-4">${err.message}</p>`;
   }
 }
 
-async function loadSubmissionsHistory() {
+async function loadSubmissionsHistory(silent = false) {
   const container = document.getElementById('submission-history-list');
-  container.innerHTML = 'Memuat...';
+  if (!container) return;
   const divisionId = document.getElementById('submission-division-filter').value;
   const params = {};
   if (divisionId) params.division_id = divisionId;
 
   try {
     const { submissions } = await apiGet('/admin/submissions/history', params);
+    const newHash = JSON.stringify(submissions);
+    if (silent && lastSuperHistoryHash === newHash) return;
+    lastSuperHistoryHash = newHash;
+
     if (submissions.length === 0) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Belum ada riwayat pengajuan.</p>';
       return;
     }
     container.innerHTML = submissions.map((s) => `
-      <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
         <div class="flex items-center justify-between mb-1">
           <span class="font-semibold text-slate-800">${s.full_name} <span class="text-xs font-normal text-slate-400">(${s.division_name || '-'})</span></span>
           <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || s.status}</span>
         </div>
         <p class="text-xs text-slate-400 mb-1">${TYPE_LABEL[s.type] || s.type} · ${s.start_date} s/d ${s.end_date}</p>
-        ${s.review_note ? `<p class="text-xs text-slate-500 italic">Catatan: ${s.review_note}</p>` : ''}
+        ${s.review_note ? `<p class="text-xs text-slate-500 italic mb-2">Catatan: ${s.review_note}</p>` : ''}
+        
+        <div class="flex gap-2 justify-end pt-2 border-t border-slate-100">
+          <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
+          <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-id="${s.id}">Hapus</button>
+        </div>
       </div>
     `).join('');
+
+    container.querySelectorAll('.btn-super-edit-sub').forEach((b) => b.addEventListener('click', () => openSuperSubModal(JSON.parse(b.dataset.sub))));
+    container.querySelectorAll('.btn-super-del-sub').forEach((b) => b.addEventListener('click', () => deleteSuperSubmission(b.dataset.id)));
   } catch (err) {
-    container.innerHTML = `<p class="text-red-500 text-center py-4">${err.message}</p>`;
+    if (!silent) container.innerHTML = `<p class="text-red-500 text-center py-4">${err.message}</p>`;
   }
 }
 
@@ -706,6 +766,98 @@ document.getElementById('btn-confirm-decision').addEventListener('click', async 
     showAlert(err.message);
   }
 });
+
+/* Super Admin Submission CRUD */
+const superSubModal = document.getElementById('superadmin-sub-modal');
+const formSuperSub = document.getElementById('form-super-sub');
+
+document.getElementById('btn-super-create-submission').addEventListener('click', () => openSuperSubModal(null));
+document.getElementById('btn-close-super-sub-modal').addEventListener('click', () => superSubModal.classList.add('hidden'));
+document.getElementById('btn-cancel-super-sub').addEventListener('click', () => superSubModal.classList.add('hidden'));
+
+async function openSuperSubModal(sub = null) {
+  hideAlert();
+  document.getElementById('super-sub-id').value = sub ? sub.id : '';
+  document.getElementById('super-sub-modal-title').textContent = sub ? `Edit Pengajuan #${sub.id}` : 'Buat Pengajuan Baru';
+
+  const userWrapper = document.getElementById('wrapper-super-sub-user');
+  const userSelect = document.getElementById('super-sub-user');
+
+  if (!sub) {
+    userWrapper.classList.remove('hidden');
+    userSelect.setAttribute('required', 'true');
+    userSelect.innerHTML = '<option value="">Memuat...</option>';
+    try {
+      const { employees } = await apiGet('/admin/employees');
+      userSelect.innerHTML = '<option value="">-- Pilih Karyawan --</option>' +
+        employees.map((e) => `<option value="${e.id}">${e.full_name} (${e.division_name || 'Umum'} - ${e.position_name || 'Staff'})</option>`).join('');
+    } catch (err) {
+      userSelect.innerHTML = '<option value="">Gagal memuat karyawan</option>';
+    }
+  } else {
+    userWrapper.classList.add('hidden');
+    userSelect.removeAttribute('required');
+  }
+
+  document.getElementById('super-sub-type').value = sub ? sub.type : 'izin';
+  document.getElementById('super-sub-start').value = sub && sub.start_date ? sub.start_date.split('T')[0] : '';
+  document.getElementById('super-sub-end').value = sub && sub.end_date ? sub.end_date.split('T')[0] : '';
+  document.getElementById('super-sub-reason').value = sub ? sub.reason || '' : '';
+  document.getElementById('super-sub-status').value = sub ? sub.status || 'pending' : 'pending';
+  document.getElementById('super-sub-note').value = sub ? sub.review_note || '' : '';
+
+  superSubModal.classList.remove('hidden');
+}
+
+if (formSuperSub) {
+  formSuperSub.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert();
+    const id = document.getElementById('super-sub-id').value;
+    const saveBtn = document.getElementById('btn-save-super-sub');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Menyimpan...';
+
+    const payload = {
+      user_id: document.getElementById('super-sub-user').value,
+      type: document.getElementById('super-sub-type').value,
+      start_date: document.getElementById('super-sub-start').value,
+      end_date: document.getElementById('super-sub-end').value,
+      reason: document.getElementById('super-sub-reason').value.trim(),
+      status: document.getElementById('super-sub-status').value,
+      review_note: document.getElementById('super-sub-note').value.trim()
+    };
+
+    try {
+      let res;
+      if (id) {
+        res = await apiPut(`/admin/submissions/${id}`, payload);
+      } else {
+        res = await apiPost('/admin/submissions', payload);
+      }
+      superSubModal.classList.add('hidden');
+      showAlert(res.message, 'success');
+      loadSubmissionsData();
+    } catch (err) {
+      showAlert(err.message);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan';
+    }
+  });
+}
+
+async function deleteSuperSubmission(id) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus data pengajuan #${id}?`)) return;
+  hideAlert();
+  try {
+    const res = await apiDelete(`/admin/submissions/${id}`);
+    showAlert(res.message, 'success');
+    loadSubmissionsData();
+  } catch (err) {
+    showAlert(err.message);
+  }
+}
 
 /* Export Submissions Event Listeners */
 document.getElementById('btn-export-submissions-csv').addEventListener('click', async () => {

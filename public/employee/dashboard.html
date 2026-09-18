@@ -193,38 +193,38 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-          <form id="form-submission" class="space-y-5">
+          <form id="form-submission" class="space-y-4">
             <div>
-              <label class="block text-sm font-bold text-slate-700 mb-1">Jenis Pengajuan</label>
-              <select id="sub-type" required class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+              <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Jenis Pengajuan</label>
+              <select id="sub-type" required class="w-full min-w-0 box-border rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
                 <option value="izin">Izin Khusus</option>
                 <option value="cuti">Cuti Tahunan</option>
                 <option value="sakit">Sakit</option>
               </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Tanggal Mulai</label>
-                <input required type="date" id="sub-start" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div class="min-w-0">
+                <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Tanggal Mulai</label>
+                <input required type="date" id="sub-start" class="w-full min-w-0 box-border appearance-none rounded-xl border border-slate-200 px-3 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
               </div>
-              <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Tanggal Selesai</label>
-                <input required type="date" id="sub-end" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
+              <div class="min-w-0">
+                <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Tanggal Selesai</label>
+                <input required type="date" id="sub-end" class="w-full min-w-0 box-border appearance-none rounded-xl border border-slate-200 px-3 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" />
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-bold text-slate-700 mb-1">Alasan / Keterangan Detail</label>
-              <textarea required id="sub-reason" rows="3" class="w-full rounded-xl border border-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" placeholder="Tuliskan alasan pengajuan secara lengkap..."></textarea>
+              <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Alasan / Keterangan Detail</label>
+              <textarea required id="sub-reason" rows="3" class="w-full min-w-0 box-border rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50" placeholder="Tuliskan alasan pengajuan secara lengkap..."></textarea>
             </div>
 
             <div>
-              <label class="block text-sm font-bold text-slate-700 mb-1">Bukti File / Surat Dokter (opsional)</label>
-              <input type="file" id="sub-attachment" accept="image/*,.pdf" class="w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
+              <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Bukti File / Surat Dokter (opsional)</label>
+              <input type="file" id="sub-attachment" accept="image/*,.pdf" class="w-full min-w-0 text-xs sm:text-sm text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
             </div>
 
-            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl py-3.5 sm:py-4 shadow-md shadow-brand-500/20 active:scale-[0.99] transition">
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm rounded-xl py-3.5 sm:py-4 shadow-md shadow-brand-500/20 active:scale-[0.99] transition">
               Kirim Pengajuan
             </button>
           </form>

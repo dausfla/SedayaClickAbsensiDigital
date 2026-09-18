@@ -48,7 +48,14 @@ export function watchPosition(onUpdate, onError) {
   }
   return navigator.geolocation.watchPosition(
     (pos) => onUpdate({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-    (err) => onError(err.message || 'Gagal memantau lokasi.'),
+    (err) => {
+      const messages = {
+        1: 'Izin lokasi ditolak. Mohon izinkan akses lokasi (GPS) di pengaturan browser Anda.',
+        2: 'Lokasi tidak dapat ditentukan. Pastikan GPS perangkat aktif.',
+        3: 'Waktu pengambilan lokasi habis. Coba lagi di area dengan sinyal GPS lebih baik.'
+      };
+      onError(messages[err.code] || 'Gagal memantau lokasi.');
+    },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }

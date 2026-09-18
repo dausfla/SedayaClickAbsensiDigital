@@ -1,7 +1,7 @@
 // routes/admin.js
-// Step 4: Modul Approval Admin Manager.
-// Semua query di-scope ke division_id milik Admin Manager yang login,
-// sehingga satu Admin Manager tidak bisa melihat/approve pengajuan divisi lain.
+// Modul Pengajuan (Admin Manager & Super Admin)
+// Admin Manager & Super Admin dapat melihat, memproses, membuat, mengedit, dan menghapus pengajuan
+// dari seluruh divisi atau memfilter per divisi.
 
 const express = require('express');
 const pool = require('../config/db');
@@ -14,24 +14,15 @@ const scoped = [requireAuth, requireRole('admin_manager', 'super_admin'), requir
 /**
  * GET /api/admin/submissions/pending
  * Daftar pengajuan izin/cuti/sakit yang berstatus 'pending'.
- * Admin Manager hanya bisa melihat divisinya sendiri; Super Admin bisa melihat semua divisi atau memfilter per divisi.
  */
 router.get('/submissions/pending', ...scoped, async (req, res) => {
   try {
     const { division_id } = req.query;
-    const userRole = req.session.user.role;
-    const userDivisionId = req.session.user.division_id;
 
     const conditions = ["s.status = 'pending'"];
     const params = [];
 
-    if (userRole === 'admin_manager') {
-      if (!userDivisionId) {
-        return res.status(400).json({ success: false, message: 'Akun Anda belum terhubung ke divisi manapun.' });
-      }
-      conditions.push('u.division_id = ?');
-      params.push(userDivisionId);
-    } else if (division_id) {
+    if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -58,21 +49,16 @@ router.get('/submissions/pending', ...scoped, async (req, res) => {
 
 /**
  * GET /api/admin/submissions/history
- * Riwayat pengajuan yang sudah diproses (approved/rejected).
+ * Riwayat pengajuan yang sudah dipproses (approved/rejected).
  */
 router.get('/submissions/history', ...scoped, async (req, res) => {
   try {
     const { division_id } = req.query;
-    const userRole = req.session.user.role;
-    const userDivisionId = req.session.user.division_id;
 
     const conditions = ["s.status IN ('approved','rejected')"];
     const params = [];
 
-    if (userRole === 'admin_manager') {
-      conditions.push('u.division_id = ?');
-      params.push(userDivisionId);
-    } else if (division_id) {
+    if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -80,7 +66,7 @@ router.get('/submissions/history', ...scoped, async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
-      `SELECT s.id, s.type, s.start_date, s.end_date, s.status, s.review_note, s.reviewed_at,
+      `SELECT s.id, s.type, s.start_date, s.end_date, s.reason, s.status, s.review_note, s.reviewed_at,
               u.full_name, d.name AS division_name
        FROM submissions s
        JOIN users u ON u.id = s.user_id
@@ -104,8 +90,6 @@ router.patch('/submissions/:id/decision', ...scoped, async (req, res) => {
   try {
     const { id } = req.params;
     const { decision, review_note } = req.body;
-    const userRole = req.session.user.role;
-    const userDivisionId = req.session.user.division_id;
 
     if (!['approved', 'rejected'].includes(decision)) {
       return res.status(400).json({ success: false, message: 'Keputusan tidak valid.' });
@@ -114,19 +98,9 @@ router.patch('/submissions/:id/decision', ...scoped, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Catatan alasan wajib diisi.' });
     }
 
-    const conditions = ['s.id = ?', "s.status = 'pending'"];
-    const params = [id];
-
-    if (userRole === 'admin_manager') {
-      conditions.push('u.division_id = ?');
-      params.push(userDivisionId);
-    }
-
-    const where = `WHERE ${conditions.join(' AND ')}`;
-
     const [rows] = await pool.query(
-      `SELECT s.id FROM submissions s JOIN users u ON u.id = s.user_id ${where}`,
-      params
+      `SELECT s.id FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ? AND s.status = 'pending'`,
+      [id]
     );
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Pengajuan tidak ditemukan atau sudah diproses.' });
@@ -147,7 +121,6 @@ router.patch('/submissions/:id/decision', ...scoped, async (req, res) => {
 /**
  * GET /api/admin/monitoring/today
  * Monitoring kehadiran tim secara real-time (hari ini) untuk divisi Admin Manager.
- * Frontend dapat melakukan polling berkala ke endpoint ini untuk efek "real-time".
  */
 router.get('/monitoring/today', ...scoped, async (req, res) => {
   try {
@@ -170,4 +143,130 @@ router.get('/monitoring/today', ...scoped, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/employees
+ * Daftar karyawan untuk dropdown pembuatan pengajuan baru.
+ */
+router.get('/employees', ...scoped, async (req, res) => {
+  try {
+    const { division_id } = req.query;
+
+    const conditions = ["u.role = 'employee'", "u.status = 'active'"];
+    const params = [];
+
+    if (division_id) {
+      conditions.push('u.division_id = ?');
+      params.push(division_id);
+    }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
+    const [rows] = await pool.query(
+      `SELECT u.id, u.full_name, d.name AS division_name, p.name AS position_name
+       FROM users u
+       LEFT JOIN divisions d ON d.id = u.division_id
+       LEFT JOIN positions p ON p.id = u.position_id
+       ${where}
+       ORDER BY u.full_name ASC`,
+      params
+    );
+    res.json({ success: true, employees: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal memuat daftar karyawan.' });
+  }
+});
+
+/**
+ * POST /api/admin/submissions
+ * Buat pengajuan baru atas nama karyawan.
+ */
+router.post('/submissions', ...scoped, async (req, res) => {
+  try {
+    const { user_id, type, start_date, end_date, reason, status = 'pending', review_note = '' } = req.body;
+
+    if (!user_id || !type || !start_date || !end_date || !reason) {
+      return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+    }
+
+    const reviewedBy = status !== 'pending' ? req.session.user.id : null;
+    const reviewedAt = status !== 'pending' ? new Date() : null;
+
+    const [result] = await pool.query(
+      `INSERT INTO submissions (user_id, type, start_date, end_date, reason, status, review_note, reviewed_by, reviewed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, type, start_date, end_date, reason, status, review_note || null, reviewedBy, reviewedAt]
+    );
+
+    res.json({ success: true, message: 'Pengajuan berhasil dibuat.', id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal membuat pengajuan.' });
+  }
+});
+
+/**
+ * PUT /api/admin/submissions/:id
+ * Edit / Update pengajuan.
+ */
+router.put('/submissions/:id', ...scoped, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, start_date, end_date, reason, status, review_note } = req.body;
+
+    const [check] = await pool.query(
+      `SELECT s.id FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`,
+      [id]
+    );
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Pengajuan tidak ditemukan.' });
+    }
+
+    const reviewedBy = status && status !== 'pending' ? req.session.user.id : null;
+
+    await pool.query(
+      `UPDATE submissions 
+       SET type = COALESCE(?, type),
+           start_date = COALESCE(?, start_date),
+           end_date = COALESCE(?, end_date),
+           reason = COALESCE(?, reason),
+           status = COALESCE(?, status),
+           review_note = COALESCE(?, review_note),
+           reviewed_by = IF(? IS NOT NULL AND ? != 'pending', ?, reviewed_by),
+           reviewed_at = IF(? IS NOT NULL AND ? != 'pending', NOW(), reviewed_at)
+       WHERE id = ?`,
+      [type, start_date, end_date, reason, status, review_note, status, status, reviewedBy, status, status, id]
+    );
+
+    res.json({ success: true, message: 'Pengajuan berhasil diperbarui.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal memperbarui pengajuan.' });
+  }
+});
+
+/**
+ * DELETE /api/admin/submissions/:id
+ * Hapus data pengajuan.
+ */
+router.delete('/submissions/:id', ...scoped, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [check] = await pool.query(
+      `SELECT s.id FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`,
+      [id]
+    );
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Pengajuan tidak ditemukan.' });
+    }
+
+    await pool.query('DELETE FROM submissions WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Pengajuan berhasil dihapus.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal menghapus pengajuan.' });
+  }
+});
+
 module.exports = router;
+

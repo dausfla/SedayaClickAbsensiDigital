@@ -131,16 +131,20 @@ router.post('/logout', requireAuth, (req, res) => {
 });
 
 /**
- * GET /api/auth/session
+ * GET /api/auth/session & GET /api/auth/me
  * Dipakai oleh frontend untuk cek status login saat halaman dimuat,
  * dan untuk menentukan redirect ke dashboard sesuai role.
  */
-router.get('/session', (req, res) => {
+const getSessionHandler = (req, res) => {
   if (req.session && req.session.user) {
     return res.json({ success: true, loggedIn: true, user: req.session.user });
   }
   res.json({ success: true, loggedIn: false });
-});
+};
+
+router.get('/session', getSessionHandler);
+router.get('/me', getSessionHandler);
+
 
 /**
  * POST /api/auth/update-profile
