@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Data dinamis (API) dan file upload: selalu network, tidak pernah dari cache.
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) {
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || url.pathname.startsWith('/secure-uploads/')) {
     event.respondWith(fetch(event.request));
     return;
   }

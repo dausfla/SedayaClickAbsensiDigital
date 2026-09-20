@@ -40,6 +40,10 @@
   .dark input, .dark select, .dark textarea { background-color: #0f172a !important; color: #f8fafc !important; border-color: #475569 !important; }
   .dark table thead { background-color: #0f172a !important; color: #94a3b8 !important; }
 
+  /* Input & Datepicker Overflow Prevention on Mobile Modals */
+  input, select, textarea { box-sizing: border-box !important; max-width: 100% !important; min-width: 0 !important; }
+  input[type="date"] { min-width: 0 !important; max-width: 100% !important; }
+
   /* Custom scrollbar for modal */
   .custom-scrollbar::-webkit-scrollbar { width: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -85,8 +89,21 @@
         </div>
 
         <!-- Theme Toggle -->
-        <button id="theme-toggle" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Beralih Mode Gelap/Terang">
-          <span id="theme-toggle-icon" class="text-lg">🌙</span>
+        <button id="theme-toggle" class="relative inline-flex items-center justify-between w-[130px] h-8 sm:w-[140px] sm:h-9 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-105 shrink-0" title="Beralih Mode Gelap/Terang">
+          <span class="text-[9px] sm:text-[10px] font-black tracking-wider text-slate-900 pl-2 sm:pl-2.5 uppercase select-none">DAY MODE</span>
+          <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4.5"></circle>
+              <line x1="12" y1="2" x2="12" y2="4"></line>
+              <line x1="12" y1="20" x2="12" y2="22"></line>
+              <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+              <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+              <line x1="2" y1="12" x2="4" y2="12"></line>
+              <line x1="20" y1="12" x2="22" y2="12"></line>
+              <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+              <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+            </svg>
+          </div>
         </button>
 
         <!-- Logout Button -->
@@ -389,6 +406,7 @@
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
   <!-- JS Script -->
+  <script type="module" src="/js/pull-to-refresh.js"></script>
   <script src="/admin/js/admin.js"></script>
 </body>
 </html>

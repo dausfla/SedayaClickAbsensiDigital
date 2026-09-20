@@ -3,10 +3,46 @@
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Rate limiter khusus untuk login: maksimal 5 percobaan GAGAL per 15 menit per kombinasi IP + email.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown-ip';
+    const email = (req.body && req.body.email) ? req.body.email.toLowerCase().trim() : 'unknown-email';
+    return `${ip}_${email}`;
+  },
+  validate: false,
+  handler: (req, res) => {
+    return res.status(429).json({
+      success: false,
+      message: 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.'
+    });
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiter longgar untuk pendaftaran: maksimal 20 request per menit per IP.
+const registerLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  handler: (req, res) => {
+    return res.status(429).json({
+      success: false,
+      message: 'Terlalu banyak pendaftaran dari IP ini. Silakan coba lagi nanti.'
+    });
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 /**
  * GET /api/auth/meta
@@ -28,7 +64,7 @@ router.get('/meta', async (req, res) => {
  * Pendaftaran mandiri karyawan. Akun langsung dibuat dengan status 'pending'
  * dan baru bisa login setelah diverifikasi/diaktifkan oleh Super Admin.
  */
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { full_name, email, password, division_id, position_id, whatsapp, address } = req.body;
 
@@ -66,7 +102,7 @@ router.post('/register', async (req, res) => {
  * POST /api/auth/login
  * Login dengan email + password. Menolak akun yang belum 'active'.
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {

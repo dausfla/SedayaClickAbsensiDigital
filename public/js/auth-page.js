@@ -1,5 +1,5 @@
 // public/js/auth-page.js
-import { apiGet, apiPost } from './api.js';
+import { apiGet, apiPost, escapeHtml } from './api.js';
 import { bindInstallButton } from './pwa-register.js';
 
 const tabLogin = document.getElementById('tab-login');
@@ -52,9 +52,9 @@ function redirectByRole(role) {
     const divSelect = document.getElementById('reg-division');
     const posSelect = document.getElementById('reg-position');
     divSelect.innerHTML = '<option value="">Pilih Divisi</option>' +
-      divisions.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
+      divisions.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
     posSelect.innerHTML = '<option value="">Pilih Jabatan</option>' +
-      positions.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+      positions.map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
   } catch (e) {
     console.error('Gagal memuat data master:', e);
   }

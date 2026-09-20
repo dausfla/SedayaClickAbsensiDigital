@@ -1,10 +1,22 @@
-import { apiGet, apiPost, apiPostForm } from '../../js/api.js';
+import { apiGet, apiPost, apiPostForm, escapeHtml } from '../../js/api.js';
 import { LiveCamera } from '../../js/camera.js';
 import { getCurrentPosition, watchPosition, clearWatch } from '../../js/geolocation.js';
 
 const alertBox = document.getElementById('alert-box');
+const alertMsg = document.getElementById('alert-msg');
+const alertCloseBtn = document.getElementById('alert-close-btn');
+
+if (alertCloseBtn) {
+  alertCloseBtn.addEventListener('click', hideAlert);
+}
+
 function showAlert(message, type = 'error') {
-  alertBox.textContent = message;
+  if (alertMsg) {
+    alertMsg.textContent = message;
+  } else if (alertBox) {
+    alertBox.textContent = message;
+  }
+  if (!alertBox) return;
   alertBox.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
   alertBox.classList.add(
     type === 'error' ? 'bg-red-50' : 'bg-emerald-50', 
@@ -13,7 +25,9 @@ function showAlert(message, type = 'error') {
   );
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function hideAlert() { alertBox.classList.add('hidden'); }
+function hideAlert() { 
+  if (alertBox) alertBox.classList.add('hidden'); 
+}
 
 /* ---------------------------------------------------------
    Load Dynamic User Profile from Database
@@ -300,12 +314,13 @@ async function loadSubmissions(silent = false) {
     container.innerHTML = submissions.map((s) => `
       <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-1.5">
         <div class="flex items-center justify-between">
-          <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">${s.type}</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_MAP[s.status] || 'bg-slate-100 text-slate-600'}">${STATUS_TEXT[s.status] || s.status}</span>
+          <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">${escapeHtml(s.type)}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_MAP[s.status] || 'bg-slate-100 text-slate-600'}">${STATUS_TEXT[s.status] || escapeHtml(s.status)}</span>
         </div>
-        <p class="text-[11px] text-slate-500 font-medium">Periode: ${s.start_date} s/d ${s.end_date}</p>
-        <p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">${s.reason}</p>
-        ${s.review_note ? `<p class="text-[11px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-100"><span class="font-semibold not-italic text-slate-700">Catatan Admin:</span> ${s.review_note}</p>` : ''}
+        <p class="text-[11px] text-slate-500 font-medium">Periode: ${escapeHtml(s.start_date)} s/d ${escapeHtml(s.end_date)}</p>
+        <p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">${escapeHtml(s.reason)}</p>
+        ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline inline-block">Lihat Lampiran</a>` : ''}
+        ${s.review_note ? `<p class="text-[11px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-100"><span class="font-semibold not-italic text-slate-700">Catatan Admin:</span> ${escapeHtml(s.review_note)}</p>` : ''}
       </div>
     `).join('');
   } catch (err) {

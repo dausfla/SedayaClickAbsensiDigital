@@ -33,22 +33,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Theme Initialization
+function renderThemeToggleBtn(isDark) {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  if (isDark) {
+    btn.className = 'relative inline-flex items-center justify-between w-[130px] h-8 sm:w-[140px] sm:h-9 px-1 rounded-full bg-black border border-slate-800 cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-105 shrink-0';
+    btn.innerHTML = `
+      <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-900" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12.3 2a10 10 0 0 0 9.7 12.8 10 10 0 1 1-9.7-12.8z"/>
+          <path d="M18 3.5l.4.9.9.4-.9.4-.4.9-.4-.9-.9-.4.9-.4z"/>
+          <path d="M21 8.5l.3.6.6.3-.6.3-.3.6-.3-.6-.6-.3.6-.3z"/>
+        </svg>
+      </div>
+      <span class="text-[9px] sm:text-[10px] font-black tracking-wider text-white pr-2 sm:pr-2.5 uppercase select-none">NIGHT MODE</span>
+    `;
+  } else {
+    btn.className = 'relative inline-flex items-center justify-between w-[130px] h-8 sm:w-[140px] sm:h-9 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-105 shrink-0';
+    btn.innerHTML = `
+      <span class="text-[9px] sm:text-[10px] font-black tracking-wider text-slate-900 pl-2 sm:pl-2.5 uppercase select-none">DAY MODE</span>
+      <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4.5"></circle>
+          <line x1="12" y1="2" x2="12" y2="4"></line>
+          <line x1="12" y1="20" x2="12" y2="22"></line>
+          <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+          <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+          <line x1="2" y1="12" x2="4" y2="12"></line>
+          <line x1="20" y1="12" x2="22" y2="12"></line>
+          <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+          <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+        </svg>
+      </div>
+    `;
+  }
+}
+
 function initTheme() {
   const isDark = localStorage.getItem('theme') === 'dark' || 
     (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
   if (isDark) {
     document.documentElement.classList.add('dark');
-    document.getElementById('theme-toggle-icon').textContent = '☀️';
   } else {
     document.documentElement.classList.remove('dark');
-    document.getElementById('theme-toggle-icon').textContent = '🌙';
   }
+  renderThemeToggleBtn(isDark);
 }
 
 function toggleTheme() {
   const isDark = document.documentElement.classList.toggle('dark');
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  document.getElementById('theme-toggle-icon').textContent = isDark ? '☀️' : '🌙';
+  renderThemeToggleBtn(isDark);
 }
 
 // Authentication Check
@@ -280,6 +315,7 @@ function renderPendingTable() {
       </td>
       <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.reason)}">
         ${escapeHtml(item.reason || '-')}
+        ${item.attachment ? `<br/><a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline">Lihat Lampiran</a>` : ''}
       </td>
       <td class="px-4 py-3.5 text-center">
         <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">

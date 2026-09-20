@@ -95,7 +95,12 @@
     <main class="px-4 sm:px-5 py-4 sm:py-5 flex-1">
 
       <!-- Alert Box -->
-      <div id="alert-box" class="hidden mb-4 text-xs font-semibold rounded-xl px-4 py-3 shadow-sm border"></div>
+      <div id="alert-box" class="hidden mb-4 text-xs font-semibold rounded-xl px-4 py-3 shadow-sm border flex items-center justify-between gap-3 transition-all">
+        <span id="alert-msg" class="flex-1 leading-relaxed"></span>
+        <button id="alert-close-btn" type="button" class="shrink-0 p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer" title="Tutup Notifikasi">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
 
       <!-- ================= TAB 1: BERANDA ================= -->
       <section id="panel-beranda" class="space-y-5">
@@ -299,6 +304,7 @@
   </div>
 
   <script type="module" src="/js/pwa-register.js"></script>
+  <script type="module" src="/js/pull-to-refresh.js"></script>
   <script type="module" src="/employee/js/employee.js"></script>
 </body>
 </html>

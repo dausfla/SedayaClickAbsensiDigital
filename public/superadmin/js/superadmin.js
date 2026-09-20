@@ -1,5 +1,5 @@
 // public/superadmin/js/superadmin.js
-import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiDownload } from '../../js/api.js';
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiDownload, escapeHtml } from '../../js/api.js';
 
 const alertBox = document.getElementById('alert-box');
 const alertMsg = document.getElementById('alert-msg');
@@ -202,9 +202,9 @@ async function loadUsers(status) {
     container.innerHTML = users.map((u) => `
       <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p class="font-semibold text-slate-800">${u.full_name} <span class="text-xs font-normal text-slate-400">(${u.role})</span></p>
-          <p class="text-xs text-slate-500">${u.email} · ${u.division_name || '-'} · ${u.position_name || '-'}</p>
-          <p class="text-xs text-slate-400">${u.whatsapp || ''}</p>
+          <p class="font-semibold text-slate-800">${escapeHtml(u.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(u.role)})</span></p>
+          <p class="text-xs text-slate-500">${escapeHtml(u.email)} · ${escapeHtml(u.division_name || '-')} · ${escapeHtml(u.position_name || '-')}</p>
+          <p class="text-xs text-slate-400">${escapeHtml(u.whatsapp || '')}</p>
         </div>
         <div class="flex items-center gap-2">
           ${status === 'pending' ? `<button class="btn-activate bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors" data-id="${u.id}">Aktifkan</button>` : ''}
@@ -263,9 +263,9 @@ async function loadUserFormOptions() {
     apiGet('/superadmin/divisions'), apiGet('/superadmin/positions'), apiGet('/superadmin/shifts')
   ]);
   userDivisionsCache = divisions; userPositionsCache = positions; userShiftsCache = shifts;
-  document.getElementById('user-division').innerHTML = '<option value="">Divisi</option>' + divisions.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
-  document.getElementById('user-position').innerHTML = '<option value="">Jabatan</option>' + positions.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
-  document.getElementById('user-shift').innerHTML = '<option value="">Shift</option>' + shifts.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('user-division').innerHTML = '<option value="">Divisi</option>' + divisions.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+  document.getElementById('user-position').innerHTML = '<option value="">Jabatan</option>' + positions.map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  document.getElementById('user-shift').innerHTML = '<option value="">Shift</option>' + shifts.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
 }
 
 document.getElementById('btn-open-create-user').addEventListener('click', async () => {
@@ -341,7 +341,7 @@ async function loadDivisions() {
   const { divisions } = await apiGet('/superadmin/divisions');
   document.getElementById('list-divisions').innerHTML = divisions.map((d) => `
     <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2.5">
-      <span class="text-sm text-slate-700">${d.name}</span>
+      <span class="text-sm text-slate-700">${escapeHtml(d.name)}</span>
       <button class="btn-del-division text-xs text-red-600 font-semibold" data-id="${d.id}">Hapus</button>
     </div>`).join('');
   document.querySelectorAll('.btn-del-division').forEach((b) => b.addEventListener('click', async () => {
@@ -364,7 +364,7 @@ async function loadPositions() {
   const { positions } = await apiGet('/superadmin/positions');
   document.getElementById('list-positions').innerHTML = positions.map((p) => `
     <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2.5">
-      <span class="text-sm text-slate-700">${p.name}</span>
+      <span class="text-sm text-slate-700">${escapeHtml(p.name)}</span>
       <button class="btn-del-position text-xs text-red-600 font-semibold" data-id="${p.id}">Hapus</button>
     </div>`).join('');
   document.querySelectorAll('.btn-del-position').forEach((b) => b.addEventListener('click', async () => {
@@ -387,7 +387,7 @@ async function loadShifts() {
   const { shifts } = await apiGet('/superadmin/shifts');
   document.getElementById('list-shifts').innerHTML = shifts.map((s) => `
     <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2.5">
-      <span class="text-sm text-slate-700">${s.name} · ${s.start_time} - ${s.end_time} (toleransi ${s.tolerance_minutes} menit)</span>
+      <span class="text-sm text-slate-700">${escapeHtml(s.name)} · ${escapeHtml(s.start_time)} - ${escapeHtml(s.end_time)} (toleransi ${s.tolerance_minutes} menit)</span>
       <button class="btn-del-shift text-xs text-red-600 font-semibold" data-id="${s.id}">Hapus</button>
     </div>`).join('');
   document.querySelectorAll('.btn-del-shift').forEach((b) => b.addEventListener('click', async () => {
@@ -520,8 +520,8 @@ async function openDetailModal(attendanceId) {
     document.getElementById('detail-overtime').textContent = data.overtime_hms || '-';
 
     // Photos
-    const clockInPhotoUrl = data.clock_in_photo ? `${data.clock_in_photo}` : '/assets/default/default-photo.png';
-    const clockOutPhotoUrl = data.clock_out_photo ? `${data.clock_out_photo}` : '/assets/default/default-photo.png';
+    const clockInPhotoUrl = data.clock_in_photo ? data.clock_in_photo.replace('/uploads/', '/secure-uploads/') : '/assets/default/default-photo.png';
+    const clockOutPhotoUrl = data.clock_out_photo ? data.clock_out_photo.replace('/uploads/', '/secure-uploads/') : '/assets/default/default-photo.png';
     const clockInImg = document.getElementById('detail-clock-in-photo');
     const clockOutImg = document.getElementById('detail-clock-out-photo');
     clockInImg.src = clockInPhotoUrl;
@@ -615,7 +615,7 @@ async function loadSubmissionsNav() {
     try {
       const { divisions } = await apiGet('/superadmin/divisions');
       const select = document.getElementById('submission-division-filter');
-      select.innerHTML = '<option value="">Semua Divisi</option>' + divisions.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
+      select.innerHTML = '<option value="">Semua Divisi</option>' + divisions.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
       submissionsDivisionsLoaded = true;
     } catch (e) {
       console.error(e);
@@ -671,12 +671,12 @@ async function loadSubmissionsPending(silent = false) {
     container.innerHTML = submissions.map((s) => `
       <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
         <div class="flex items-center justify-between mb-1">
-          <span class="font-semibold text-slate-800">${s.full_name} <span class="text-xs font-normal text-slate-400">(${s.division_name || '-'})</span></span>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">${TYPE_LABEL[s.type] || s.type}</span>
+          <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">${escapeHtml(TYPE_LABEL[s.type] || s.type)}</span>
         </div>
-        <p class="text-xs text-slate-400 mb-1">${s.position_name || '-'} · ${s.start_date} s/d ${s.end_date}</p>
-        <p class="text-sm text-slate-600 mb-2">${s.reason}</p>
-        ${s.attachment ? `<a href="${s.attachment}" target="_blank" class="text-xs text-brand-600 underline mb-2 inline-block">Lihat lampiran</a><br/>` : ''}
+        <p class="text-xs text-slate-400 mb-1">${escapeHtml(s.position_name || '-')} · ${escapeHtml(s.start_date)} s/d ${escapeHtml(s.end_date)}</p>
+        <p class="text-sm text-slate-600 mb-2">${escapeHtml(s.reason)}</p>
+        ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline mb-2 inline-block">Lihat lampiran</a><br/>` : ''}
         <div class="flex flex-wrap gap-2 pt-1">
           <button class="btn-sub-approve flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Setujui</button>
           <button class="btn-sub-reject flex-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Tolak</button>
@@ -715,11 +715,11 @@ async function loadSubmissionsHistory(silent = false) {
     container.innerHTML = submissions.map((s) => `
       <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
         <div class="flex items-center justify-between mb-1">
-          <span class="font-semibold text-slate-800">${s.full_name} <span class="text-xs font-normal text-slate-400">(${s.division_name || '-'})</span></span>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || s.status}</span>
+          <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || escapeHtml(s.status)}</span>
         </div>
-        <p class="text-xs text-slate-400 mb-1">${TYPE_LABEL[s.type] || s.type} · ${s.start_date} s/d ${s.end_date}</p>
-        ${s.review_note ? `<p class="text-xs text-slate-500 italic mb-2">Catatan: ${s.review_note}</p>` : ''}
+        <p class="text-xs text-slate-400 mb-1">${escapeHtml(TYPE_LABEL[s.type] || s.type)} · ${escapeHtml(s.start_date)} s/d ${escapeHtml(s.end_date)}</p>
+        ${s.review_note ? `<p class="text-xs text-slate-500 italic mb-2">Catatan: ${escapeHtml(s.review_note)}</p>` : ''}
         
         <div class="flex gap-2 justify-end pt-2 border-t border-slate-100">
           <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
@@ -790,7 +790,7 @@ async function openSuperSubModal(sub = null) {
     try {
       const { employees } = await apiGet('/admin/employees');
       userSelect.innerHTML = '<option value="">-- Pilih Karyawan --</option>' +
-        employees.map((e) => `<option value="${e.id}">${e.full_name} (${e.division_name || 'Umum'} - ${e.position_name || 'Staff'})</option>`).join('');
+        employees.map((e) => `<option value="${e.id}">${escapeHtml(e.full_name)} (${escapeHtml(e.division_name || 'Umum')} - ${escapeHtml(e.position_name || 'Staff')})</option>`).join('');
     } catch (err) {
       userSelect.innerHTML = '<option value="">Gagal memuat karyawan</option>';
     }
@@ -900,17 +900,50 @@ function applyTheme(theme) {
   }
 }
 
+function renderPillButtonContent(btn, isDark, isMobile = false) {
+  if (!btn) return;
+  if (isDark) {
+    btn.className = isMobile
+      ? 'relative inline-flex items-center justify-between w-[125px] h-8 px-1 rounded-full bg-black border border-slate-800 cursor-pointer select-none transition-all duration-300 shadow-xs shrink-0'
+      : 'relative inline-flex items-center justify-between w-full h-9 px-1 rounded-full bg-black border border-slate-800 cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-[1.02] shrink-0 mb-3';
+    btn.innerHTML = `
+      <div class="${isMobile ? 'w-6 h-6' : 'w-7 h-7'} rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+        <svg class="${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-slate-900" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12.3 2a10 10 0 0 0 9.7 12.8 10 10 0 1 1-9.7-12.8z"/>
+          <path d="M18 3.5l.4.9.9.4-.9.4-.4.9-.4-.9-.9-.4.9-.4z"/>
+          <path d="M21 8.5l.3.6.6.3-.6.3-.3.6-.3-.6-.6-.3.6-.3z"/>
+        </svg>
+      </div>
+      <span class="${isMobile ? '' : 'sidebar-label'} text-[9px] sm:text-[10px] font-black tracking-wider text-white ${isMobile ? 'pr-2' : 'pr-2.5'} uppercase select-none">NIGHT MODE</span>
+    `;
+  } else {
+    btn.className = isMobile
+      ? 'relative inline-flex items-center justify-between w-[125px] h-8 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs shrink-0'
+      : 'relative inline-flex items-center justify-between w-full h-9 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-[1.02] shrink-0 mb-3';
+    btn.innerHTML = `
+      <span class="${isMobile ? '' : 'sidebar-label'} text-[9px] sm:text-[10px] font-black tracking-wider text-slate-900 ${isMobile ? 'pl-2' : 'pl-2.5'} uppercase select-none">DAY MODE</span>
+      <div class="${isMobile ? 'w-6 h-6' : 'w-7 h-7'} rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+        <svg class="${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4.5"></circle>
+          <line x1="12" y1="2" x2="12" y2="4"></line>
+          <line x1="12" y1="20" x2="12" y2="22"></line>
+          <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+          <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+          <line x1="2" y1="12" x2="4" y2="12"></line>
+          <line x1="20" y1="12" x2="22" y2="12"></line>
+          <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+          <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+        </svg>
+      </div>
+    `;
+  }
+}
+
 function updateThemeUI(isDark) {
-  const icon = isDark ? '☀️' : '🌙';
-  const text = isDark ? 'Mode Terang' : 'Mode Gelap';
-
-  const iconEl = document.getElementById('theme-toggle-icon');
-  const textEl = document.getElementById('theme-toggle-text');
-  const iconMobEl = document.getElementById('theme-toggle-icon-mobile');
-
-  if (iconEl) iconEl.textContent = icon;
-  if (textEl) textEl.textContent = text;
-  if (iconMobEl) iconMobEl.textContent = icon;
+  const deskBtn = document.getElementById('btn-toggle-theme');
+  const mobBtn = document.getElementById('btn-toggle-theme-mobile');
+  renderPillButtonContent(deskBtn, isDark, false);
+  renderPillButtonContent(mobBtn, isDark, true);
 }
 
 function toggleTheme() {

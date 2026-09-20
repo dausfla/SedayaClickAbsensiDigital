@@ -95,3 +95,21 @@ export async function apiDownload(path, params = {}, fallbackFilename = 'downloa
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+/**
+ * Utility untuk meng-escape karakter HTML untuk mencegah serangan XSS.
+ */
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
+}
+
