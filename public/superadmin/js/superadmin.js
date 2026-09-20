@@ -263,29 +263,33 @@ async function loadUserFormOptions() {
     apiGet('/superadmin/divisions'), apiGet('/superadmin/positions'), apiGet('/superadmin/shifts')
   ]);
   userDivisionsCache = divisions; userPositionsCache = positions; userShiftsCache = shifts;
-  document.getElementById('user-division').innerHTML = '<option value="">Divisi</option>' + divisions.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
-  document.getElementById('user-position').innerHTML = '<option value="">Jabatan</option>' + positions.map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-  document.getElementById('user-shift').innerHTML = '<option value="">Shift</option>' + shifts.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  document.getElementById('user-division').innerHTML = '<option value="">-- Pilih Divisi --</option>' + divisions.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+  document.getElementById('user-position').innerHTML = '<option value="">-- Pilih Jabatan --</option>' + positions.map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  document.getElementById('user-shift').innerHTML = '<option value="">-- Pilih Shift --</option>' + shifts.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
 }
 
-document.getElementById('btn-open-create-user').addEventListener('click', async () => {
-  await loadUserFormOptions();
+document.getElementById('btn-open-create-user').addEventListener('click', () => {
   openUserModal(null);
 });
 
-function openUserModal(user) {
+async function openUserModal(user) {
+  try {
+    await loadUserFormOptions();
+  } catch (err) {
+    console.error('Failed to load user form options:', err);
+  }
   document.getElementById('form-user').reset();
   document.getElementById('user-modal-title').textContent = user ? 'Edit User' : 'Buat User Baru';
   document.getElementById('user-id').value = user ? user.id : '';
   document.getElementById('user-password').placeholder = user ? 'Password (kosongkan jika tidak diubah)' : 'Password';
   if (user) {
-    document.getElementById('user-full-name').value = user.full_name;
-    document.getElementById('user-email').value = user.email;
+    document.getElementById('user-full-name').value = user.full_name || '';
+    document.getElementById('user-email').value = user.email || '';
     document.getElementById('user-email').disabled = true;
-    document.getElementById('user-role').value = user.role;
-    document.getElementById('user-division').value = user.division_id || '';
-    document.getElementById('user-position').value = user.position_id || '';
-    document.getElementById('user-shift').value = user.shift_id || '';
+    document.getElementById('user-role').value = user.role || 'employee';
+    document.getElementById('user-division').value = user.division_id != null ? String(user.division_id) : '';
+    document.getElementById('user-position').value = user.position_id != null ? String(user.position_id) : '';
+    document.getElementById('user-shift').value = user.shift_id != null ? String(user.shift_id) : '';
     document.getElementById('user-whatsapp').value = user.whatsapp || '';
     document.getElementById('user-address').value = user.address || '';
   } else {
@@ -520,12 +524,33 @@ async function openDetailModal(attendanceId) {
     document.getElementById('detail-overtime').textContent = data.overtime_hms || '-';
 
     // Photos
-    const clockInPhotoUrl = data.clock_in_photo ? data.clock_in_photo.replace('/uploads/', '/secure-uploads/') : '/assets/default/default-photo.png';
-    const clockOutPhotoUrl = data.clock_out_photo ? data.clock_out_photo.replace('/uploads/', '/secure-uploads/') : '/assets/default/default-photo.png';
+    const getSecureUrl = (url) => {
+      if (!url || typeof url !== 'string' || !url.trim()) return '/assets/default/default-photo.png';
+      let clean = url.trim();
+      if (clean.startsWith('/uploads/')) return clean.replace('/uploads/', '/secure-uploads/');
+      if (clean.startsWith('uploads/')) return '/' + clean.replace('uploads/', 'secure-uploads/');
+      if (!clean.startsWith('/secure-uploads/')) return '/secure-uploads/attendance/' + clean.split('/').pop();
+      return clean;
+    };
+
+    const clockInPhotoUrl = getSecureUrl(data.clock_in_photo);
+    const clockOutPhotoUrl = getSecureUrl(data.clock_out_photo);
+
     const clockInImg = document.getElementById('detail-clock-in-photo');
     const clockOutImg = document.getElementById('detail-clock-out-photo');
+
+    clockInImg.onerror = () => {
+      clockInImg.onerror = null;
+      clockInImg.src = '/assets/default/default-photo.png';
+    };
+    clockOutImg.onerror = () => {
+      clockOutImg.onerror = null;
+      clockOutImg.src = '/assets/default/default-photo.png';
+    };
+
     clockInImg.src = clockInPhotoUrl;
     clockOutImg.src = clockOutPhotoUrl;
+
     // Set time overlay on photos
     document.getElementById('detail-clock-in-time').textContent = data.clock_in_time ? data.clock_in_time.slice(0, 5) : '';
     document.getElementById('detail-clock-out-time').textContent = data.clock_out_time ? data.clock_out_time.slice(0, 5) : '';
@@ -563,8 +588,8 @@ async function openDetailModal(attendanceId) {
     detailModal.classList.remove('hidden');
 
     // Add click listeners to photos for lightbox
-    clockInImg.addEventListener('click', () => openLightbox(clockInPhotoUrl));
-    clockOutImg.addEventListener('click', () => openLightbox(clockOutPhotoUrl));
+    clockInImg.onclick = () => openLightbox(clockInImg.src);
+    clockOutImg.onclick = () => openLightbox(clockOutImg.src);
   } catch (err) {
     showAlert(err.message);
   }

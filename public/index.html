@@ -1,53 +1,67 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>SedayaClick — Absensi & Penggajian</title>
-<meta name="theme-color" content="#4338CA" />
-<link rel="manifest" href="/manifest.json" />
-<link rel="apple-touch-icon" href="/icons/icon-192.png" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
-        colors: {
-          brand: { 50:'#eef2ff',100:'#e0e7ff',500:'#4f46e5',600:'#4338CA',700:'#3730a3',900:'#1e1b4b' }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>SedayaClick — Absensi</title>
+  <meta name="theme-color" content="#4338CA" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#4f46e5', 600: '#4338CA', 700: '#3730a3', 900: '#1e1b4b' }
+          }
         }
       }
     }
-  }
-</script>
-<style>
-  body { font-family: 'Plus Jakarta Sans', sans-serif; }
-  .tab-active { color: #4338CA; font-weight: 700; }
-</style>
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .tab-active {
+      color: #4338CA;
+      font-weight: 700;
+    }
+  </style>
 </head>
+
 <body class="min-h-screen bg-slate-100 text-slate-800 antialiased flex items-center justify-center p-0 sm:p-4">
 
   <!-- Mobile-App Container Card -->
-  <div class="w-full max-w-[440px] bg-slate-50 min-h-screen sm:min-h-0 sm:rounded-3xl border-x sm:border border-slate-200/80 shadow-2xl overflow-hidden relative flex flex-col justify-between">
+  <div
+    class="w-full max-w-[440px] bg-slate-50 min-h-screen sm:min-h-0 sm:rounded-3xl border-x sm:border border-slate-200/80 shadow-2xl overflow-hidden relative flex flex-col justify-between">
 
     <!-- Top Hero Header with Brand Gradient -->
-    <div class="bg-gradient-to-b from-brand-700 via-brand-600 to-indigo-900 text-white pt-10 pb-12 px-6 text-center relative overflow-hidden flex flex-col items-center">
+    <div
+      class="bg-gradient-to-b from-brand-700 via-brand-600 to-indigo-900 text-white pt-10 pb-12 px-6 text-center relative overflow-hidden flex flex-col items-center">
       <!-- Decorative Glow Shapes -->
       <div class="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
-      <div class="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-brand-500/20 blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-brand-500/20 blur-2xl pointer-events-none">
+      </div>
 
       <!-- App Logo Circle Badge -->
-      <div class="w-20 h-20 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center text-4xl shadow-xl mb-3 relative z-10">
+      <div
+        class="w-20 h-20 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center text-4xl shadow-xl mb-3 relative z-10">
         ⏱
       </div>
 
       <!-- App Name & Tagline -->
       <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-1 relative z-10">SedayaClick</h1>
-      <p class="text-brand-100/90 text-xs sm:text-sm font-medium max-w-[260px] leading-snug relative z-10">Absensi & Penggajian Terintegrasi Presisi Satelit</p>
+      <p class="text-brand-100/90 text-xs sm:text-sm font-medium max-w-[260px] leading-snug relative z-10">Absensi
+        Digital</p>
     </div>
 
     <!-- Main Card Body -->
@@ -66,20 +80,32 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Email</label>
-            <input required type="email" id="login-email" class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="nama@perusahaan.com" />
+            <input required type="email" id="login-email"
+              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+              placeholder="nama@perusahaan.com" />
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Password</label>
             <div class="relative">
-              <input required type="password" id="login-password" class="w-full rounded-full bg-slate-50 border border-slate-200/80 pl-5 pr-12 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="••••••••" />
-              <button type="button" id="toggle-login-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Tampilkan/Sembunyikan Password">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <input required type="password" id="login-password"
+                class="w-full rounded-full bg-slate-50 border border-slate-200/80 pl-5 pr-12 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+                placeholder="••••••••" />
+              <button type="button" id="toggle-login-password"
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                title="Tampilkan/Sembunyikan Password">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
               </button>
             </div>
           </div>
 
-          <button type="submit" class="w-full rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm py-3.5 shadow-lg shadow-brand-600/25 active:scale-[0.98] transition-all mt-2">
+          <button type="submit"
+            class="w-full rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm py-3.5 shadow-lg shadow-brand-600/25 active:scale-[0.98] transition-all mt-2">
             Masuk
           </button>
 
@@ -91,7 +117,7 @@
 
           <div class="border-t border-slate-100 pt-4 mt-4 text-center">
             <p class="text-xs text-slate-500">
-              Belum punya akun? 
+              Belum punya akun?
               <button type="button" id="tab-register" class="font-bold text-brand-600 hover:underline">Daftar</button>
             </p>
           </div>
@@ -101,10 +127,12 @@
         <form id="form-register" class="space-y-3.5 hidden">
           <!-- Back button & Title -->
           <div class="flex items-center justify-between mb-2">
-            <button type="button" id="tab-login" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-brand-600 transition-colors p-1 -ml-1">
+            <button type="button" id="tab-login"
+              class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-brand-600 transition-colors p-1 -ml-1">
               <span class="text-base font-bold">←</span> <span>Kembali</span>
             </button>
-            <span class="text-[10px] font-bold tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">KARYAWAN BARU</span>
+            <span class="text-[10px] font-bold tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">Buat
+              Akun</span>
           </div>
 
           <div>
@@ -114,20 +142,33 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Nama Lengkap</label>
-            <input required type="text" id="reg-full-name" class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="Nama Lengkap Karyawan" />
+            <input required type="text" id="reg-full-name"
+              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+              placeholder="Firdaus" />
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Email</label>
-            <input required type="email" id="reg-email" class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="nama@perusahaan.com" />
+            <input required type="email" id="reg-email"
+              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+              placeholder="hi@firdaus.co" />
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Password</label>
             <div class="relative">
-              <input required minlength="6" type="password" id="reg-password" class="w-full rounded-full bg-slate-50 border border-slate-200/80 pl-4 pr-11 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="Minimal 6 karakter" />
-              <button type="button" id="toggle-reg-password" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Tampilkan/Sembunyikan Password">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <input required minlength="6" type="password" id="reg-password"
+                class="w-full rounded-full bg-slate-50 border border-slate-200/80 pl-4 pr-11 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+                placeholder="Minimal 6 karakter" />
+              <button type="button" id="toggle-reg-password"
+                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                title="Tampilkan/Sembunyikan Password">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
               </button>
             </div>
           </div>
@@ -135,37 +176,47 @@
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Divisi</label>
-              <select required id="reg-division" class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></select>
+              <select required id="reg-division"
+                class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Jabatan</label>
-              <select required id="reg-position" class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></select>
+              <select required id="reg-position"
+                class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></select>
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Nomor WhatsApp</label>
-            <input required type="tel" id="reg-whatsapp" class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="08xxxxxxxxxx" />
+            <input required type="tel" id="reg-whatsapp"
+              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+              placeholder="08xxxxxxxxxx" />
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Alamat</label>
-            <textarea required id="reg-address" rows="2" class="w-full rounded-2xl bg-slate-50 border border-slate-200/80 px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all" placeholder="Alamat domisili lengkap..."></textarea>
+            <textarea required id="reg-address" rows="2"
+              class="w-full rounded-2xl bg-slate-50 border border-slate-200/80 px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+              placeholder="Alamat domisili lengkap..."></textarea>
           </div>
 
-          <button type="submit" class="w-full rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm py-3.5 shadow-lg shadow-brand-600/25 active:scale-[0.98] transition-all mt-1">
+          <button type="submit"
+            class="w-full rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm py-3.5 shadow-lg shadow-brand-600/25 active:scale-[0.98] transition-all mt-1">
             Daftar
           </button>
 
-          <p class="text-[11px] text-slate-400 text-center leading-relaxed">Akun baru memerlukan persetujuan dari Super Admin sebelum dapat digunakan untuk masuk.</p>
+          <p class="text-[11px] text-slate-400 text-center leading-relaxed">Akun baru memerlukan persetujuan dari Super
+            Admin sebelum dapat digunakan untuk masuk.</p>
         </form>
 
       </div>
 
       <!-- PWA Install Button -->
-      <button type="button" id="btn-install-pwa" class="mt-4 w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-600 bg-white border border-brand-200 hover:bg-brand-50 rounded-full py-3 px-4 shadow-sm active:scale-[0.98] transition-all">
+      <button type="button" id="btn-install-pwa"
+        class="mt-4 w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-600 bg-white border border-brand-200 hover:bg-brand-50 rounded-full py-3 px-4 shadow-sm active:scale-[0.98] transition-all">
         <svg class="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
         <span>Tambahkan ke Layar Utama (Install App)</span>
       </button>
@@ -178,8 +229,10 @@
   </div>
 
   <!-- PWA Install Guide Modal -->
-  <div id="pwa-install-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-in fade-in duration-200">
+  <div id="pwa-install-modal"
+    class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div
+      class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-in fade-in duration-200">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-lg shadow-inner">⏱</div>
@@ -188,16 +241,22 @@
             <p class="text-[11px] text-slate-400 font-medium">Panduan Tambah ke Layar Utama</p>
           </div>
         </div>
-        <button id="btn-close-pwa-modal" class="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button id="btn-close-pwa-modal"
+          class="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
       <!-- iOS Safari Instructions -->
       <div id="pwa-instructions-ios" class="space-y-3 text-xs text-slate-600">
         <p class="font-medium text-slate-700">Petunjuk Pemasangan di iPhone / iPad (Safari):</p>
-        <ol class="space-y-2 list-decimal list-inside bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed font-normal">
-          <li>Tekan tombol <strong>Bagikan (Share)</strong> <span class="inline-block px-1.5 py-0.5 bg-slate-200 rounded text-slate-800 text-[10px] font-bold">⎋</span> di bagian bawah Safari.</li>
+        <ol
+          class="space-y-2 list-decimal list-inside bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed font-normal">
+          <li>Tekan tombol <strong>Bagikan (Share)</strong> <span
+              class="inline-block px-1.5 py-0.5 bg-slate-200 rounded text-slate-800 text-[10px] font-bold">⎋</span> di
+            bagian bawah Safari.</li>
           <li>Gulir menu ke bawah lalu pilih <strong>"Tambahkan ke Layar Utama"</strong> (Add to Home Screen).</li>
           <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas.</li>
         </ol>
@@ -206,14 +265,16 @@
       <!-- Android / Chrome Instructions -->
       <div id="pwa-instructions-android" class="space-y-3 text-xs text-slate-600 hidden">
         <p class="font-medium text-slate-700">Petunjuk Pemasangan di Android (Chrome):</p>
-        <ol class="space-y-2 list-decimal list-inside bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed font-normal">
+        <ol
+          class="space-y-2 list-decimal list-inside bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed font-normal">
           <li>Tekan menu <strong>titik tiga (⋮)</strong> di pojok kanan atas Chrome.</li>
           <li>Pilih opsi <strong>"Tambahkan ke Layar Utama"</strong> atau <strong>"Install Aplikasi"</strong>.</li>
           <li>Konfirmasi pemasangan.</li>
         </ol>
       </div>
 
-      <button id="btn-pwa-modal-ok" class="mt-5 w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-3 rounded-full shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">
+      <button id="btn-pwa-modal-ok"
+        class="mt-5 w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-3 rounded-full shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">
         Saya Mengerti
       </button>
     </div>
@@ -227,11 +288,11 @@
       const input = document.getElementById(inputId);
       const button = document.getElementById(buttonId);
       if (!input || !button) return;
-      
+
       button.addEventListener('click', () => {
         const isPassword = input.type === 'password';
         input.type = isPassword ? 'text' : 'password';
-        button.innerHTML = isPassword 
+        button.innerHTML = isPassword
           ? `<svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.047 10.047 0 013.98-1.063c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-1.782 1.782l-10-10"/></svg>`
           : `<svg class="w-5 h-5 text-slate-400 hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
       });
@@ -249,4 +310,5 @@
     }
   </script>
 </body>
+
 </html>

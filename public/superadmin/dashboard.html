@@ -1,140 +1,243 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SedayaClick — Super Admin</title>
-<meta name="theme-color" content="#4338CA" />
-<link rel="manifest" href="/manifest.json" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        fontFamily: { sans: ['Inter','sans-serif'] },
-        colors: { brand: { 50:'#eef2ff',100:'#e0e7ff',500:'#4f46e5',600:'#4338CA',700:'#3730a3' } }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SedayaClick — Super Admin</title>
+  <meta name="theme-color" content="#4338CA" />
+  <link rel="manifest" href="/manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: { brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#4f46e5', 600: '#4338CA', 700: '#3730a3' } }
+        }
       }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
     }
-  };
-</script>
-<style>
-  body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
-  .nav-btn.active { background: #eef2ff; color: #4338CA; }
-  .dark .nav-btn.active { background: rgba(79, 70, 229, 0.25); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
-  .subtab.active { color: #4338CA; border-color: #4338CA; }
-  .dark .subtab.active { color: #818cf8; border-color: #818cf8; }
 
-  /* Dark mode style overrides */
-  .dark body { background-color: #0f172a; color: #f8fafc; }
-  .dark aside, .dark header, .dark nav { background-color: #1e293b; border-color: #334155; }
-  .dark .bg-white { background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; }
-  .dark .bg-slate-50 { background-color: #0f172a !important; color: #f8fafc !important; }
-  .dark .bg-slate-100 { background-color: #334155 !important; color: #f8fafc !important; }
-  .dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: #334155 !important; }
-  .dark .text-slate-800, .dark .text-slate-700, .dark .text-slate-600 { color: #f1f5f9 !important; }
-  .dark .text-slate-500, .dark .text-slate-400 { color: #94a3b8 !important; }
-  .dark input, .dark select, .dark textarea { background-color: #0f172a !important; color: #f8fafc !important; border-color: #475569 !important; }
-  .dark table thead { background-color: #0f172a !important; color: #94a3b8 !important; }
+    .nav-btn.active {
+      background: #eef2ff;
+      color: #4338CA;
+    }
 
-  /* Input & Datepicker Overflow Prevention on Mobile Modals */
-  input, select, textarea { box-sizing: border-box !important; max-width: 100% !important; min-width: 0 !important; }
-  input[type="date"] { min-width: 0 !important; max-width: 100% !important; }
-  /* Sidebar Smooth Transition */
-  aside#main-sidebar {
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
-    will-change: width, opacity;
-  }
-  
-  /* Collapsed State (Split Mode / Compact Sidebar) */
-  aside#main-sidebar.sidebar-collapsed {
-    width: 4.5rem !important;
-  }
-  aside#main-sidebar.sidebar-collapsed .sidebar-label,
-  aside#main-sidebar.sidebar-collapsed .sidebar-brand-text,
-  aside#main-sidebar.sidebar-collapsed .sidebar-user-name,
-  aside#main-sidebar.sidebar-collapsed #theme-toggle-text,
-  aside#main-sidebar.sidebar-collapsed #btn-logout-text {
-    display: none !important;
-  }
-  aside#main-sidebar.sidebar-collapsed #btn-toggle-theme {
-    width: 2.5rem !important;
-    justify-content: center !important;
-    padding-left: 0.25rem !important;
-    padding-right: 0.25rem !important;
-  }
-  aside#main-sidebar.sidebar-collapsed .nav-btn {
-    justify-content: center;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    text-align: center;
-  }
-  aside#main-sidebar.sidebar-collapsed .sidebar-header {
-    justify-content: center;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
+    .dark .nav-btn.active {
+      background: rgba(79, 70, 229, 0.25);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
 
-  /* Hidden State */
-  aside#main-sidebar.sidebar-hidden {
-    width: 0 !important;
-    min-width: 0 !important;
-    opacity: 0 !important;
-    overflow: hidden !important;
-    border-right-width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    pointer-events: none !important;
-  }
-</style>
+    .subtab.active {
+      color: #4338CA;
+      border-color: #4338CA;
+    }
+
+    .dark .subtab.active {
+      color: #818cf8;
+      border-color: #818cf8;
+    }
+
+    /* Dark mode style overrides */
+    .dark body {
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+
+    .dark aside,
+    .dark header,
+    .dark nav {
+      background-color: #1e293b;
+      border-color: #334155;
+    }
+
+    .dark .bg-white {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+
+    .dark .bg-slate-50 {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+    }
+
+    .dark .bg-slate-100 {
+      background-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+
+    .dark .border-slate-100,
+    .dark .border-slate-200,
+    .dark .border-slate-300 {
+      border-color: #334155 !important;
+    }
+
+    .dark .text-slate-800,
+    .dark .text-slate-700,
+    .dark .text-slate-600 {
+      color: #f1f5f9 !important;
+    }
+
+    .dark .text-slate-500,
+    .dark .text-slate-400 {
+      color: #94a3b8 !important;
+    }
+
+    .dark input,
+    .dark select,
+    .dark textarea {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #475569 !important;
+    }
+
+    .dark table thead {
+      background-color: #0f172a !important;
+      color: #94a3b8 !important;
+    }
+
+    /* Input & Datepicker Overflow Prevention on Mobile Modals */
+    input,
+    select,
+    textarea {
+      box-sizing: border-box !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    input[type="date"] {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    /* Sidebar Smooth Transition */
+    aside#main-sidebar {
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
+      will-change: width, opacity;
+    }
+
+    /* Collapsed State (Split Mode / Compact Sidebar) */
+    aside#main-sidebar.sidebar-collapsed {
+      width: 4.5rem !important;
+    }
+
+    aside#main-sidebar.sidebar-collapsed .sidebar-label,
+    aside#main-sidebar.sidebar-collapsed .sidebar-brand-text,
+    aside#main-sidebar.sidebar-collapsed .sidebar-user-name,
+    aside#main-sidebar.sidebar-collapsed #theme-toggle-text,
+    aside#main-sidebar.sidebar-collapsed #btn-logout-text {
+      display: none !important;
+    }
+
+    aside#main-sidebar.sidebar-collapsed #btn-toggle-theme {
+      width: 2.5rem !important;
+      justify-content: center !important;
+      padding-left: 0.25rem !important;
+      padding-right: 0.25rem !important;
+    }
+
+    aside#main-sidebar.sidebar-collapsed .nav-btn {
+      justify-content: center;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      text-align: center;
+    }
+
+    aside#main-sidebar.sidebar-collapsed .sidebar-header {
+      justify-content: center;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+
+    /* Hidden State */
+    aside#main-sidebar.sidebar-hidden {
+      width: 0 !important;
+      min-width: 0 !important;
+      opacity: 0 !important;
+      overflow: hidden !important;
+      border-right-width: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
 </head>
+
 <body class="min-h-screen bg-slate-50 flex">
 
   <!-- Sidebar -->
-  <aside id="main-sidebar" class="hidden lg:flex w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex-col shrink-0 sticky top-0 h-screen z-20">
-    <div class="sidebar-header px-4 py-4 flex items-center justify-between font-bold text-brand-700 dark:text-brand-500 text-lg border-b border-slate-100 dark:border-slate-700">
+  <aside id="main-sidebar"
+    class="hidden lg:flex w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex-col shrink-0 sticky top-0 h-screen z-20">
+    <div
+      class="sidebar-header px-4 py-4 flex items-center justify-between font-bold text-brand-700 dark:text-brand-500 text-lg border-b border-slate-100 dark:border-slate-700">
       <div class="flex items-center gap-2 overflow-hidden">
-        <span class="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center shrink-0">⏱</span>
+        <span
+          class="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center shrink-0">⏱</span>
         <span class="sidebar-brand-text truncate">SedayaClick</span>
       </div>
       <div class="flex items-center gap-1">
-        <button id="btn-toggle-sidebar-collapse" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Split / Collapse Sidebar">
+        <button id="btn-toggle-sidebar-collapse"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          title="Split / Collapse Sidebar">
           <span id="sidebar-collapse-icon" class="text-sm">◀</span>
         </button>
-        <button id="btn-toggle-sidebar-hide" class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Sembunyikan Sidebar">
+        <button id="btn-toggle-sidebar-hide"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          title="Sembunyikan Sidebar">
           <span class="text-sm">✕</span>
         </button>
       </div>
     </div>
     <nav class="flex-1 px-3 py-4 space-y-1 text-sm font-medium text-slate-600 dark:text-slate-300 overflow-y-auto">
-      <button data-nav="dashboard" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Dashboard">
+      <button data-nav="dashboard"
+        class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+        title="Dashboard">
         <span class="text-base shrink-0">📊</span>
         <span class="sidebar-label truncate">Dashboard</span>
       </button>
-      <button data-nav="users" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Manajemen User">
+      <button data-nav="users" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+        title="Manajemen User">
         <span class="text-base shrink-0">👥</span>
         <span class="sidebar-label truncate">Manajemen User</span>
       </button>
-      <button data-nav="submissions" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Pengajuan">
+      <button data-nav="submissions"
+        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Pengajuan">
         <span class="text-base shrink-0">📝</span>
         <span class="sidebar-label truncate">Pengajuan</span>
       </button>
-      <button data-nav="master" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Master Data">
+      <button data-nav="master" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+        title="Master Data">
         <span class="text-base shrink-0">📁</span>
         <span class="sidebar-label truncate">Pengaturan</span>
       </button>
-      <button data-nav="reports" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Penggajian & Pelaporan">
+      <button data-nav="reports" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+        title="Penggajian & Pelaporan">
         <span class="text-base shrink-0">💰</span>
-        <span class="sidebar-label truncate">Penggajian & Pelaporan</span>
+        <span class="sidebar-label truncate">Pelaporan</span>
       </button>
     </nav>
     <div class="p-4 border-t border-slate-100 dark:border-slate-700">
-      <button id="btn-toggle-theme" class="relative inline-flex items-center justify-between w-full h-9 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-[1.02] shrink-0 mb-3" title="Ubah Mode Gelap/Terang">
-        <span class="sidebar-label text-[10px] font-black tracking-wider text-slate-900 pl-2.5 uppercase select-none">DAY MODE</span>
-        <div class="w-7 h-7 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
-          <svg class="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+      <button id="btn-toggle-theme"
+        class="relative inline-flex items-center justify-between w-full h-9 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-[1.02] shrink-0 mb-3"
+        title="Ubah Mode Gelap/Terang">
+        <span
+          class="sidebar-label text-[10px] font-black tracking-wider text-slate-900 pl-2.5 uppercase select-none">DAY
+          MODE</span>
+        <div
+          class="w-7 h-7 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+          <svg class="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="4.5"></circle>
             <line x1="12" y1="2" x2="12" y2="4"></line>
             <line x1="12" y1="20" x2="12" y2="22"></line>
@@ -148,7 +251,9 @@
         </div>
       </button>
       <p class="sidebar-user-name text-xs text-slate-400 mb-2 truncate" id="sa-name">—</p>
-      <button id="btn-logout" class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400 px-3 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Keluar">
+      <button id="btn-logout"
+        class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400 px-3 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+        title="Keluar">
         <span class="shrink-0">🚪</span> <span id="btn-logout-text" class="truncate">Keluar</span>
       </button>
     </div>
@@ -156,12 +261,17 @@
 
   <div class="flex-1 min-w-0">
     <!-- Desktop Top Navigation Bar -->
-    <header class="hidden lg:flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5 items-center justify-between sticky top-0 z-10 shadow-xs">
+    <header
+      class="hidden lg:flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5 items-center justify-between sticky top-0 z-10 shadow-xs">
       <div class="flex items-center gap-3">
-        <button id="btn-show-sidebar" class="hidden items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all" title="Tampilkan Sidebar">
+        <button id="btn-show-sidebar"
+          class="hidden items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+          title="Tampilkan Sidebar">
           <span>📑</span> <span>Tampilkan Sidebar</span>
         </button>
-        <button id="btn-toggle-sidebar-collapse-top" class="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Split / Collapse Sidebar">
+        <button id="btn-toggle-sidebar-collapse-top"
+          class="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          title="Split / Collapse Sidebar">
           <span id="top-collapse-icon">◀</span> <span class="text-xs font-medium">Split Sidebar</span>
         </button>
       </div>
@@ -171,13 +281,18 @@
     </header>
 
     <!-- Mobile top bar -->
-    <header class="lg:hidden bg-white border-b border-slate-200 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
+    <header
+      class="lg:hidden bg-white border-b border-slate-200 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
       <div class="font-bold text-brand-700 dark:text-brand-500">SedayaClick</div>
       <div class="flex items-center gap-2">
-        <button id="btn-toggle-theme-mobile" class="relative inline-flex items-center justify-between w-[125px] h-8 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs shrink-0" title="Ubah Tema">
+        <button id="btn-toggle-theme-mobile"
+          class="relative inline-flex items-center justify-between w-[125px] h-8 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs shrink-0"
+          title="Ubah Tema">
           <span class="text-[9px] font-black tracking-wider text-slate-900 pl-2 uppercase select-none">DAY MODE</span>
-          <div class="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
-            <svg class="w-3.5 h-3.5 text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <div
+            class="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
+            <svg class="w-3.5 h-3.5 text-slate-900" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="4.5"></circle>
               <line x1="12" y1="2" x2="12" y2="4"></line>
               <line x1="12" y1="20" x2="12" y2="22"></line>
@@ -190,11 +305,13 @@
             </svg>
           </div>
         </button>
-        <button id="btn-logout-mobile" class="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">Keluar</button>
+        <button id="btn-logout-mobile"
+          class="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">Keluar</button>
       </div>
     </header>
     <nav class="lg:hidden bg-white border-b border-slate-200 flex overflow-x-auto px-2">
-      <button data-nav="dashboard" class="nav-btn active px-4 py-3 text-sm font-medium whitespace-nowrap">Dashboard</button>
+      <button data-nav="dashboard"
+        class="nav-btn active px-4 py-3 text-sm font-medium whitespace-nowrap">Dashboard</button>
       <button data-nav="users" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">User</button>
       <button data-nav="submissions" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Pengajuan</button>
       <button data-nav="master" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Master Data</button>
@@ -202,9 +319,12 @@
     </nav>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-      <div id="alert-box" class="hidden mb-4 text-sm rounded-xl px-4 py-3 flex items-center justify-between gap-3 shadow-sm transition-all border">
+      <div id="alert-box"
+        class="hidden mb-4 text-sm rounded-xl px-4 py-3 flex items-center justify-between gap-3 shadow-sm transition-all border">
         <span id="alert-msg"></span>
-        <button id="btn-close-alert" type="button" class="text-base font-bold leading-none px-2 py-0.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none transition-colors" title="Tutup Notifikasi">&times;</button>
+        <button id="btn-close-alert" type="button"
+          class="text-base font-bold leading-none px-2 py-0.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none transition-colors"
+          title="Tutup Notifikasi">&times;</button>
       </div>
 
       <!-- PANEL: DASHBOARD -->
@@ -214,10 +334,14 @@
             <h1 class="text-xl font-bold text-slate-800">Ringkasan </h1>
             <p class="text-xs text-slate-500 mt-0.5">Statistik kehadiran & pengajuan karyawan secara real-time</p>
           </div>
-          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200" id="dashboard-period-buttons">
-            <button data-dashboardperiod="daily" class="period-btn active text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-white text-brand-600 shadow-sm">Harian</button>
-            <button data-dashboardperiod="weekly" class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Mingguan</button>
-            <button data-dashboardperiod="monthly" class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Bulanan</button>
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200"
+            id="dashboard-period-buttons">
+            <button data-dashboardperiod="daily"
+              class="period-btn active text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-white text-brand-600 shadow-sm">Harian</button>
+            <button data-dashboardperiod="weekly"
+              class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Mingguan</button>
+            <button data-dashboardperiod="monthly"
+              class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Bulanan</button>
           </div>
         </div>
 
@@ -225,7 +349,8 @@
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Hadir Tepat Waktu</span>
-              <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">⏱</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">⏱</span>
             </div>
             <p class="text-2xl font-extrabold text-emerald-600" id="kpi-on-time">0</p>
           </div>
@@ -233,7 +358,8 @@
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Terlambat</span>
-              <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⚠️</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⚠️</span>
             </div>
             <p class="text-2xl font-extrabold text-amber-600" id="kpi-late">0</p>
           </div>
@@ -241,7 +367,8 @@
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Izin</span>
-              <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center text-xs font-bold">📋</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center text-xs font-bold">📋</span>
             </div>
             <p class="text-2xl font-extrabold text-sky-600" id="kpi-izin">0</p>
           </div>
@@ -249,7 +376,8 @@
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Sakit</span>
-              <span class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-bold">🏥</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-bold">🏥</span>
             </div>
             <p class="text-2xl font-extrabold text-purple-600" id="kpi-sakit">0</p>
           </div>
@@ -257,7 +385,8 @@
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Cuti</span>
-              <span class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold">🏖</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold">🏖</span>
             </div>
             <p class="text-2xl font-extrabold text-rose-600" id="kpi-cuti">0</p>
           </div>
@@ -265,15 +394,18 @@
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Pengajuan Pending</span>
-              <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">⏳</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">⏳</span>
             </div>
             <p class="text-2xl font-extrabold text-indigo-600" id="kpi-pending">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+          <div
+            class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium text-slate-400">Total Karyawan Aktif</span>
-              <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">👥</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">👥</span>
             </div>
             <p class="text-2xl font-extrabold text-slate-800" id="kpi-active">0</p>
           </div>
@@ -292,13 +424,17 @@
       <section id="panel-users" class="hidden">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
           <h1 class="text-xl font-bold text-slate-800">Manajemen User</h1>
-          <button id="btn-open-create-user" class="bg-brand-600 text-white text-sm font-semibold rounded-lg px-4 py-2.5">+ Buat User</button>
+          <button id="btn-open-create-user"
+            class="bg-brand-600 text-white text-sm font-semibold rounded-lg px-4 py-2.5">+ Buat User</button>
         </div>
 
         <div class="flex gap-6 border-b border-slate-200 mb-4 text-sm font-semibold overflow-x-auto">
-          <button data-userstab="pending" class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Menunggu Aktivasi</button>
-          <button data-userstab="active" class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Aktif</button>
-          <button data-userstab="inactive" class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Nonaktif</button>
+          <button data-userstab="pending"
+            class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Menunggu Aktivasi</button>
+          <button data-userstab="active"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Aktif</button>
+          <button data-userstab="inactive"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Nonaktif</button>
         </div>
 
         <div id="users-list" class="space-y-3 text-sm text-slate-500">Memuat...</div>
@@ -308,14 +444,19 @@
       <section id="panel-master" class="hidden">
         <h1 class="text-xl font-bold text-slate-800 mb-5">Master Data</h1>
         <div class="flex gap-6 border-b border-slate-200 mb-4 text-sm font-semibold overflow-x-auto">
-          <button data-mastertab="divisions" class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Divisi</button>
-          <button data-mastertab="positions" class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Jabatan</button>
-          <button data-mastertab="shifts" class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Jam Kerja / Shift</button>
+          <button data-mastertab="divisions"
+            class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Divisi</button>
+          <button data-mastertab="positions"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Jabatan</button>
+          <button data-mastertab="shifts"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Jam Kerja /
+            Shift</button>
         </div>
 
         <div id="master-divisions" class="master-panel space-y-4">
           <form id="form-add-division" class="flex gap-2">
-            <input required id="input-division-name" placeholder="Nama divisi baru" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <input required id="input-division-name" placeholder="Nama divisi baru"
+              class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             <button class="bg-brand-600 text-white text-sm font-semibold rounded-lg px-4">Tambah</button>
           </form>
           <div id="list-divisions" class="space-y-2"></div>
@@ -323,7 +464,8 @@
 
         <div id="master-positions" class="master-panel space-y-4 hidden">
           <form id="form-add-position" class="flex gap-2">
-            <input required id="input-position-name" placeholder="Nama jabatan baru" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <input required id="input-position-name" placeholder="Nama jabatan baru"
+              class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             <button class="bg-brand-600 text-white text-sm font-semibold rounded-lg px-4">Tambah</button>
           </form>
           <div id="list-positions" class="space-y-2"></div>
@@ -331,10 +473,14 @@
 
         <div id="master-shifts" class="master-panel space-y-4 hidden">
           <form id="form-add-shift" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <input required id="input-shift-name" placeholder="Nama shift" class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
-            <input required type="time" step="1" id="input-shift-start" value="08:00:00" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            <input required type="time" step="1" id="input-shift-end" value="17:00:00" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            <input type="number" min="0" id="input-shift-tolerance" placeholder="Toleransi (menit)" class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-3" />
+            <input required id="input-shift-name" placeholder="Nama shift"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
+            <input required type="time" step="1" id="input-shift-start" value="08:00:00"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            <input required type="time" step="1" id="input-shift-end" value="17:00:00"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            <input type="number" min="0" id="input-shift-tolerance" placeholder="Toleransi (menit)"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-3" />
             <button class="bg-brand-600 text-white text-sm font-semibold rounded-lg px-4 py-2">Tambah Shift</button>
           </form>
           <div id="list-shifts" class="space-y-2"></div>
@@ -353,17 +499,24 @@
               <option value="custom">Rentang Custom</option>
               <option value="all">Semua Data</option>
             </select>
-            <input type="date" id="filter-start" class="hidden rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            <input type="date" id="filter-start"
+              class="hidden rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
             <input type="date" id="filter-end" class="hidden rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
             <select id="filter-division" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
               <option value="">Semua Divisi</option>
             </select>
-            <input type="text" id="filter-name" placeholder="Nama karyawan" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
-            <button id="btn-apply-filter" class="bg-slate-800 text-white text-sm font-semibold rounded-lg px-4 py-2.5">Terapkan Filter</button>
+            <input type="text" id="filter-name" placeholder="Nama karyawan"
+              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            <button id="btn-apply-filter"
+              class="bg-slate-800 text-white text-sm font-semibold rounded-lg px-4 py-2.5">Terapkan Filter</button>
           </div>
           <div class="flex gap-3">
-            <button id="btn-export-csv" class="text-sm font-semibold border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50">Ekspor CSV</button>
-            <button id="btn-export-xlsx" class="text-sm font-semibold border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50">Ekspor Excel (.xlsx)</button>
+            <button id="btn-export-csv"
+              class="text-sm font-semibold border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50">Ekspor
+              CSV</button>
+            <button id="btn-export-xlsx"
+              class="text-sm font-semibold border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50">Ekspor Excel
+              (.xlsx)</button>
           </div>
         </div>
 
@@ -393,26 +546,40 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
           <h1 class="text-xl font-bold text-slate-800">Pengajuan Izin / Cuti / Sakit</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button id="btn-super-create-submission" class="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
+            <button id="btn-super-create-submission"
+              class="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
               + Buat Pengajuan
             </button>
-            <select id="submission-division-filter" class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <select id="submission-division-filter"
+              class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="">Semua Divisi</option>
             </select>
-            <button id="btn-export-submissions-csv" class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm">
-              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <button id="btn-export-submissions-csv"
+              class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                </path>
+              </svg>
               Ekspor CSV
             </button>
-            <button id="btn-export-submissions-xlsx" class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm">
-              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <button id="btn-export-submissions-xlsx"
+              class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                </path>
+              </svg>
               Ekspor Excel
             </button>
           </div>
         </div>
 
         <div class="flex gap-6 border-b border-slate-200 mb-4 text-sm font-semibold overflow-x-auto">
-          <button data-submissionstab="pending" class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Menunggu Persetujuan</button>
-          <button data-submissionstab="history" class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Riwayat</button>
+          <button data-submissionstab="pending"
+            class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Menunggu Persetujuan</button>
+          <button data-submissionstab="history"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Riwayat</button>
         </div>
 
         <div id="submission-pending-list" class="space-y-3 text-sm text-slate-500">Memuat...</div>
@@ -422,25 +589,35 @@
   </div>
 
   <!-- Modal: Decision Pengajuan -->
-  <div id="decision-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+  <div id="decision-modal"
+    class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 w-full max-w-md">
       <h3 id="decision-title" class="font-bold text-slate-800 text-lg mb-3">Keputusan Pengajuan</h3>
       <label class="block text-xs font-semibold text-slate-500 mb-1">Catatan Alasan (wajib)</label>
-      <textarea id="decision-note" rows="3" placeholder="Masukkan alasan keputusan..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 mb-4"></textarea>
+      <textarea id="decision-note" rows="3" placeholder="Masukkan alasan keputusan..."
+        class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 mb-4"></textarea>
       <div class="flex gap-3">
-        <button id="btn-cancel-decision" class="flex-1 border border-slate-300 text-slate-600 text-sm font-semibold rounded-xl py-2.5 hover:bg-slate-50 transition-colors">Batal</button>
-        <button id="btn-confirm-decision" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl py-2.5 transition-colors">Konfirmasi</button>
+        <button id="btn-cancel-decision"
+          class="flex-1 border border-slate-300 text-slate-600 text-sm font-semibold rounded-xl py-2.5 hover:bg-slate-50 transition-colors">Batal</button>
+        <button id="btn-confirm-decision"
+          class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl py-2.5 transition-colors">Konfirmasi</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Super Admin Buat/Edit Pengajuan -->
-  <div id="superadmin-sub-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4 my-auto">
+  <div id="superadmin-sub-modal"
+    class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+    <div
+      class="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4 my-auto">
       <div class="flex items-center justify-between">
-        <h3 id="super-sub-modal-title" class="font-bold text-slate-900 dark:text-white text-base">Buat Pengajuan Baru</h3>
-        <button id="btn-close-super-sub-modal" type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <h3 id="super-sub-modal-title" class="font-bold text-slate-900 dark:text-white text-base">Buat Pengajuan Baru
+        </h3>
+        <button id="btn-close-super-sub-modal" type="button"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
@@ -449,14 +626,16 @@
 
         <div id="wrapper-super-sub-user">
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Karyawan</label>
-          <select id="super-sub-user" required class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <select id="super-sub-user" required
+            class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="">Memuat karyawan...</option>
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Pengajuan</label>
-          <select id="super-sub-type" required class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <select id="super-sub-type" required
+            class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="izin">Izin Khusus</option>
             <option value="cuti">Cuti Tahunan</option>
             <option value="sakit">Sakit</option>
@@ -465,70 +644,90 @@
 
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
           <div class="min-w-0">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Tanggal Mulai</label>
-            <input required type="date" id="super-sub-start" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Tanggal
+              Mulai</label>
+            <input required type="date" id="super-sub-start"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
           <div class="min-w-0">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Tanggal Selesai</label>
-            <input required type="date" id="super-sub-end" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Tanggal
+              Selesai</label>
+            <input required type="date" id="super-sub-end"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Alasan / Keterangan</label>
-          <textarea id="super-sub-reason" required rows="2" class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Tuliskan alasan pengajuan..."></textarea>
+          <textarea id="super-sub-reason" required rows="2"
+            class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            placeholder="Tuliskan alasan pengajuan..."></textarea>
         </div>
 
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
           <div class="min-w-0">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Status</label>
-            <select id="super-sub-status" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <select id="super-sub-status"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="pending">Pending</option>
               <option value="approved">Disetujui</option>
               <option value="rejected">Ditolak</option>
             </select>
           </div>
           <div class="min-w-0">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Catatan Review</label>
-            <input type="text" id="super-sub-note" placeholder="Opsional..." class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Catatan
+              Review</label>
+            <input type="text" id="super-sub-note" placeholder="Opsional..."
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
         </div>
 
         <div class="flex gap-2.5 pt-2">
-          <button type="button" id="btn-cancel-super-sub" class="flex-1 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl py-2.5 transition-colors">Batal</button>
-          <button type="submit" id="btn-save-super-sub" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl py-2.5 shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">Simpan</button>
+          <button type="button" id="btn-cancel-super-sub"
+            class="flex-1 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl py-2.5 transition-colors">Batal</button>
+          <button type="submit" id="btn-save-super-sub"
+            class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl py-2.5 shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Buat/Edit User -->
-  <div id="user-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40 overflow-y-auto">
-    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md my-auto shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+  <div id="user-modal"
+    class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40 overflow-y-auto">
+    <div
+      class="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md my-auto shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4">
       <div class="flex items-center justify-between">
         <h3 id="user-modal-title" class="font-bold text-slate-900 dark:text-white text-base">Buat User Baru</h3>
-        <button type="button" id="btn-cancel-user-icon" onclick="document.getElementById('btn-cancel-user').click()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button type="button" id="btn-cancel-user-icon" onclick="document.getElementById('btn-cancel-user').click()"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
       <form id="form-user" class="space-y-3">
         <input type="hidden" id="user-id" />
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Lengkap</label>
-          <input required id="user-full-name" placeholder="Nama Lengkap" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input required id="user-full-name" placeholder="Nama Lengkap"
+            class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email</label>
-          <input required type="email" id="user-email" placeholder="Email" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input required type="email" id="user-email" placeholder="Email"
+            class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
-          <input id="user-password" type="password" placeholder="Password (kosongkan jika edit)" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input id="user-password" type="password" placeholder="Password (kosongkan jika edit)"
+            class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
         </div>
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
           <div class="min-w-0">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Role</label>
-            <select id="user-role" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <select id="user-role"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="employee">Karyawan</option>
               <option value="admin_manager">Admin Manager</option>
               <option value="super_admin">Super Admin</option>
@@ -536,47 +735,67 @@
           </div>
           <div class="min-w-0">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Shift</label>
-            <select id="user-shift" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"><option value="">Shift</option></select>
+            <select id="user-shift"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="">Shift</option>
+            </select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
           <div class="min-w-0">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Divisi</label>
-            <select id="user-division" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"><option value="">Divisi</option></select>
+            <select id="user-division"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="">Divisi</option>
+            </select>
           </div>
           <div class="min-w-0">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">Jabatan</label>
-            <select id="user-position" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"><option value="">Jabatan</option></select>
+            <select id="user-position"
+              class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-2 sm:px-3 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="">Jabatan</option>
+            </select>
           </div>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">WhatsApp</label>
-          <input id="user-whatsapp" placeholder="08xxxxxxxxxx" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input id="user-whatsapp" placeholder="08xxxxxxxxxx"
+            class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Alamat</label>
-          <textarea id="user-address" placeholder="Alamat..." rows="2" class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+          <textarea id="user-address" placeholder="Alamat..." rows="2"
+            class="w-full min-w-0 box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
         </div>
         <div class="flex gap-2.5 pt-2">
-          <button type="button" id="btn-cancel-user" class="flex-1 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl py-2.5 transition-colors">Batal</button>
-          <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl py-2.5 shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">Simpan</button>
+          <button type="button" id="btn-cancel-user"
+            class="flex-1 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl py-2.5 transition-colors">Batal</button>
+          <button type="submit"
+            class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl py-2.5 shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Detail Absensi -->
-  <div id="detail-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-      
+  <div id="detail-modal"
+    class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+    <div
+      class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+
       <!-- Modal Header -->
       <div class="flex items-start justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
         <div>
-          <h3 id="detail-modal-title" class="font-bold text-slate-800 text-lg flex items-center gap-2">Detail Absensi</h3>
+          <h3 id="detail-modal-title" class="font-bold text-slate-800 text-lg flex items-center gap-2">Detail Absensi
+          </h3>
           <p id="detail-date" class="text-xs text-slate-400 mt-0.5"></p>
         </div>
-        <button id="btn-close-detail" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors focus:outline-none" title="Tutup">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button id="btn-close-detail"
+          class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors focus:outline-none"
+          title="Tutup">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
 
@@ -602,8 +821,11 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Clock In
               </span>
               <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-[4/3]">
-                <img id="detail-clock-in-photo" class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105" alt="Foto Clock In" />
-                <span id="detail-clock-in-time" class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+                <img id="detail-clock-in-photo"
+                  class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                  alt="Foto Clock In" />
+                <span id="detail-clock-in-time"
+                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
               </div>
             </div>
             <div class="space-y-1.5">
@@ -611,8 +833,11 @@
                 <span class="w-2 h-2 rounded-full bg-rose-500"></span> Clock Out
               </span>
               <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-[4/3]">
-                <img id="detail-clock-out-photo" class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105" alt="Foto Clock Out" />
-                <span id="detail-clock-out-time" class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+                <img id="detail-clock-out-photo"
+                  class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                  alt="Foto Clock Out" />
+                <span id="detail-clock-out-time"
+                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
               </div>
             </div>
           </div>
@@ -649,11 +874,15 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Clock In</p>
-            <div id="detail-clock-in-note" class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center"></div>
+            <div id="detail-clock-in-note"
+              class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+            </div>
           </div>
           <div>
             <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Clock Out</p>
-            <div id="detail-clock-out-note" class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center"></div>
+            <div id="detail-clock-out-note"
+              class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+            </div>
           </div>
         </div>
 
@@ -661,12 +890,24 @@
         <div>
           <p class="text-xs font-semibold text-slate-500 mb-1.5">Lokasi GPS</p>
           <div class="flex flex-wrap gap-2">
-            <a id="detail-clock-in-map" href="#" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <a id="detail-clock-in-map" href="#" target="_blank"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
               Peta Clock In
             </a>
-            <a id="detail-clock-out-map" href="#" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <a id="detail-clock-out-map" href="#" target="_blank"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
               Peta Clock Out
             </a>
           </div>
@@ -676,7 +917,8 @@
 
       <!-- Modal Footer -->
       <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
-        <button id="btn-close-detail-bottom" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl transition-colors shadow-sm">
+        <button id="btn-close-detail-bottom"
+          class="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl transition-colors shadow-sm">
           Kembali
         </button>
       </div>
@@ -688,7 +930,8 @@
   <div id="lightbox-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-60">
     <div class="relative w-full max-w-md">
       <img id="lightbox-image" class="rounded-lg border border-slate-200" src="" alt="">
-      <button id="btn-close-lightbox" class="absolute top-0 right-0 -mt-2 -mr-2 bg-white rounded-full border border-slate-300 w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100">
+      <button id="btn-close-lightbox"
+        class="absolute top-0 right-0 -mt-2 -mr-2 bg-white rounded-full border border-slate-300 w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100">
         &times;
       </button>
     </div>
@@ -698,4 +941,5 @@
   <script type="module" src="/js/pull-to-refresh.js"></script>
   <script type="module" src="/superadmin/js/superadmin.js"></script>
 </body>
+
 </html>
