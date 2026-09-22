@@ -21,30 +21,40 @@ router.post(
   uploadSubmissionAttachment.single('attachment'),
   async (req, res) => {
     try {
-      const { type, start_date, end_date, reason } = req.body;
+      const { type, start_date, end_date, start_time, end_time, reason } = req.body;
       const userId = req.session.user.id;
 
-      if (!type || !['izin', 'cuti', 'sakit'].includes(type)) {
+      if (!type || !['izin', 'cuti', 'sakit', 'lembur'].includes(type)) {
         return res.status(400).json({ success: false, message: 'Jenis pengajuan tidak valid.' });
       }
-      if (!start_date || !end_date || !reason || !reason.trim()) {
+
+      const effectiveStartDate = start_date || req.body.overtime_date;
+      const effectiveEndDate = end_date || effectiveStartDate;
+
+      if (!effectiveStartDate || !reason || !reason.trim()) {
         return res.status(400).json({ success: false, message: 'Tanggal dan alasan wajib diisi.' });
       }
-      if (new Date(end_date) < new Date(start_date)) {
+      if (new Date(effectiveEndDate) < new Date(effectiveStartDate)) {
         return res.status(400).json({ success: false, message: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' });
+      }
+
+      if (type === 'lembur' && (!start_time || !end_time)) {
+        return res.status(400).json({ success: false, message: 'Jam mulai dan jam selesai lembur wajib diisi.' });
       }
 
       const attachmentPath = req.file ? `/uploads/submissions/${req.file.filename}` : null;
 
       const [result] = await pool.query(
-        `INSERT INTO submissions (user_id, type, start_date, end_date, reason, attachment, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-        [userId, type, start_date, end_date, reason, attachmentPath]
+        `INSERT INTO submissions (user_id, type, start_date, end_date, start_time, end_time, reason, attachment, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        [userId, type, effectiveStartDate, effectiveEndDate, start_time || null, end_time || null, reason.trim(), attachmentPath]
       );
 
       res.status(201).json({
         success: true,
-        message: 'Pengajuan berhasil dikirim dan menunggu persetujuan Admin Manager.',
+        message: type === 'lembur' 
+          ? 'Pengajuan lembur berhasil dikirim dan menunggu persetujuan Admin Manager.' 
+          : 'Pengajuan berhasil dikirim dan menunggu persetujuan Admin Manager.',
         submission_id: result.insertId
       });
     } catch (err) {
@@ -56,14 +66,12 @@ router.post(
 
 /**
  * GET /api/submissions/mine
- * Daftar pengajuan milik user yang login (bukan rekap seluruh tim — ini
- * berbeda dari batasan riwayat absensi; pengajuan sendiri boleh dilihat
- * pemiliknya agar tahu status persetujuan).
+ * Daftar pengajuan milik user yang login.
  */
 router.get('/mine', requireAuth, requireRole('employee'), requireActiveAccount, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, type, start_date, end_date, reason, attachment, status, review_note, reviewed_at, created_at
+      `SELECT id, type, start_date, end_date, start_time, end_time, reason, attachment, status, review_note, reviewed_at, created_at
        FROM submissions WHERE user_id = ? ORDER BY created_at DESC`,
       [req.session.user.id]
     );

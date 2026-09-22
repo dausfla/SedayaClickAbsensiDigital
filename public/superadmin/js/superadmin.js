@@ -38,6 +38,7 @@ if (btnCloseAlert) {
     document.getElementById('sa-name').textContent = user.full_name;
     loadDashboard();
     loadMasterOptionsForFilters();
+    startSubmissionsPolling();
   } catch (e) {
     window.location.href = '/index.html';
   }
@@ -58,6 +59,7 @@ const navPanels = {
   dashboard: 'panel-dashboard',
   users: 'panel-users',
   submissions: 'panel-submissions',
+  overtime: 'panel-overtime',
   master: 'panel-master',
   reports: 'panel-reports'
 };
@@ -68,10 +70,14 @@ let superSubmissionsTimer = null;
 export function startSubmissionsPolling() {
   stopSubmissionsPolling();
   superSubmissionsTimer = setInterval(() => {
-    if (currentNav === 'submissions') {
+    if (currentNav === 'dashboard') {
+      loadDashboard();
+    } else if (currentNav === 'submissions') {
       loadSubmissionsData(true);
+    } else if (currentNav === 'overtime') {
+      loadSAOvertimeData(true);
     }
-  }, 10000);
+  }, 3000);
 }
 
 export function stopSubmissionsPolling() {
@@ -98,6 +104,10 @@ navButtons.forEach((btn) => {
       loadSubmissionsNav();
       startSubmissionsPolling();
     }
+    if (btn.dataset.nav === 'overtime') {
+      loadSAOvertimeData();
+      startSubmissionsPolling();
+    }
     if (btn.dataset.nav === 'master') { loadDivisions(); loadPositions(); loadShifts(); }
     if (btn.dataset.nav === 'reports') loadReport();
   });
@@ -120,6 +130,7 @@ async function loadDashboard(period = currentDashboardPeriod) {
     if (document.getElementById('kpi-izin')) document.getElementById('kpi-izin').textContent = metrics.izin || 0;
     if (document.getElementById('kpi-sakit')) document.getElementById('kpi-sakit').textContent = metrics.sakit || 0;
     if (document.getElementById('kpi-cuti')) document.getElementById('kpi-cuti').textContent = metrics.cuti || 0;
+    if (document.getElementById('kpi-lembur')) document.getElementById('kpi-lembur').textContent = metrics.lembur || 0;
 
     const periodLabelMap = { daily: 'Harian', weekly: 'Mingguan (7 Hari)', monthly: 'Bulanan (30 Hari)' };
     const subTitle = document.getElementById('chart-period-subtitle');
@@ -470,15 +481,31 @@ async function loadReport() {
         <td class="px-4 py-3 text-slate-600 tabular-nums">${r.late_duration_hms}</td>
         <td class="px-4 py-3 text-slate-600 tabular-nums">${r.overtime_hms}</td>
         <td class="px-4 py-3 text-slate-500">${r.status_label}</td>
-        <td class="px-4 py-3 text-center">
-          <button class="btn-detail bg-blue-500 hover:bg-blue-600 text-white font-semibold text-xs px-3 py-1.5 rounded" data-id="${r.id || r.attendance_id}">Lihat Detail</button>
+        <td class="px-4 py-3 text-center whitespace-nowrap">
+          <div class="flex items-center justify-center gap-1.5">
+            <button class="btn-detail bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-xs transition-colors" data-id="${r.id || r.attendance_id}">Detail</button>
+            <button class="btn-delete-report bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-xs transition-colors" data-id="${r.id || r.attendance_id}">Hapus</button>
+          </div>
         </td>
       </tr>
     `).join('');
 
-    // Add event listeners to detail buttons
+    // Add event listeners to detail & delete buttons
     tbody.querySelectorAll('.btn-detail').forEach((btn) => {
       btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
+    });
+    tbody.querySelectorAll('.btn-delete-report').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Apakah Anda yakin ingin menghapus data absensi ini? Data yang dihapus tidak dapat dikembalikan.')) {
+          try {
+            await apiDelete(`/admin/attendance/${btn.dataset.id}`);
+            showAlert('Data absensi berhasil dihapus.', 'success');
+            loadReport();
+          } catch (e) {
+            showAlert(e.message || 'Gagal menghapus data absensi.');
+          }
+        }
+      });
     });
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-4 text-center text-red-500">${err.message}</td></tr>`;
@@ -560,19 +587,35 @@ async function openDetailModal(attendanceId) {
     document.getElementById('detail-clock-out-note').textContent = data.clock_out_note || '-';
 
     // Location links
-    if (data.clock_in_lat && data.clock_in_lng) {
-      document.getElementById('detail-clock-in-map').href = `https://www.google.com/maps?q=${data.clock_in_lat},${data.clock_in_lng}`;
+    const clockInGpsUrl = (data.clock_in_lat && data.clock_in_lng)
+      ? `https://www.google.com/maps?q=${data.clock_in_lat},${data.clock_in_lng}`
+      : null;
+    const clockOutGpsUrl = (data.clock_out_lat && data.clock_out_lng)
+      ? `https://www.google.com/maps?q=${data.clock_out_lat},${data.clock_out_lng}`
+      : null;
+
+    if (clockInGpsUrl) {
+      document.getElementById('detail-clock-in-map').href = clockInGpsUrl;
       document.getElementById('detail-clock-in-map').classList.remove('hidden');
+      const inPhotoMapBtn = document.getElementById('detail-clock-in-photo-map');
+      if (inPhotoMapBtn) { inPhotoMapBtn.href = clockInGpsUrl; inPhotoMapBtn.classList.remove('hidden'); }
     } else {
       document.getElementById('detail-clock-in-map').href = '#';
       document.getElementById('detail-clock-in-map').classList.add('hidden');
+      const inPhotoMapBtn = document.getElementById('detail-clock-in-photo-map');
+      if (inPhotoMapBtn) { inPhotoMapBtn.classList.add('hidden'); }
     }
-    if (data.clock_out_lat && data.clock_out_lng) {
-      document.getElementById('detail-clock-out-map').href = `https://www.google.com/maps?q=${data.clock_out_lat},${data.clock_out_lng}`;
+
+    if (clockOutGpsUrl) {
+      document.getElementById('detail-clock-out-map').href = clockOutGpsUrl;
       document.getElementById('detail-clock-out-map').classList.remove('hidden');
+      const outPhotoMapBtn = document.getElementById('detail-clock-out-photo-map');
+      if (outPhotoMapBtn) { outPhotoMapBtn.href = clockOutGpsUrl; outPhotoMapBtn.classList.remove('hidden'); }
     } else {
       document.getElementById('detail-clock-out-map').href = '#';
       document.getElementById('detail-clock-out-map').classList.add('hidden');
+      const outPhotoMapBtn = document.getElementById('detail-clock-out-photo-map');
+      if (outPhotoMapBtn) { outPhotoMapBtn.classList.add('hidden'); }
     }
 
     // Status
@@ -584,20 +627,107 @@ async function openDetailModal(attendanceId) {
     else if (data.status_display === 'Terlambat') statusEl.classList.add('text-amber-600');
     else statusEl.classList.add('text-slate-500');
 
+    // Overtime section
+    const overtimeSection = document.getElementById('detail-overtime-section');
+    if (overtimeSection) {
+      if (data.overtime_clock_in_time || data.overtime_task_reason) {
+        overtimeSection.classList.remove('hidden');
+
+        const otClockInPhotoUrl = getSecureUrl(data.overtime_clock_in_photo);
+        const otClockOutPhotoUrl = getSecureUrl(data.overtime_clock_out_photo);
+
+        const otInGpsUrl = (data.overtime_clock_in_lat && data.overtime_clock_in_lng)
+          ? `https://www.google.com/maps?q=${data.overtime_clock_in_lat},${data.overtime_clock_in_lng}`
+          : null;
+        const otOutGpsUrl = (data.overtime_clock_out_lat && data.overtime_clock_out_lng)
+          ? `https://www.google.com/maps?q=${data.overtime_clock_out_lat},${data.overtime_clock_out_lng}`
+          : null;
+
+        const otClockInImg = document.getElementById('detail-overtime-clock-in-photo');
+        const otClockOutImg = document.getElementById('detail-overtime-clock-out-photo');
+
+        if (otClockInImg) {
+          otClockInImg.onerror = () => { otClockInImg.onerror = null; otClockInImg.src = '/assets/default/default-photo.png'; };
+          otClockInImg.src = otClockInPhotoUrl;
+          otClockInImg.onclick = () => openLightbox(otClockInImg.src, `Masuk Lembur - ${data.full_name}`, otInGpsUrl);
+        }
+        if (otClockOutImg) {
+          otClockOutImg.onerror = () => { otClockOutImg.onerror = null; otClockOutImg.src = '/assets/default/default-photo.png'; };
+          otClockOutImg.src = otClockOutPhotoUrl;
+          otClockOutImg.onclick = () => openLightbox(otClockOutImg.src, `Keluar Lembur - ${data.full_name}`, otOutGpsUrl);
+        }
+
+        const otInTimeEl = document.getElementById('detail-overtime-clock-in-time');
+        const otOutTimeEl = document.getElementById('detail-overtime-clock-out-time');
+        if (otInTimeEl) otInTimeEl.textContent = data.overtime_clock_in_time ? data.overtime_clock_in_time.slice(0, 5) : '';
+        if (otOutTimeEl) otOutTimeEl.textContent = data.overtime_clock_out_time ? data.overtime_clock_out_time.slice(0, 5) : '';
+
+        const otDurationEl = document.getElementById('detail-overtime-duration');
+        if (otDurationEl) otDurationEl.textContent = data.overtime_duration_hms || '-';
+
+        const otTaskEl = document.getElementById('detail-overtime-task');
+        if (otTaskEl) otTaskEl.textContent = data.overtime_task_reason || '-';
+
+        const otInNoteEl = document.getElementById('detail-overtime-clock-in-note');
+        if (otInNoteEl) otInNoteEl.textContent = data.overtime_clock_in_note || '-';
+
+        const otOutNoteEl = document.getElementById('detail-overtime-clock-out-note');
+        if (otOutNoteEl) otOutNoteEl.textContent = data.overtime_clock_out_note || '-';
+
+        const otInMapEl = document.getElementById('detail-overtime-clock-in-map');
+        const otInPhotoMapEl = document.getElementById('detail-overtime-clock-in-photo-map');
+        if (otInGpsUrl) {
+          if (otInMapEl) { otInMapEl.href = otInGpsUrl; otInMapEl.classList.remove('hidden'); }
+          if (otInPhotoMapEl) { otInPhotoMapEl.href = otInGpsUrl; otInPhotoMapEl.classList.remove('hidden'); }
+        } else {
+          if (otInMapEl) otInMapEl.classList.add('hidden');
+          if (otInPhotoMapEl) otInPhotoMapEl.classList.add('hidden');
+        }
+
+        const otOutMapEl = document.getElementById('detail-overtime-clock-out-map');
+        const otOutPhotoMapEl = document.getElementById('detail-overtime-clock-out-photo-map');
+        if (otOutGpsUrl) {
+          if (otOutMapEl) { otOutMapEl.href = otOutGpsUrl; otOutMapEl.classList.remove('hidden'); }
+          if (otOutPhotoMapEl) { otOutPhotoMapEl.href = otOutGpsUrl; otOutPhotoMapEl.classList.remove('hidden'); }
+        } else {
+          if (otOutMapEl) otOutMapEl.classList.add('hidden');
+          if (otOutPhotoMapEl) otOutPhotoMapEl.classList.add('hidden');
+        }
+      } else {
+        overtimeSection.classList.add('hidden');
+      }
+    }
+
     // Show modal
     detailModal.classList.remove('hidden');
 
     // Add click listeners to photos for lightbox
-    clockInImg.onclick = () => openLightbox(clockInImg.src);
-    clockOutImg.onclick = () => openLightbox(clockOutImg.src);
+    clockInImg.onclick = () => openLightbox(clockInImg.src, `Clock In - ${data.full_name}`, clockInGpsUrl);
+    clockOutImg.onclick = () => openLightbox(clockOutImg.src, `Clock Out - ${data.full_name}`, clockOutGpsUrl);
   } catch (err) {
     showAlert(err.message);
   }
 }
 
 // Lightbox functions
-function openLightbox(imageUrl) {
+function openLightbox(imageUrl, title = 'Detail Foto Presensi', gpsUrl = null) {
+  const lightboxTitle = document.getElementById('lightbox-title');
+  const lightboxLoc = document.getElementById('lightbox-location');
+  if (lightboxTitle) lightboxTitle.textContent = title;
   lightboxImage.src = imageUrl;
+
+  if (lightboxLoc) {
+    if (gpsUrl && gpsUrl !== '#') {
+      lightboxLoc.innerHTML = `
+        <a href="${gpsUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-600 font-bold text-xs border border-brand-200 shadow-xs transition-colors">
+          📍 Buka GPS Lokasi (${title})
+        </a>
+      `;
+    } else {
+      lightboxLoc.innerHTML = `<span class="text-xs text-slate-400 font-medium">📍 Lokasi GPS tidak tercatat</span>`;
+    }
+  }
+
   lightboxModal.classList.remove('hidden');
 }
 function closeLightbox() {
@@ -631,7 +761,7 @@ let submissionsDivisionsLoaded = false;
 let lastSuperPendingHash = '';
 let lastSuperHistoryHash = '';
 
-const TYPE_LABEL = { izin: 'Izin', cuti: 'Cuti', sakit: 'Sakit' };
+const TYPE_LABEL = { izin: 'Izin', cuti: 'Cuti', sakit: 'Sakit', lembur: 'Lembur' };
 const STATUS_STYLE = { approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700' };
 const STATUS_LABEL = { approved: 'Disetujui', rejected: 'Ditolak' };
 
@@ -693,23 +823,28 @@ async function loadSubmissionsPending(silent = false) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Tidak ada pengajuan yang menunggu persetujuan.</p>';
       return;
     }
-    container.innerHTML = submissions.map((s) => `
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
-        <div class="flex items-center justify-between mb-1">
-          <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">${escapeHtml(TYPE_LABEL[s.type] || s.type)}</span>
+    container.innerHTML = submissions.map((s) => {
+      const timeSpan = (s.type === 'lembur' && s.start_time && s.end_time)
+        ? ` • <span class="text-amber-600 font-bold">⏱️ ${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)} WIB</span>`
+        : '';
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${s.type === 'lembur' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-700'}">${escapeHtml(TYPE_LABEL[s.type] || s.type)}</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-1">${escapeHtml(s.position_name || '-')} · ${escapeHtml(s.start_date)}${s.start_date !== s.end_date ? ` s/d ${escapeHtml(s.end_date)}` : ''}${timeSpan}</p>
+          <p class="text-sm text-slate-600 mb-2">${escapeHtml(s.reason)}</p>
+          ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline mb-2 inline-block">Lihat lampiran</a><br/>` : ''}
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button class="btn-sub-approve flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Setujui</button>
+            <button class="btn-sub-reject flex-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Tolak</button>
+            <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
+            <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}">Hapus</button>
+          </div>
         </div>
-        <p class="text-xs text-slate-400 mb-1">${escapeHtml(s.position_name || '-')} · ${escapeHtml(s.start_date)} s/d ${escapeHtml(s.end_date)}</p>
-        <p class="text-sm text-slate-600 mb-2">${escapeHtml(s.reason)}</p>
-        ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline mb-2 inline-block">Lihat lampiran</a><br/>` : ''}
-        <div class="flex flex-wrap gap-2 pt-1">
-          <button class="btn-sub-approve flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Setujui</button>
-          <button class="btn-sub-reject flex-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Tolak</button>
-          <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
-          <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}">Hapus</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     container.querySelectorAll('.btn-sub-approve').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'approved')));
     container.querySelectorAll('.btn-sub-reject').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'rejected')));
@@ -737,21 +872,26 @@ async function loadSubmissionsHistory(silent = false) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Belum ada riwayat pengajuan.</p>';
       return;
     }
-    container.innerHTML = submissions.map((s) => `
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
-        <div class="flex items-center justify-between mb-1">
-          <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || escapeHtml(s.status)}</span>
+    container.innerHTML = submissions.map((s) => {
+      const timeSpan = (s.type === 'lembur' && s.start_time && s.end_time)
+        ? ` • <span class="text-amber-600 font-bold">⏱️ ${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)} WIB</span>`
+        : '';
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || escapeHtml(s.status)}</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-1">${escapeHtml(TYPE_LABEL[s.type] || s.type)} · ${escapeHtml(s.start_date)}${s.start_date !== s.end_date ? ` s/d ${escapeHtml(s.end_date)}` : ''}${timeSpan}</p>
+          ${s.review_note ? `<p class="text-xs text-slate-500 italic mb-2">Catatan: ${escapeHtml(s.review_note)}</p>` : ''}
+          
+          <div class="flex gap-2 justify-end pt-2 border-t border-slate-100">
+            <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
+            <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-id="${s.id}">Hapus</button>
+          </div>
         </div>
-        <p class="text-xs text-slate-400 mb-1">${escapeHtml(TYPE_LABEL[s.type] || s.type)} · ${escapeHtml(s.start_date)} s/d ${escapeHtml(s.end_date)}</p>
-        ${s.review_note ? `<p class="text-xs text-slate-500 italic mb-2">Catatan: ${escapeHtml(s.review_note)}</p>` : ''}
-        
-        <div class="flex gap-2 justify-end pt-2 border-t border-slate-100">
-          <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
-          <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-id="${s.id}">Hapus</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     container.querySelectorAll('.btn-super-edit-sub').forEach((b) => b.addEventListener('click', () => openSuperSubModal(JSON.parse(b.dataset.sub))));
     container.querySelectorAll('.btn-super-del-sub').forEach((b) => b.addEventListener('click', () => deleteSuperSubmission(b.dataset.id)));
@@ -766,7 +906,7 @@ const decisionNote = document.getElementById('decision-note');
 let activeDecision = null;
 
 function openDecisionModal(id, name, decision) {
-  activeDecision = { id, decision };
+  activeDecision = { id, decision, isOvertime: false };
   decisionNote.value = '';
   document.getElementById('decision-title').textContent = `${decision === 'approved' ? 'Setujui' : 'Tolak'} pengajuan ${name}`;
   decisionModal.classList.remove('hidden');
@@ -780,17 +920,215 @@ document.getElementById('btn-confirm-decision').addEventListener('click', async 
     return;
   }
   try {
-    const result = await apiPatch(`/admin/submissions/${activeDecision.id}/decision`, {
+    const endpoint = activeDecision && activeDecision.isOvertime
+      ? `/admin/overtime/${activeDecision.id}/decision`
+      : `/admin/submissions/${activeDecision.id}/decision`;
+
+    const result = await apiPatch(endpoint, {
       decision: activeDecision.decision,
       review_note: decisionNote.value.trim()
     });
     decisionModal.classList.add('hidden');
     showAlert(result.message, 'success');
-    loadSubmissionsData();
+    if (activeDecision && activeDecision.isOvertime) {
+      loadSAOvertimeData();
+    } else {
+      loadSubmissionsData();
+    }
   } catch (err) {
     showAlert(err.message);
   }
 });
+
+/* ---------------------------------------------------------
+   SUPER ADMIN OVERTIME ATTENDANCE MANAGEMENT
+--------------------------------------------------------- */
+let saOtCurrentTab = 'pending';
+let saOtPendingList = [];
+let saOtHistoryList = [];
+let saOtDivisionsLoaded = false;
+
+async function populateSAOvertimeDivisions() {
+  if (saOtDivisionsLoaded) return;
+  try {
+    const select = document.getElementById('sa-ot-filter-division');
+    if (!select) return;
+    const { divisions } = await apiGet('/superadmin/divisions');
+    if (divisions && divisions.length > 0) {
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">Semua Divisi</option>' +
+        divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+      select.value = currentVal;
+      saOtDivisionsLoaded = true;
+    }
+  } catch (err) {
+    console.error('Gagal memuat divisi presensi lembur:', err);
+  }
+}
+
+export async function loadSAOvertimeData(silent = false) {
+  try {
+    await populateSAOvertimeDivisions();
+
+    const divId = document.getElementById('sa-ot-filter-division')?.value || '';
+    const query = divId ? `?division_id=${divId}` : '';
+
+    const [resPending, resHistory] = await Promise.all([
+      apiGet(`/admin/overtime/pending${query}`),
+      apiGet(`/admin/overtime/history${query}`)
+    ]);
+
+    saOtPendingList = resPending.overtimes || [];
+    saOtHistoryList = resHistory.overtimes || [];
+
+    if (document.getElementById('sa-ot-badge-pending')) document.getElementById('sa-ot-badge-pending').textContent = saOtPendingList.length;
+    if (document.getElementById('sa-ot-badge-history')) document.getElementById('sa-ot-badge-history').textContent = saOtHistoryList.length;
+
+    renderSAOvertimeTables();
+  } catch (err) {
+    console.error('Gagal memuat data lembur super admin:', err);
+  }
+}
+
+function renderSAOvertimeTables() {
+  renderSAOvertimePendingTable();
+  renderSAOvertimeHistoryTable();
+}
+
+function renderSAOvertimePendingTable() {
+  const tbody = document.getElementById('sa-ot-tbody-pending');
+  if (!tbody) return;
+
+  const keyword = document.getElementById('sa-ot-search-input')?.value.toLowerCase().trim() || '';
+  let list = saOtPendingList;
+  if (keyword) list = list.filter(o => o.full_name && o.full_name.toLowerCase().includes(keyword));
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Tidak ada presensi lembur pending.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    const inTime = item.overtime_clock_in_time ? new Date(item.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const outTime = item.overtime_clock_out_time ? new Date(item.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const sec = item.overtime_duration_seconds || 0;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const durStr = sec > 0 ? `${h}j ${m}m` : '-';
+
+    return `
+      <tr class="hover:bg-amber-50/40 dark:hover:bg-amber-950/20 transition-colors">
+        <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">${escapeHtml(item.full_name)}</td>
+        <td class="px-4 py-3 text-slate-600 dark:text-slate-300"><span class="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[11px] font-semibold">${escapeHtml(item.division_name || '-')}</span></td>
+        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}</td>
+        <td class="px-4 py-3 text-slate-700 dark:text-slate-200 whitespace-nowrap"><div class="font-bold text-amber-700 dark:text-amber-400">In: ${inTime} | Out: ${outTime}</div><div class="text-[11px] text-slate-500 font-medium">Durasi: <span class="font-bold">${durStr}</span></div></td>
+        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}"><div class="font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(item.overtime_task_reason || '-')}</div>${item.overtime_clock_out_note ? `<div class="text-[11px] text-slate-500 italic">Catatan: ${escapeHtml(item.overtime_clock_out_note)}</div>` : ''}</td>
+        <td class="px-4 py-3 whitespace-nowrap"><button data-id="${item.id}" class="btn-sa-ot-detail px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors flex items-center gap-1"><span>📸</span> <span>Detail</span></button></td>
+        <td class="px-4 py-3 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">Pending</span></td>
+        <td class="px-4 py-3 text-right whitespace-nowrap"><div class="flex items-center justify-end gap-1.5"><button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="approved" class="btn-sa-ot-decide px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px]">Setujui</button><button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="rejected" class="btn-sa-ot-decide px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px]">Tolak</button><button data-id="${item.id}" class="btn-sa-ot-delete px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] border border-rose-200">Hapus</button></div></td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('.btn-sa-ot-detail').forEach(b => b.addEventListener('click', () => openSAOvertimeDetailModal(b.dataset.id)));
+  tbody.querySelectorAll('.btn-sa-ot-decide').forEach(b => b.addEventListener('click', () => openSAOvertimeDecisionModal(b.dataset.id, b.dataset.name, b.dataset.decision)));
+  tbody.querySelectorAll('.btn-sa-ot-delete').forEach(b => b.addEventListener('click', () => deleteSAOvertime(b.dataset.id)));
+}
+
+function renderSAOvertimeHistoryTable() {
+  const tbody = document.getElementById('sa-ot-tbody-history');
+  if (!tbody) return;
+
+  const keyword = document.getElementById('sa-ot-search-input')?.value.toLowerCase().trim() || '';
+  let list = saOtHistoryList;
+  if (keyword) list = list.filter(o => o.full_name && o.full_name.toLowerCase().includes(keyword));
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">Belum ada riwayat presensi lembur.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    const inTime = item.overtime_clock_in_time ? new Date(item.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const outTime = item.overtime_clock_out_time ? new Date(item.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const sec = item.overtime_duration_seconds || 0;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const durStr = sec > 0 ? `${h}j ${m}m` : '-';
+
+    return `
+      <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+        <td class="px-4 py-3.5 font-bold text-slate-900 dark:text-white">${escapeHtml(item.full_name)}</td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300"><span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-[11px] font-semibold">${escapeHtml(item.division_name || '-')}</span></td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400">⏱️ ${inTime} - ${outTime} (${durStr})</div></td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}">${escapeHtml(item.overtime_task_reason || '-')}</td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300"><div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}</span><span class="text-xs text-slate-500 truncate max-w-xs" title="${escapeHtml(item.overtime_review_note)}">${escapeHtml(item.overtime_review_note || '-')}</span></div></td>
+        <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
+          <div>${escapeHtml(item.reviewed_by_name || 'Admin')}</div>
+          <button data-id="${item.id}" class="btn-sa-ot-delete mt-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] border border-rose-200 transition-colors">Hapus</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('.btn-sa-ot-delete').forEach(b => b.addEventListener('click', () => deleteSAOvertime(b.dataset.id)));
+}
+
+async function deleteSAOvertime(id) {
+  if (confirm('Apakah Anda yakin ingin menghapus data presensi lembur ini? Data yang dihapus tidak dapat dikembalikan.')) {
+    try {
+      await apiDelete(`/admin/overtime/${id}`);
+      showAlert('Presensi lembur berhasil dihapus.', 'success');
+      loadSAOvertimeData();
+    } catch (err) {
+      showAlert(err.message || 'Gagal menghapus presensi lembur.');
+    }
+  }
+}
+
+function openSAOvertimeDecisionModal(id, name, decision) {
+  activeDecision = { id, decision, isOvertime: true };
+  decisionNote.value = decision === 'approved' ? 'Lembur Disetujui' : '';
+  document.getElementById('decision-title').textContent = `${decision === 'approved' ? 'Setujui' : 'Tolak'} presensi lembur ${name}`;
+  decisionModal.classList.remove('hidden');
+}
+
+function openSAOvertimeDetailModal(id) {
+  const item = saOtPendingList.find(o => String(o.id) === String(id)) || saOtHistoryList.find(o => String(o.id) === String(id));
+  if (!item) return;
+
+  const inPhoto = item.overtime_clock_in_photo ? item.overtime_clock_in_photo.replace('/uploads/', '/secure-uploads/') : null;
+  const outPhoto = item.overtime_clock_out_photo ? item.overtime_clock_out_photo.replace('/uploads/', '/secure-uploads/') : null;
+
+  if (inPhoto) openLightbox(inPhoto);
+  else if (outPhoto) openLightbox(outPhoto);
+  else showAlert('Tidak ada foto presensi lembur.');
+}
+
+// Subtab & Event Listeners for Super Admin Overtime
+document.getElementById('sa-ot-tab-pending')?.addEventListener('click', () => {
+  saOtCurrentTab = 'pending';
+  document.getElementById('sa-ot-tab-pending').classList.add('border-brand-600', 'text-brand-600', 'dark:border-brand-400', 'dark:text-brand-300');
+  document.getElementById('sa-ot-tab-pending').classList.remove('border-transparent', 'text-slate-500');
+  document.getElementById('sa-ot-tab-history').classList.remove('border-brand-600', 'text-brand-600', 'dark:border-brand-400', 'dark:text-brand-300');
+  document.getElementById('sa-ot-tab-history').classList.add('border-transparent', 'text-slate-500');
+  document.getElementById('sa-ot-panel-pending').classList.remove('hidden');
+  document.getElementById('sa-ot-panel-history').classList.add('hidden');
+});
+
+document.getElementById('sa-ot-tab-history')?.addEventListener('click', () => {
+  saOtCurrentTab = 'history';
+  document.getElementById('sa-ot-tab-history').classList.add('border-brand-600', 'text-brand-600', 'dark:border-brand-400', 'dark:text-brand-300');
+  document.getElementById('sa-ot-tab-history').classList.remove('border-transparent', 'text-slate-500');
+  document.getElementById('sa-ot-tab-pending').classList.remove('border-brand-600', 'text-brand-600', 'dark:border-brand-400', 'dark:text-brand-300');
+  document.getElementById('sa-ot-tab-pending').classList.add('border-transparent', 'text-slate-500');
+  document.getElementById('sa-ot-panel-history').classList.remove('hidden');
+  document.getElementById('sa-ot-panel-pending').classList.add('hidden');
+});
+
+document.getElementById('sa-ot-filter-division')?.addEventListener('change', loadSAOvertimeData);
+document.getElementById('sa-ot-search-input')?.addEventListener('input', renderSAOvertimeTables);
+document.getElementById('sa-ot-btn-refresh')?.addEventListener('click', loadSAOvertimeData);
 
 /* Super Admin Submission CRUD */
 const superSubModal = document.getElementById('superadmin-sub-modal');
@@ -799,6 +1137,15 @@ const formSuperSub = document.getElementById('form-super-sub');
 document.getElementById('btn-super-create-submission').addEventListener('click', () => openSuperSubModal(null));
 document.getElementById('btn-close-super-sub-modal').addEventListener('click', () => superSubModal.classList.add('hidden'));
 document.getElementById('btn-cancel-super-sub').addEventListener('click', () => superSubModal.classList.add('hidden'));
+
+function toggleSuperSubTimeContainer() {
+  const type = document.getElementById('super-sub-type')?.value;
+  const timeWrapper = document.getElementById('wrapper-super-sub-time');
+  if (timeWrapper) {
+    timeWrapper.classList.toggle('hidden', type !== 'lembur');
+  }
+}
+document.getElementById('super-sub-type')?.addEventListener('change', toggleSuperSubTimeContainer);
 
 async function openSuperSubModal(sub = null) {
   hideAlert();
@@ -827,9 +1174,13 @@ async function openSuperSubModal(sub = null) {
   document.getElementById('super-sub-type').value = sub ? sub.type : 'izin';
   document.getElementById('super-sub-start').value = sub && sub.start_date ? sub.start_date.split('T')[0] : '';
   document.getElementById('super-sub-end').value = sub && sub.end_date ? sub.end_date.split('T')[0] : '';
+  if (document.getElementById('super-sub-start-time')) document.getElementById('super-sub-start-time').value = sub ? sub.start_time || '' : '';
+  if (document.getElementById('super-sub-end-time')) document.getElementById('super-sub-end-time').value = sub ? sub.end_time || '' : '';
   document.getElementById('super-sub-reason').value = sub ? sub.reason || '' : '';
   document.getElementById('super-sub-status').value = sub ? sub.status || 'pending' : 'pending';
   document.getElementById('super-sub-note').value = sub ? sub.review_note || '' : '';
+
+  toggleSuperSubTimeContainer();
 
   superSubModal.classList.remove('hidden');
 }
@@ -848,6 +1199,8 @@ if (formSuperSub) {
       type: document.getElementById('super-sub-type').value,
       start_date: document.getElementById('super-sub-start').value,
       end_date: document.getElementById('super-sub-end').value,
+      start_time: document.getElementById('super-sub-start-time')?.value || null,
+      end_time: document.getElementById('super-sub-end-time')?.value || null,
       reason: document.getElementById('super-sub-reason').value.trim(),
       status: document.getElementById('super-sub-status').value,
       review_note: document.getElementById('super-sub-note').value.trim()

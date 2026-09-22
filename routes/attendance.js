@@ -188,11 +188,167 @@ router.post(
   }
 );
 
+/* ---------------------------------------------------------
+   OVERTIME ATTENDANCE (ABSEN MASUK & PULANG LEMBUR)
+--------------------------------------------------------- */
+
 /**
- * PENTING: Sengaja TIDAK ada endpoint GET /history atau GET /report di sini.
- * Sesuai spesifikasi, karyawan (role 'employee') tidak diberi akses untuk
- * melihat rekap/riwayat absensi. Endpoint rekap hanya tersedia di
- * routes/admin.js dan routes/reports.js yang dilindungi requireRole('admin_manager','super_admin').
+ * GET /api/attendance/overtime/today
+ * Mengembalikan status absensi lembur HARI INI milik user yang login
  */
+router.get('/overtime/today', requireAuth, requireRole('employee'), requireActiveAccount, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, overtime_clock_in_time, overtime_clock_out_time, overtime_task_reason, 
+              overtime_duration_seconds, overtime_clock_in_note, overtime_clock_out_note,
+              overtime_status, overtime_review_note, overtime_reviewed_at
+       FROM attendances WHERE user_id = ? AND attendance_date = ?`,
+      [req.session.user.id, todayStr()]
+    );
+    res.json({ success: true, overtime: rows[0] || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal memuat status absensi lembur.' });
+  }
+});
+
+/**
+ * POST /api/attendance/overtime/clock-in
+ * multipart/form-data: photo, latitude, longitude, task_reason (WAJIB), note (optional)
+ */
+router.post(
+  '/overtime/clock-in',
+  requireAuth,
+  requireRole('employee'),
+  requireActiveAccount,
+  uploadAttendancePhoto.single('photo'),
+  async (req, res) => {
+    try {
+      const userId = req.session.user.id;
+      const { latitude, longitude, task_reason, note } = req.body;
+      const date = todayStr();
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Foto Absen Masuk Lembur wajib diambil.' });
+      }
+      if (!latitude || !longitude) {
+        return res.status(400).json({ success: false, message: 'Lokasi GPS wajib aktif dan terkunci.' });
+      }
+      if (!task_reason || !task_reason.trim()) {
+        return res.status(400).json({ success: false, message: 'Keterangan tugas lembur (ngerjain apa) wajib diisi.' });
+      }
+
+      const [existing] = await pool.query(
+        'SELECT id, overtime_clock_in_time FROM attendances WHERE user_id = ? AND attendance_date = ?',
+        [userId, date]
+      );
+
+      if (existing.length > 0 && existing[0].overtime_clock_in_time) {
+        return res.status(409).json({ success: false, message: 'Anda sudah melakukan Absen Masuk Lembur hari ini.' });
+      }
+
+      const now = new Date();
+      const photoPath = `/uploads/attendance/${req.file.filename}`;
+
+      if (existing.length > 0) {
+        await pool.query(
+          `UPDATE attendances SET 
+             overtime_clock_in_time = ?, 
+             overtime_clock_in_photo = ?, 
+             overtime_clock_in_lat = ?, 
+             overtime_clock_in_lng = ?,
+             overtime_task_reason = ?, 
+             overtime_clock_in_note = ?,
+             overtime_status = 'pending'
+           WHERE id = ?`,
+          [now, photoPath, latitude, longitude, task_reason.trim(), note ? note.trim() : null, existing[0].id]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO attendances
+           (user_id, attendance_date, overtime_clock_in_time, overtime_clock_in_photo, 
+            overtime_clock_in_lat, overtime_clock_in_lng, overtime_task_reason, overtime_clock_in_note, status, overtime_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'on_time', 'pending')`,
+          [userId, date, now, photoPath, latitude, longitude, task_reason.trim(), note ? note.trim() : null]
+        );
+      }
+
+      res.json({
+        success: true,
+        message: 'Absen Masuk Lembur berhasil dicatat dan menunggu persetujuan.'
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Gagal melakukan Absen Masuk Lembur.' });
+    }
+  }
+);
+
+/**
+ * POST /api/attendance/overtime/clock-out
+ * multipart/form-data: photo, latitude, longitude, note (WAJIB diisi)
+ */
+router.post(
+  '/overtime/clock-out',
+  requireAuth,
+  requireRole('employee'),
+  requireActiveAccount,
+  uploadAttendancePhoto.single('photo'),
+  async (req, res) => {
+    try {
+      const userId = req.session.user.id;
+      const { latitude, longitude, note } = req.body;
+      const date = todayStr();
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Foto Absen Pulang Lembur wajib diambil.' });
+      }
+      if (!latitude || !longitude) {
+        return res.status(400).json({ success: false, message: 'Lokasi GPS wajib aktif dan terkunci.' });
+      }
+      if (!note || !note.trim()) {
+        return res.status(400).json({ success: false, message: 'Catatan/keterangan wajib diisi saat Absen Pulang Lembur.' });
+      }
+
+      const [existing] = await pool.query(
+        'SELECT id, overtime_clock_in_time, overtime_clock_out_time FROM attendances WHERE user_id = ? AND attendance_date = ?',
+        [userId, date]
+      );
+
+      if (existing.length === 0 || !existing[0].overtime_clock_in_time) {
+        return res.status(400).json({ success: false, message: 'Anda belum melakukan Absen Masuk Lembur hari ini.' });
+      }
+      if (existing[0].overtime_clock_out_time) {
+        return res.status(409).json({ success: false, message: 'Anda sudah melakukan Absen Pulang Lembur hari ini.' });
+      }
+
+      const now = new Date();
+      const overtimeDurationSeconds = calculateWorkDuration(existing[0].overtime_clock_in_time, now);
+      const photoPath = `/uploads/attendance/${req.file.filename}`;
+
+      await pool.query(
+        `UPDATE attendances SET 
+           overtime_clock_out_time = ?, 
+           overtime_clock_out_photo = ?, 
+           overtime_clock_out_lat = ?, 
+           overtime_clock_out_lng = ?,
+           overtime_clock_out_note = ?, 
+           overtime_duration_seconds = ?,
+           overtime_status = 'pending'
+         WHERE id = ?`,
+        [now, photoPath, latitude, longitude, note.trim(), overtimeDurationSeconds, existing[0].id]
+      );
+
+      res.json({
+        success: true,
+        message: 'Absen Pulang Lembur berhasil dicatat dan menunggu persetujuan.',
+        overtime_duration_hms: secondsToHMS(overtimeDurationSeconds)
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Gagal melakukan Absen Pulang Lembur.' });
+    }
+  }
+);
 
 module.exports = router;

@@ -19,7 +19,7 @@ const loginLimiter = rateLimit({
     const email = (req.body && req.body.email) ? req.body.email.toLowerCase().trim() : 'unknown-email';
     return `${ip}_${email}`;
   },
-  validate: false,
+  validate: { keyGeneratorIpFallback: false, xForwardedForHeader: false },
   handler: (req, res) => {
     return res.status(429).json({
       success: false,
@@ -34,6 +34,7 @@ const loginLimiter = rateLimit({
 const registerLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
+  validate: { xForwardedForHeader: false },
   handler: (req, res) => {
     return res.status(429).json({
       success: false,
@@ -104,18 +105,20 @@ router.post('/register', registerLimiter, async (req, res) => {
  */
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, remember_me } = req.body;
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email dan password wajib diisi.' });
     }
+
+    const cleanEmail = String(email).toLowerCase().trim();
 
     const [rows] = await pool.query(
       `SELECT u.*, d.name AS division_name, p.name AS position_name
        FROM users u
        LEFT JOIN divisions d ON d.id = u.division_id
        LEFT JOIN positions p ON p.id = u.position_id
-       WHERE u.email = ?`,
-      [email]
+       WHERE LOWER(TRIM(u.email)) = ?`,
+      [cleanEmail]
     );
 
     if (rows.length === 0) {
@@ -134,6 +137,13 @@ router.post('/login', loginLimiter, async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ success: false, message: 'Email atau password salah.' });
+    }
+
+    // Jika 'Ingatkan Saya' dicentang, atur masa aktif session cookie menjadi 30 hari
+    if (remember_me) {
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 hari
+    } else {
+      req.session.cookie.maxAge = 12 * 60 * 60 * 1000; // 12 jam
     }
 
     // Simpan data minimal & aman di session (tanpa password).

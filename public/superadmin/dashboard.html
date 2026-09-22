@@ -216,6 +216,11 @@
         <span class="text-base shrink-0">📝</span>
         <span class="sidebar-label truncate">Pengajuan</span>
       </button>
+      <button data-nav="overtime"
+        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Presensi Lembur">
+        <span class="text-base shrink-0">⚡</span>
+        <span class="sidebar-label truncate">Presensi Lembur</span>
+      </button>
       <button data-nav="master" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
         title="Master Data">
         <span class="text-base shrink-0">📁</span>
@@ -314,6 +319,7 @@
         class="nav-btn active px-4 py-3 text-sm font-medium whitespace-nowrap">Dashboard</button>
       <button data-nav="users" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">User</button>
       <button data-nav="submissions" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Pengajuan</button>
+      <button data-nav="overtime" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">⚡ Presensi Lembur</button>
       <button data-nav="master" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Master Data</button>
       <button data-nav="reports" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Laporan</button>
     </nav>
@@ -389,6 +395,15 @@
                 class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold">🏖</span>
             </div>
             <p class="text-2xl font-extrabold text-rose-600" id="kpi-cuti">0</p>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-slate-400">Lembur</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⏱</span>
+            </div>
+            <p class="text-2xl font-extrabold text-amber-600" id="kpi-lembur">0</p>
           </div>
 
           <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -533,7 +548,7 @@
                 <th class="text-left px-4 py-3">Terlambat</th>
                 <th class="text-left px-4 py-3">Lembur</th>
                 <th class="text-left px-4 py-3">Status</th>
-                <th class="text-left px-4 py-3">Detail</th>
+                <th class="text-center px-4 py-3">Aksi</th>
               </tr>
             </thead>
             <tbody id="report-body" class="divide-y divide-slate-100"></tbody>
@@ -544,7 +559,7 @@
       <!-- PANEL: PENGAJUAN -->
       <section id="panel-submissions" class="hidden">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <h1 class="text-xl font-bold text-slate-800">Pengajuan Izin / Cuti / Sakit</h1>
+          <h1 class="text-xl font-bold text-slate-800">Pengajuan Izin / Cuti / Sakit / Lembur</h1>
           <div class="flex flex-wrap items-center gap-2">
             <button id="btn-super-create-submission"
               class="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
@@ -584,6 +599,88 @@
 
         <div id="submission-pending-list" class="space-y-3 text-sm text-slate-500">Memuat...</div>
         <div id="submission-history-list" class="hidden space-y-3 text-sm text-slate-500">Memuat...</div>
+      </section>
+
+      <!-- PANEL: PRESENSI LEMBUR (OVERTIME ATTENDANCE) -->
+      <section id="panel-overtime" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <div>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <span>⚡</span> <span>Presensi Lembur (Overtime)</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Verifikasi foto selfie, GPS lokasi, dan persetujuan lembur karyawan seluruh divisi</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="sa-ot-filter-division" class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
+              <option value="">Semua Divisi</option>
+            </select>
+            <input type="text" id="sa-ot-search-input" placeholder="Cari nama karyawan..." class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200" />
+            <button id="sa-ot-btn-refresh" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Subtab Persetujuan Lembur Super Admin -->
+        <div class="flex overflow-x-auto no-scrollbar gap-4 border-b border-slate-200 dark:border-slate-700 text-xs font-bold pb-0.5">
+          <button id="sa-ot-tab-pending" class="py-2.5 border-b-2 border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-300 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0">
+            <span>Pending Review</span>
+            <span id="sa-ot-badge-pending" class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-extrabold">0</span>
+          </button>
+          <button id="sa-ot-tab-history" class="py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0">
+            <span>Riwayat Lembur</span>
+            <span id="sa-ot-badge-history" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-extrabold">0</span>
+          </button>
+        </div>
+
+        <!-- Tabel Pending Overtime Super Admin -->
+        <div id="sa-ot-panel-pending" class="block">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs min-w-[850px]">
+                <thead class="bg-amber-50/60 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold uppercase border-b border-amber-100 dark:border-amber-900">
+                  <tr>
+                    <th class="px-4 py-3.5">Karyawan</th>
+                    <th class="px-4 py-3.5">Divisi</th>
+                    <th class="px-4 py-3.5">Tanggal</th>
+                    <th class="px-4 py-3.5">Jam Masuk / Pulang</th>
+                    <th class="px-4 py-3.5">Keterangan Tugas</th>
+                    <th class="px-4 py-3.5">Foto & GPS</th>
+                    <th class="px-4 py-3.5 text-center">Status</th>
+                    <th class="px-4 py-3.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="sa-ot-tbody-pending" class="divide-y divide-slate-100 dark:divide-slate-700 font-medium">
+                  <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Memuat presensi lembur pending...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Riwayat Overtime Super Admin -->
+        <div id="sa-ot-panel-history" class="hidden">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs min-w-[800px]">
+                <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
+                  <tr>
+                    <th class="px-4 py-3.5">Karyawan</th>
+                    <th class="px-4 py-3.5">Divisi</th>
+                    <th class="px-4 py-3.5">Tanggal & Jam</th>
+                    <th class="px-4 py-3.5">Keterangan Tugas</th>
+                    <th class="px-4 py-3.5">Status & Catatan Review</th>
+                    <th class="px-4 py-3.5 text-right">Peninjau</th>
+                  </tr>
+                </thead>
+                <tbody id="sa-ot-tbody-history" class="divide-y divide-slate-100 dark:divide-slate-700 font-medium">
+                  <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">Memuat riwayat presensi lembur...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -639,7 +736,19 @@
             <option value="izin">Izin Khusus</option>
             <option value="cuti">Cuti Tahunan</option>
             <option value="sakit">Sakit</option>
+            <option value="lembur">Pengajuan Lembur</option>
           </select>
+        </div>
+
+        <div id="wrapper-super-sub-time" class="hidden grid grid-cols-2 gap-2 bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
+          <div>
+            <label class="block text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1">Jam Mulai</label>
+            <input type="time" id="super-sub-start-time" class="w-full box-border rounded-lg border border-amber-300 dark:border-amber-700 px-2 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1">Jam Selesai</label>
+            <input type="time" id="super-sub-end-time" class="w-full box-border rounded-lg border border-amber-300 dark:border-amber-700 px-2 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-amber-500">
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
@@ -827,6 +936,12 @@
                 <span id="detail-clock-in-time"
                   class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
               </div>
+              <div class="text-center pt-0.5">
+                <a id="detail-clock-in-photo-map" href="#" target="_blank"
+                  class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">
+                  📍 Buka GPS Masuk
+                </a>
+              </div>
             </div>
             <div class="space-y-1.5">
               <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
@@ -838,6 +953,12 @@
                   alt="Foto Clock Out" />
                 <span id="detail-clock-out-time"
                   class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+              </div>
+              <div class="text-center pt-0.5">
+                <a id="detail-clock-out-photo-map" href="#" target="_blank"
+                  class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">
+                  📍 Buka GPS Pulang
+                </a>
               </div>
             </div>
           </div>
@@ -913,6 +1034,107 @@
           </div>
         </div>
 
+        <!-- Detail Absensi Lembur Section -->
+        <div id="detail-overtime-section" class="border-t border-slate-100 pt-4 space-y-3 hidden">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Detail Absensi Lembur
+          </h4>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <span class="text-xs font-semibold text-purple-600 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span> Masuk Lembur
+              </span>
+              <div class="relative group rounded-xl overflow-hidden border border-purple-200 bg-slate-100 aspect-[4/3]">
+                <img id="detail-overtime-clock-in-photo"
+                  class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                  alt="Foto Masuk Lembur" />
+                <span id="detail-overtime-clock-in-time"
+                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+              </div>
+              <div class="text-center pt-0.5">
+                <a id="detail-overtime-clock-in-photo-map" href="#" target="_blank"
+                  class="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:underline">
+                  📍 Buka GPS Masuk Lembur
+                </a>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <span class="text-xs font-semibold text-purple-600 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Keluar Lembur
+              </span>
+              <div class="relative group rounded-xl overflow-hidden border border-purple-200 bg-slate-100 aspect-[4/3]">
+                <img id="detail-overtime-clock-out-photo"
+                  class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                  alt="Foto Keluar Lembur" />
+                <span id="detail-overtime-clock-out-time"
+                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+              </div>
+              <div class="text-center pt-0.5">
+                <a id="detail-overtime-clock-out-photo-map" href="#" target="_blank"
+                  class="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:underline">
+                  📍 Buka GPS Keluar Lembur
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="bg-purple-50/50 rounded-xl p-2.5 border border-purple-100">
+              <p class="text-[11px] font-medium text-purple-600">Durasi Lembur</p>
+              <p id="detail-overtime-duration" class="font-mono font-bold text-purple-700 text-sm mt-0.5"></p>
+            </div>
+            <div class="bg-purple-50/50 rounded-xl p-2.5 border border-purple-100">
+              <p class="text-[11px] font-medium text-purple-600">Tugas Lembur</p>
+              <p id="detail-overtime-task" class="text-xs text-slate-700 font-medium mt-0.5"></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Masuk Lembur</p>
+              <div id="detail-overtime-clock-in-note"
+                class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+              </div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Keluar Lembur</p>
+              <div id="detail-overtime-clock-out-note"
+                class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs font-semibold text-slate-500 mb-1.5">Lokasi GPS Lembur</p>
+            <div class="flex flex-wrap gap-2">
+              <a id="detail-overtime-clock-in-map" href="#" target="_blank"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Peta Masuk Lembur
+              </a>
+              <a id="detail-overtime-clock-out-map" href="#" target="_blank"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Peta Keluar Lembur
+              </a>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Modal Footer -->
@@ -927,13 +1149,21 @@
   </div>
 
   <!-- Lightbox Modal for Photos -->
-  <div id="lightbox-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-60">
-    <div class="relative w-full max-w-md">
-      <img id="lightbox-image" class="rounded-lg border border-slate-200" src="" alt="">
-      <button id="btn-close-lightbox"
-        class="absolute top-0 right-0 -mt-2 -mr-2 bg-white rounded-full border border-slate-300 w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-100">
-        &times;
-      </button>
+  <div id="lightbox-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-200">
+    <div class="relative w-full max-w-md bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 space-y-3.5">
+      <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+        <h3 id="lightbox-title" class="font-bold text-sm text-slate-800">Detail Foto Presensi</h3>
+        <button id="btn-close-lightbox"
+          class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors font-bold text-lg">
+          &times;
+        </button>
+      </div>
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 aspect-[4/3]">
+        <img id="lightbox-image" class="w-full h-full object-cover" src="" alt="Detail Foto" />
+      </div>
+      <div id="lightbox-location" class="text-center pt-0.5">
+        <!-- Dynamic Location Button Injected Here -->
+      </div>
     </div>
   </div>
 

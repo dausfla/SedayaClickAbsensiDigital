@@ -41,8 +41,20 @@ function redirectByRole(role) {
 (async () => {
   try {
     const { loggedIn, user } = await apiGet('/auth/session');
-    if (loggedIn) redirectByRole(user.role);
+    if (loggedIn) {
+      redirectByRole(user.role);
+      return;
+    }
   } catch (e) { /* diam saja, biarkan user login manual */ }
+
+  // Auto-fill email jika 'Ingatkan Saya' sebelumnya aktif
+  if (localStorage.getItem('remember_me') === 'true') {
+    const savedEmail = localStorage.getItem('saved_email');
+    const emailInput = document.getElementById('login-email');
+    const rememberCheckbox = document.getElementById('login-remember-me');
+    if (savedEmail && emailInput) emailInput.value = savedEmail;
+    if (rememberCheckbox) rememberCheckbox.checked = true;
+  }
 })();
 
 // Muat data divisi & jabatan untuk form pendaftaran.
@@ -66,11 +78,26 @@ formLogin.addEventListener('submit', async (e) => {
   const submitBtn = formLogin.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Memproses...';
+
+  const emailVal = document.getElementById('login-email').value.trim();
+  const passwordVal = document.getElementById('login-password').value;
+  const rememberMeVal = document.getElementById('login-remember-me')?.checked || false;
+
   try {
     const { user } = await apiPost('/auth/login', {
-      email: document.getElementById('login-email').value.trim(),
-      password: document.getElementById('login-password').value
+      email: emailVal,
+      password: passwordVal,
+      remember_me: rememberMeVal
     });
+
+    if (rememberMeVal) {
+      localStorage.setItem('remember_me', 'true');
+      localStorage.setItem('saved_email', emailVal);
+    } else {
+      localStorage.removeItem('remember_me');
+      localStorage.removeItem('saved_email');
+    }
+
     redirectByRole(user.role);
   } catch (err) {
     showAlert(err.message);

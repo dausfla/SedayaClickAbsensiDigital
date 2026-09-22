@@ -37,13 +37,13 @@ function buildFilter(req) {
   }
   // Jika period tidak dikirim / tidak dikenali, tidak ada filter tanggal (semua data).
 
-  // Admin Manager terkunci ke divisinya sendiri, tidak peduli apa yang dikirim di query.
-  if (req.session.user.role === 'admin_manager') {
-    conditions.push('u.division_id = ?');
-    params.push(req.session.user.division_id);
-  } else if (division_id) {
+  // Filter divisi dari database
+  if (division_id) {
     conditions.push('u.division_id = ?');
     params.push(division_id);
+  } else if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
+    conditions.push('u.division_id = ?');
+    params.push(req.session.user.division_id);
   }
 
   // Pencarian nama karyawan (LIKE)
@@ -66,6 +66,49 @@ async function fetchReportRows(req) {
      LEFT JOIN positions p ON p.id = u.position_id
      ${where}
      ORDER BY a.attendance_date DESC, u.full_name ASC`,
+    params
+  );
+  return rows;
+}
+
+async function fetchSubmissionsForReport(req) {
+  const { period, start_date, end_date, division_id, name } = req.query;
+  const conditions = [];
+  const params = [];
+
+  if (period === 'weekly') {
+    conditions.push('s.start_date >= CURDATE() - INTERVAL 7 DAY');
+  } else if (period === 'monthly') {
+    conditions.push('s.start_date >= CURDATE() - INTERVAL 30 DAY');
+  } else if (period === 'custom' && start_date && end_date) {
+    conditions.push('s.start_date BETWEEN ? AND ?');
+    params.push(start_date, end_date);
+  }
+
+  if (division_id) {
+    conditions.push('u.division_id = ?');
+    params.push(division_id);
+  } else if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
+    conditions.push('u.division_id = ?');
+    params.push(req.session.user.division_id);
+  }
+
+  if (name) {
+    conditions.push('u.full_name LIKE ?');
+    params.push(`%${name}%`);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const [rows] = await pool.query(
+    `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.status, s.reason, s.review_note, s.created_at,
+            DATEDIFF(s.end_date, s.start_date) + 1 AS total_days,
+            u.full_name, d.name AS division_name, p.name AS position_name
+     FROM submissions s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN divisions d ON d.id = u.division_id
+     LEFT JOIN positions p ON p.id = u.position_id
+     ${where}
+     ORDER BY s.created_at DESC`,
     params
   );
   return rows;
@@ -100,9 +143,10 @@ router.get('/attendance/export', ...scoped, async (req, res) => {
       return res.send(csv);
     }
 
-    const buffer = await generateXLSX(rows, 'Rekap Absensi & Penggajian');
+    const submissionRows = await fetchSubmissionsForReport(req);
+    const buffer = await generateXLSX(rows, submissionRows);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="rekap-absensi-${Date.now()}.xlsx"`);
+    res.setHeader('Content-Disposition', `attachment; filename="rekap-absensi-gaji-${Date.now()}.xlsx"`);
     res.send(Buffer.from(buffer));
   } catch (err) {
     console.error(err);
@@ -140,7 +184,7 @@ router.get('/submissions', ...scoped, async (req, res) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const [rows] = await pool.query(
-      `SELECT s.id, s.type, s.start_date, s.end_date, s.status, s.reason,
+      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.status, s.reason,
               DATEDIFF(s.end_date, s.start_date) + 1 AS total_days,
               u.full_name, d.name AS division_name
        FROM submissions s
@@ -190,7 +234,7 @@ router.get('/submissions/export', ...scoped, async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
-      `SELECT s.id, s.type, s.start_date, s.end_date, s.status, s.reason, s.review_note, s.created_at,
+      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.status, s.reason, s.review_note, s.created_at,
               DATEDIFF(s.end_date, s.start_date) + 1 AS total_days,
               u.full_name, d.name AS division_name, p.name AS position_name
        FROM submissions s
@@ -298,6 +342,19 @@ router.get('/attendance/:id', ...scoped, async (req, res) => {
       work_duration_hms: secondsToHMS(row.work_duration_seconds),
       late_duration_hms: secondsToHMS(row.late_duration_seconds),
       overtime_hms: secondsToHMS(row.overtime_seconds),
+      overtime_clock_in_time: formatTime(row.overtime_clock_in_time),
+      overtime_clock_out_time: formatTime(row.overtime_clock_out_time),
+      overtime_clock_in_photo: row.overtime_clock_in_photo,
+      overtime_clock_out_photo: row.overtime_clock_out_photo,
+      overtime_clock_in_lat: row.overtime_clock_in_lat,
+      overtime_clock_in_lng: row.overtime_clock_in_lng,
+      overtime_clock_out_lat: row.overtime_clock_out_lat,
+      overtime_clock_out_lng: row.overtime_clock_out_lng,
+      overtime_task_reason: row.overtime_task_reason,
+      overtime_clock_in_note: row.overtime_clock_in_note,
+      overtime_clock_out_note: row.overtime_clock_out_note,
+      overtime_duration_seconds: row.overtime_duration_seconds,
+      overtime_duration_hms: secondsToHMS(row.overtime_duration_seconds),
       status_display: status_display,
       status_label: status_display
     };
@@ -400,6 +457,19 @@ router.get('/attendance/by-user/:userId', ...scoped, async (req, res) => {
         work_duration_hms: secondsToHMS(row.work_duration_seconds),
         late_duration_hms: secondsToHMS(row.late_duration_seconds),
         overtime_hms: secondsToHMS(row.overtime_seconds),
+        overtime_clock_in_time: formatTime(row.overtime_clock_in_time),
+        overtime_clock_out_time: formatTime(row.overtime_clock_out_time),
+        overtime_clock_in_photo: row.overtime_clock_in_photo,
+        overtime_clock_out_photo: row.overtime_clock_out_photo,
+        overtime_clock_in_lat: row.overtime_clock_in_lat,
+        overtime_clock_in_lng: row.overtime_clock_in_lng,
+        overtime_clock_out_lat: row.overtime_clock_out_lat,
+        overtime_clock_out_lng: row.overtime_clock_out_lng,
+        overtime_task_reason: row.overtime_task_reason,
+        overtime_clock_in_note: row.overtime_clock_in_note,
+        overtime_clock_out_note: row.overtime_clock_out_note,
+        overtime_duration_seconds: row.overtime_duration_seconds,
+        overtime_duration_hms: secondsToHMS(row.overtime_duration_seconds),
         status_display: status_display,
         status_label: status_display
       };

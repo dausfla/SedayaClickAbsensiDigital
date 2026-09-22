@@ -10,6 +10,8 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+const defaultPhotoPath = path.join(__dirname, '../public/assets/default/default-photo.png');
+
 /**
  * GET /secure-uploads/attendance/:filename
  */
@@ -19,7 +21,13 @@ router.get('/attendance/:filename', requireAuth, async (req, res) => {
     const safeFilename = path.basename(rawFilename);
     const user = req.session.user;
 
-    const filePattern = `%/${safeFilename}`;
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
+    if (safeFilename === 'default-photo.png' || safeFilename.includes('default')) {
+      if (fs.existsSync(defaultPhotoPath)) return res.sendFile(defaultPhotoPath);
+    }
+
+    const filePattern = `%${safeFilename}`;
     let isAuthorized = false;
 
     if (user.role === 'super_admin') {
@@ -29,9 +37,12 @@ router.get('/attendance/:filename', requireAuth, async (req, res) => {
       // Karyawan HANYA boleh akses foto absensi miliknya sendiri
       const [rows] = await pool.query(
         `SELECT id FROM attendances 
-         WHERE user_id = ? AND (clock_in_photo LIKE ? OR clock_out_photo LIKE ?) 
+         WHERE user_id = ? AND (
+           clock_in_photo LIKE ? OR clock_out_photo LIKE ? OR 
+           overtime_clock_in_photo LIKE ? OR overtime_clock_out_photo LIKE ?
+         ) 
          LIMIT 1`,
-        [user.id, filePattern, filePattern]
+        [user.id, filePattern, filePattern, filePattern, filePattern]
       );
       isAuthorized = rows.length > 0;
     } else if (user.role === 'admin_manager') {
@@ -39,25 +50,31 @@ router.get('/attendance/:filename', requireAuth, async (req, res) => {
       const [rows] = await pool.query(
         `SELECT a.id FROM attendances a 
          JOIN users u ON u.id = a.user_id 
-         WHERE u.division_id = ? AND (a.clock_in_photo LIKE ? OR a.clock_out_photo LIKE ?) 
+         WHERE u.division_id = ? AND (
+           a.clock_in_photo LIKE ? OR a.clock_out_photo LIKE ? OR 
+           a.overtime_clock_in_photo LIKE ? OR a.overtime_clock_out_photo LIKE ?
+         ) 
          LIMIT 1`,
-        [user.division_id, filePattern, filePattern]
+        [user.division_id, filePattern, filePattern, filePattern, filePattern]
       );
       isAuthorized = rows.length > 0;
     }
 
     if (!isAuthorized) {
+      if (fs.existsSync(defaultPhotoPath)) return res.sendFile(defaultPhotoPath);
       return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke berkas ini.' });
     }
 
     const filePath = path.join(__dirname, '../uploads/attendance', safeFilename);
     if (!fs.existsSync(filePath)) {
+      if (fs.existsSync(defaultPhotoPath)) return res.sendFile(defaultPhotoPath);
       return res.status(404).json({ success: false, message: 'Berkas tidak ditemukan.' });
     }
 
     return res.sendFile(filePath);
   } catch (err) {
     console.error('Error secure-uploads attendance:', err);
+    if (fs.existsSync(defaultPhotoPath)) return res.sendFile(defaultPhotoPath);
     return res.status(500).json({ success: false, message: 'Gagal mengambil berkas.' });
   }
 });
@@ -71,7 +88,9 @@ router.get('/submissions/:filename', requireAuth, async (req, res) => {
     const safeFilename = path.basename(rawFilename);
     const user = req.session.user;
 
-    const filePattern = `%/${safeFilename}`;
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
+    const filePattern = `%${safeFilename}`;
     let isAuthorized = false;
 
     if (user.role === 'super_admin') {

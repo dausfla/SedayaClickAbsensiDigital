@@ -21,10 +21,11 @@ const reportRoutes = require('./routes/reports');
 const secureUploadsRoutes = require('./routes/secureUploads');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
-// Header keamanan dengan helmet (CSP dinonaktifkan agar tidak konflik dengan Tailwind CDN)
-app.use(helmet({ contentSecurityPolicy: false }));
+// Header keamanan dengan helmet (CSP dinonaktifkan agar tidak konflik dengan Tailwind CDN, CORP set to cross-origin untuk file media)
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // Pastikan folder upload ada sebelum server menerima request.
 ['uploads/attendance', 'uploads/submissions'].forEach((dir) => {
@@ -111,6 +112,59 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ success: false, message });
 });
 
-app.listen(PORT, () => {
-  console.log(`SedayaClick berjalan di http://localhost:${PORT}`);
+async function runMigrations() {
+  try {
+    const [cols] = await pool.query("SHOW COLUMNS FROM submissions LIKE 'start_time'");
+    if (cols.length === 0) {
+      await pool.query("ALTER TABLE submissions ADD COLUMN start_time TIME NULL AFTER end_date");
+    }
+    const [endCols] = await pool.query("SHOW COLUMNS FROM submissions LIKE 'end_time'");
+    if (endCols.length === 0) {
+      await pool.query("ALTER TABLE submissions ADD COLUMN end_time TIME NULL AFTER start_time");
+    }
+    await pool.query("ALTER TABLE submissions MODIFY COLUMN type ENUM('izin','cuti','sakit','lembur') NOT NULL").catch(() => {
+      return pool.query("ALTER TABLE submissions MODIFY COLUMN type VARCHAR(50) NOT NULL");
+    });
+
+    // Migration for attendances table overtime columns
+    const [otInCols] = await pool.query("SHOW COLUMNS FROM attendances LIKE 'overtime_clock_in_time'");
+    if (otInCols.length === 0) {
+      await pool.query(`
+        ALTER TABLE attendances
+        ADD COLUMN overtime_clock_in_time DATETIME NULL,
+        ADD COLUMN overtime_clock_out_time DATETIME NULL,
+        ADD COLUMN overtime_clock_in_photo VARCHAR(255) NULL,
+        ADD COLUMN overtime_clock_out_photo VARCHAR(255) NULL,
+        ADD COLUMN overtime_clock_in_lat DECIMAL(10,7) NULL,
+        ADD COLUMN overtime_clock_in_lng DECIMAL(10,7) NULL,
+        ADD COLUMN overtime_clock_out_lat DECIMAL(10,7) NULL,
+        ADD COLUMN overtime_clock_out_lng DECIMAL(10,7) NULL,
+        ADD COLUMN overtime_task_reason TEXT NULL,
+        ADD COLUMN overtime_clock_in_note TEXT NULL,
+        ADD COLUMN overtime_clock_out_note TEXT NULL,
+        ADD COLUMN overtime_duration_seconds INT DEFAULT 0
+      `);
+    }
+
+    const [otStatusCols] = await pool.query("SHOW COLUMNS FROM attendances LIKE 'overtime_status'");
+    if (otStatusCols.length === 0) {
+      await pool.query(`
+        ALTER TABLE attendances
+        ADD COLUMN overtime_status ENUM('pending','approved','rejected') DEFAULT 'pending',
+        ADD COLUMN overtime_review_note TEXT NULL,
+        ADD COLUMN overtime_reviewed_by INT NULL,
+        ADD COLUMN overtime_reviewed_at DATETIME NULL
+      `);
+    }
+
+    console.log('[MIGRATION] Database schema updated for Overtime module.');
+  } catch (err) {
+    console.warn('[MIGRATION] Migration check:', err.message);
+  }
+}
+
+runMigrations().then(() => {
+  app.listen(PORT, () => {
+    console.log(`SedayaClick berjalan di http://localhost:${PORT}`);
+  });
 });

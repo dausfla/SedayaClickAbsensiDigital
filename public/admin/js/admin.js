@@ -7,6 +7,8 @@ let state = {
   employees: [],
   pendingSubmissions: [],
   historySubmissions: [],
+  pendingOvertimes: [],
+  historyOvertimes: [],
   selectedDivisionId: '',
   searchKeyword: '',
   activeTab: 'pending',
@@ -28,8 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await refreshAllData();
 
-  // Start polling every 10 seconds for real-time synchronization
-  state.pollingInterval = setInterval(refreshAllData, 10000);
+  // Start polling every 3 seconds for real-time synchronization
+  state.pollingInterval = setInterval(refreshAllData, 3000);
 });
 
 // Theme Initialization
@@ -149,7 +151,9 @@ function initEventListeners() {
 
   // Tabs Switch
   document.getElementById('tab-btn-pending')?.addEventListener('click', () => switchTab('pending'));
+  document.getElementById('tab-btn-overtime')?.addEventListener('click', () => switchTab('overtime'));
   document.getElementById('tab-btn-history')?.addEventListener('click', () => switchTab('history'));
+  document.getElementById('tab-btn-overtime-history')?.addEventListener('click', () => switchTab('overtime-history'));
 
   // Modal Submission Open/Close
   document.getElementById('btn-open-create-modal')?.addEventListener('click', () => openSubmissionModal());
@@ -163,39 +167,50 @@ function initEventListeners() {
   document.getElementById('btn-close-decision-modal')?.addEventListener('click', closeDecisionModal);
   document.getElementById('btn-cancel-decision')?.addEventListener('click', closeDecisionModal);
   document.getElementById('btn-confirm-decision')?.addEventListener('click', handleDecisionSubmit);
+
+  // Modal Overtime Detail Close
+  document.getElementById('btn-close-ot-detail')?.addEventListener('click', closeOvertimeDetailModal);
+  document.getElementById('btn-done-ot-detail')?.addEventListener('click', closeOvertimeDetailModal);
 }
 
 // Switch Tabs
 function switchTab(tab) {
   state.activeTab = tab;
   const btnPending = document.getElementById('tab-btn-pending');
+  const btnOvertime = document.getElementById('tab-btn-overtime');
   const btnHistory = document.getElementById('tab-btn-history');
+  const btnOvertimeHistory = document.getElementById('tab-btn-overtime-history');
+
   const panelPending = document.getElementById('panel-pending');
+  const panelOvertime = document.getElementById('panel-overtime');
   const panelHistory = document.getElementById('panel-history');
+  const panelOvertimeHistory = document.getElementById('panel-overtime-history');
 
-  if (tab === 'pending') {
-    btnPending.classList.add('border-brand-600', 'text-brand-600', 'dark:border-brand-500', 'dark:text-brand-400');
-    btnPending.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
-    btnHistory.classList.remove('border-brand-600', 'text-brand-600', 'dark:border-brand-500', 'dark:text-brand-400');
-    btnHistory.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+  const tabs = [
+    { name: 'pending', btn: btnPending, panel: panelPending },
+    { name: 'overtime', btn: btnOvertime, panel: panelOvertime },
+    { name: 'history', btn: btnHistory, panel: panelHistory },
+    { name: 'overtime-history', btn: btnOvertimeHistory, panel: panelOvertimeHistory }
+  ];
 
-    panelPending.classList.remove('hidden');
-    panelHistory.classList.add('hidden');
-  } else {
-    btnHistory.classList.add('border-brand-600', 'text-brand-600', 'dark:border-brand-500', 'dark:text-brand-400');
-    btnHistory.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
-    btnPending.classList.remove('border-brand-600', 'text-brand-600', 'dark:border-brand-500', 'dark:text-brand-400');
-    btnPending.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
-
-    panelHistory.classList.remove('hidden');
-    panelPending.classList.add('hidden');
-  }
+  tabs.forEach(t => {
+    if (!t.btn || !t.panel) return;
+    if (t.name === tab) {
+      t.btn.classList.add('border-brand-600', 'text-brand-600', 'dark:border-brand-500', 'dark:text-brand-400');
+      t.btn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+      t.panel.classList.remove('hidden');
+    } else {
+      t.btn.classList.remove('border-brand-600', 'text-brand-600', 'dark:border-brand-500', 'dark:text-brand-400');
+      t.btn.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+      t.panel.classList.add('hidden');
+    }
+  });
 }
 
 // Load Divisions
 async function loadDivisions() {
   try {
-    const res = await fetch('/api/superadmin/divisions');
+    const res = await fetch('/api/admin/divisions');
     const data = await res.json();
     if (data.success) {
       state.divisions = data.divisions || [];
@@ -231,21 +246,27 @@ async function loadEmployees() {
   }
 }
 
-// Refresh All Submissions Data
+// Refresh All Submissions & Overtime Data
 async function refreshAllData() {
   try {
     const divisionParam = state.selectedDivisionId ? `?division_id=${state.selectedDivisionId}` : '';
     
-    const [resPending, resHistory] = await Promise.all([
+    const [resPending, resHistory, resOtPending, resOtHistory] = await Promise.all([
       fetch(`/api/admin/submissions/pending${divisionParam}`),
-      fetch(`/api/admin/submissions/history${divisionParam}`)
+      fetch(`/api/admin/submissions/history${divisionParam}`),
+      fetch(`/api/admin/overtime/pending${divisionParam}`),
+      fetch(`/api/admin/overtime/history${divisionParam}`)
     ]);
 
     const dataPending = await resPending.json();
     const dataHistory = await resHistory.json();
+    const dataOtPending = await resOtPending.json();
+    const dataOtHistory = await resOtHistory.json();
 
     if (dataPending.success) state.pendingSubmissions = dataPending.submissions || [];
     if (dataHistory.success) state.historySubmissions = dataHistory.submissions || [];
+    if (dataOtPending.success) state.pendingOvertimes = dataOtPending.overtimes || [];
+    if (dataOtHistory.success) state.historyOvertimes = dataOtHistory.overtimes || [];
 
     updateCounters();
     renderTables();
@@ -256,22 +277,32 @@ async function refreshAllData() {
 
 // Update Counters in Cards and Badges
 function updateCounters() {
-  const pendingCount = state.pendingSubmissions.length;
-  const approvedCount = state.historySubmissions.filter(s => s.status === 'approved').length;
-  const rejectedCount = state.historySubmissions.filter(s => s.status === 'rejected').length;
+  const pendingSubCount = state.pendingSubmissions.length;
+  const pendingOtCount = state.pendingOvertimes.length;
+  const totalPending = pendingSubCount + pendingOtCount;
 
-  document.getElementById('stat-pending').textContent = pendingCount;
-  document.getElementById('stat-approved').textContent = approvedCount;
-  document.getElementById('stat-rejected').textContent = rejectedCount;
+  const approvedSubCount = state.historySubmissions.filter(s => s.status === 'approved').length;
+  const approvedOtCount = state.historyOvertimes.filter(s => s.overtime_status === 'approved').length;
 
-  document.getElementById('badge-pending-count').textContent = pendingCount;
+  const rejectedSubCount = state.historySubmissions.filter(s => s.status === 'rejected').length;
+  const rejectedOtCount = state.historyOvertimes.filter(s => s.overtime_status === 'rejected').length;
+
+  document.getElementById('stat-pending').textContent = totalPending;
+  document.getElementById('stat-approved').textContent = approvedSubCount + approvedOtCount;
+  document.getElementById('stat-rejected').textContent = rejectedSubCount + rejectedOtCount;
+
+  document.getElementById('badge-pending-count').textContent = pendingSubCount;
+  document.getElementById('badge-overtime-pending-count').textContent = pendingOtCount;
   document.getElementById('badge-history-count').textContent = state.historySubmissions.length;
+  document.getElementById('badge-overtime-history-count').textContent = state.historyOvertimes.length;
 }
 
-// Render Both Pending & History Tables
+// Render All Tables
 function renderTables() {
   renderPendingTable();
+  renderOvertimePendingTable();
   renderHistoryTable();
+  renderOvertimeHistoryTable();
 }
 
 // Render Pending Submissions Table
@@ -311,7 +342,8 @@ function renderPendingTable() {
         </span>
       </td>
       <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-        ${formatDate(item.start_date)} - ${formatDate(item.end_date)}
+        ${formatDate(item.start_date)} ${item.start_date !== item.end_date ? `- ${formatDate(item.end_date)}` : ''}
+        ${item.type === 'lembur' && item.start_time && item.end_time ? `<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">⏱️ ${item.start_time.slice(0,5)} - ${item.end_time.slice(0,5)} WIB</div>` : ''}
       </td>
       <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.reason)}">
         ${escapeHtml(item.reason || '-')}
@@ -378,7 +410,8 @@ function renderHistoryTable() {
         </span>
       </td>
       <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-        ${formatDate(item.start_date)} - ${formatDate(item.end_date)}
+        ${formatDate(item.start_date)} ${item.start_date !== item.end_date ? `- ${formatDate(item.end_date)}` : ''}
+        ${item.type === 'lembur' && item.start_time && item.end_time ? `<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">⏱️ ${item.start_time.slice(0,5)} - ${item.end_time.slice(0,5)} WIB</div>` : ''}
       </td>
       <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
         <div class="flex items-center gap-2">
@@ -404,15 +437,269 @@ function renderHistoryTable() {
   `).join('');
 }
 
+// Render Pending Overtime Attendance Table
+function renderOvertimePendingTable() {
+  const tbody = document.getElementById('tbody-overtime');
+  if (!tbody) return;
+
+  let list = state.pendingOvertimes || [];
+  if (state.searchKeyword) {
+    list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
+  }
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+          Tidak ada presensi lembur yang membutuhkan persetujuan.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    const inTime = item.overtime_clock_in_time ? new Date(item.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const outTime = item.overtime_clock_out_time ? new Date(item.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const sec = item.overtime_duration_seconds || 0;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const durStr = sec > 0 ? `${h}j ${m}m` : '-';
+
+    return `
+      <tr class="hover:bg-amber-50/40 dark:hover:bg-amber-950/20 transition-colors">
+        <td class="px-4 py-3.5 font-bold text-slate-900 dark:text-white">
+          ${escapeHtml(item.full_name)}
+          <div class="text-[11px] font-normal text-slate-400">${escapeHtml(item.position_name || '-')}</div>
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+          <span class="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[11px] font-semibold">
+            ${escapeHtml(item.division_name || '-')}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+          ${formatDate(item.attendance_date)}
+        </td>
+        <td class="px-4 py-3.5 text-slate-700 dark:text-slate-200 whitespace-nowrap">
+          <div class="font-bold text-amber-700 dark:text-amber-400">In: ${inTime} | Out: ${outTime}</div>
+          <div class="text-[11px] text-slate-500 font-medium">Durasi: <span class="font-bold">${durStr}</span></div>
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}">
+          <div class="font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(item.overtime_task_reason || '-')}</div>
+          ${item.overtime_clock_out_note ? `<div class="text-[11px] text-slate-500 italic">Catatan: ${escapeHtml(item.overtime_clock_out_note)}</div>` : ''}
+        </td>
+        <td class="px-4 py-3.5 whitespace-nowrap">
+          <button onclick="openOvertimeDetailModal(${item.id})" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors flex items-center gap-1">
+            <span>📸</span> <span>Lihat Foto & GPS</span>
+          </button>
+        </td>
+        <td class="px-4 py-3.5 text-center">
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+            Pending
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-right whitespace-nowrap">
+          <div class="flex items-center justify-end gap-1.5">
+            <button onclick="openOvertimeDecisionModal(${item.id}, 'approved')" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] shadow-sm transition-colors">
+              Setujui
+            </button>
+            <button onclick="openOvertimeDecisionModal(${item.id}, 'rejected')" class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] shadow-sm transition-colors">
+              Tolak
+            </button>
+            <button onclick="deleteOvertime(${item.id})" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] border border-rose-200 transition-colors">
+              Hapus
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Render History Overtime Attendance Table
+function renderOvertimeHistoryTable() {
+  const tbody = document.getElementById('tbody-overtime-history');
+  if (!tbody) return;
+
+  let list = state.historyOvertimes || [];
+  if (state.searchKeyword) {
+    list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
+  }
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+          Belum ada riwayat presensi lembur.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    const inTime = item.overtime_clock_in_time ? new Date(item.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const outTime = item.overtime_clock_out_time ? new Date(item.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+    const sec = item.overtime_duration_seconds || 0;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const durStr = sec > 0 ? `${h}j ${m}m` : '-';
+
+    return `
+      <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+        <td class="px-4 py-3.5 font-bold text-slate-900 dark:text-white">
+          ${escapeHtml(item.full_name)}
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+          <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-[11px] font-semibold">
+            ${escapeHtml(item.division_name || '-')}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+          ${formatDate(item.attendance_date)}
+          <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400">⏱️ ${inTime} - ${outTime} (${durStr})</div>
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}">
+          ${escapeHtml(item.overtime_task_reason || '-')}
+        </td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
+              ${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}
+            </span>
+            <span class="text-xs text-slate-500 truncate max-w-xs" title="${escapeHtml(item.overtime_review_note)}">
+              ${escapeHtml(item.overtime_review_note || '-')}
+            </span>
+          </div>
+        </td>
+        <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
+          <div>${escapeHtml(item.reviewed_by_name || 'Admin')}</div>
+          <button onclick="deleteOvertime(${item.id})" class="mt-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] border border-rose-200 transition-colors">
+            Hapus
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Global Delete Overtime Handler
+window.deleteOvertime = async function(id) {
+  if (confirm('Apakah Anda yakin ingin menghapus data presensi lembur ini? Data yang dihapus tidak dapat dikembalikan.')) {
+    try {
+      const res = await fetch(`/api/admin/overtime/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Presensi lembur berhasil dihapus.', 'success');
+        refreshAllData();
+      } else {
+        showToast(data.message || 'Gagal menghapus presensi lembur.', 'error');
+      }
+    } catch (err) {
+      showToast('Terjadi kesalahan saat menghapus data.', 'error');
+    }
+  }
+};
+
+// Modal Detail Presensi Lembur (Foto Selfie & GPS Map Link)
+function openOvertimeDetailModal(id) {
+  const item = state.pendingOvertimes.find(o => o.id === id) || state.historyOvertimes.find(o => o.id === id);
+  if (!item) return;
+
+  const content = document.getElementById('ot-detail-content');
+  if (!content) return;
+
+  const inPhoto = item.overtime_clock_in_photo ? item.overtime_clock_in_photo.replace('/uploads/', '/secure-uploads/') : null;
+  const outPhoto = item.overtime_clock_out_photo ? item.overtime_clock_out_photo.replace('/uploads/', '/secure-uploads/') : null;
+
+  const inGpsLink = (item.overtime_clock_in_lat && item.overtime_clock_in_lng)
+    ? `https://maps.google.com/?q=${item.overtime_clock_in_lat},${item.overtime_clock_in_lng}`
+    : null;
+
+  const outGpsLink = (item.overtime_clock_out_lat && item.overtime_clock_out_lng)
+    ? `https://maps.google.com/?q=${item.overtime_clock_out_lat},${item.overtime_clock_out_lng}`
+    : null;
+
+  content.innerHTML = `
+    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl space-y-1 text-xs">
+      <div class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)} (${escapeHtml(item.division_name || '-')})</div>
+      <div class="text-slate-500">Tanggal: <span class="font-semibold">${formatDate(item.attendance_date)}</span></div>
+      <div class="text-slate-500">Tugas Lembur: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.overtime_task_reason || '-')}</span></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2">
+        <span class="text-xs font-bold text-amber-600 block">Absen Masuk Lembur</span>
+        ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Masuk Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
+        ${inGpsLink ? `<a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">📍 Buka GPS Masuk</a>` : '<span class="text-xs text-slate-400">GPS tak melacak</span>'}
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2">
+        <span class="text-xs font-bold text-rose-600 block">Absen Pulang Lembur</span>
+        ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Pulang Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
+        ${outGpsLink ? `<a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">📍 Buka GPS Pulang</a>` : '<span class="text-xs text-slate-400">GPS tak melacak</span>'}
+      </div>
+    </div>
+  `;
+
+  const modal = document.getElementById('modal-overtime-detail');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeOvertimeDetailModal() {
+  const modal = document.getElementById('modal-overtime-detail');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+// Open Decision Modal for Overtime
+function openOvertimeDecisionModal(id, decision) {
+  document.getElementById('decision-submission-id').value = id;
+  document.getElementById('decision-action-type').value = `overtime_${decision}`;
+  document.getElementById('decision-review-note').value = decision === 'approved' ? 'Lembur Disetujui' : '';
+  
+  const titleEl = document.getElementById('modal-decision-title');
+  const confirmBtn = document.getElementById('btn-confirm-decision');
+  
+  if (decision === 'approved') {
+    titleEl.textContent = 'Setujui Presensi Lembur';
+    confirmBtn.className = 'px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-colors';
+  } else {
+    titleEl.textContent = 'Tolak Presensi Lembur';
+    confirmBtn.className = 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors';
+  }
+
+  const modal = document.getElementById('modal-decision');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
 // Badge Helpers
 function getTypeBadgeStyle(type) {
   switch (type) {
     case 'cuti': return 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300';
     case 'izin': return 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300';
     case 'sakit': return 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+    case 'lembur': return 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
     default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
   }
 }
+
+function toggleFormTimeContainer() {
+  const type = document.getElementById('form-type')?.value;
+  const container = document.getElementById('form-time-container');
+  if (!container) return;
+  if (type === 'lembur') {
+    container.classList.remove('hidden');
+  } else {
+    container.classList.add('hidden');
+  }
+}
+
+document.getElementById('form-type')?.addEventListener('change', toggleFormTimeContainer);
 
 // Open Submission Modal for Creating New
 function openSubmissionModal() {
@@ -423,9 +710,13 @@ function openSubmissionModal() {
   document.getElementById('form-type').value = 'cuti';
   document.getElementById('form-start-date').value = '';
   document.getElementById('form-end-date').value = '';
+  if (document.getElementById('form-start-time')) document.getElementById('form-start-time').value = '';
+  if (document.getElementById('form-end-time')) document.getElementById('form-end-time').value = '';
   document.getElementById('form-status').value = 'pending';
   document.getElementById('form-review-note').value = '';
   document.getElementById('form-reason').value = '';
+
+  toggleFormTimeContainer();
 
   const modal = document.getElementById('modal-submission');
   modal.classList.remove('hidden');
@@ -452,9 +743,13 @@ function editSubmission(id, sourceTab) {
   document.getElementById('form-type').value = item.type || 'cuti';
   document.getElementById('form-start-date').value = formatInputDate(item.start_date);
   document.getElementById('form-end-date').value = formatInputDate(item.end_date);
+  if (document.getElementById('form-start-time')) document.getElementById('form-start-time').value = item.start_time || '';
+  if (document.getElementById('form-end-time')) document.getElementById('form-end-time').value = item.end_time || '';
   document.getElementById('form-status').value = item.status || 'pending';
   document.getElementById('form-review-note').value = item.review_note || '';
   document.getElementById('form-reason').value = item.reason || '';
+
+  toggleFormTimeContainer();
 
   const modal = document.getElementById('modal-submission');
   modal.classList.remove('hidden');
@@ -470,6 +765,8 @@ async function handleFormSubmit(e) {
   const type = document.getElementById('form-type').value;
   const start_date = document.getElementById('form-start-date').value;
   const end_date = document.getElementById('form-end-date').value;
+  const start_time = document.getElementById('form-start-time')?.value || null;
+  const end_time = document.getElementById('form-end-time')?.value || null;
   const status = document.getElementById('form-status').value;
   const review_note = document.getElementById('form-review-note').value;
   const reason = document.getElementById('form-reason').value;
@@ -482,14 +779,18 @@ async function handleFormSubmit(e) {
     showToast('Semua field bertanda bintang (*) wajib diisi!', 'error');
     return;
   }
+  if (type === 'lembur' && (!start_time || !end_time)) {
+    showToast('Jam mulai dan selesai wajib diisi untuk pengajuan lembur!', 'error');
+    return;
+  }
 
   const isEdit = Boolean(id);
   const url = isEdit ? `/api/admin/submissions/${id}` : '/api/admin/submissions';
   const method = isEdit ? 'PUT' : 'POST';
 
   const payload = isEdit 
-    ? { type, start_date, end_date, reason, status, review_note }
-    : { user_id, type, start_date, end_date, reason, status, review_note };
+    ? { type, start_date, end_date, start_time, end_time, reason, status, review_note }
+    : { user_id, type, start_date, end_date, start_time, end_time, reason, status, review_note };
 
   try {
     const res = await fetch(url, {
@@ -531,7 +832,7 @@ async function deleteSubmission(id) {
   }
 }
 
-// Decision Modal (Approve / Reject Quick)
+// Decision Modal (Approve / Reject Quick for Submissions & Overtime)
 function openDecisionModal(id, decision) {
   document.getElementById('decision-submission-id').value = id;
   document.getElementById('decision-action-type').value = decision;
@@ -561,7 +862,7 @@ function closeDecisionModal() {
 
 async function handleDecisionSubmit() {
   const id = document.getElementById('decision-submission-id').value;
-  const decision = document.getElementById('decision-action-type').value;
+  const rawAction = document.getElementById('decision-action-type').value;
   const review_note = document.getElementById('decision-review-note').value.trim();
 
   if (!review_note) {
@@ -569,8 +870,12 @@ async function handleDecisionSubmit() {
     return;
   }
 
+  const isOvertime = rawAction.startsWith('overtime_');
+  const decision = isOvertime ? rawAction.replace('overtime_', '') : rawAction;
+  const endpoint = isOvertime ? `/api/admin/overtime/${id}/decision` : `/api/admin/submissions/${id}/decision`;
+
   try {
-    const res = await fetch(`/api/admin/submissions/${id}/decision`, {
+    const res = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ decision, review_note })
@@ -589,6 +894,13 @@ async function handleDecisionSubmit() {
     showToast('Terjadi kesalahan server', 'error');
   }
 }
+
+// Attach helper functions to window for onclick handlers in HTML strings
+window.openDecisionModal = openDecisionModal;
+window.openOvertimeDecisionModal = openOvertimeDecisionModal;
+window.openOvertimeDetailModal = openOvertimeDetailModal;
+window.editSubmission = editSubmission;
+window.deleteSubmission = deleteSubmission;
 
 // Utility Helpers
 function formatDate(dateStr) {

@@ -41,14 +41,21 @@ router.get('/dashboard/summary', ...scoped, async (req, res) => {
     const [[late]] = await pool.query(
       `SELECT COUNT(*) AS total FROM attendances WHERE ${attCondition} AND status = 'late'`
     );
-    const [[pending]] = await pool.query(
+    
+    // Hitung total pending (Submissions pending + Presensi Lembur pending)
+    const [[pendingSub]] = await pool.query(
       `SELECT COUNT(*) AS total FROM submissions WHERE status = 'pending'`
     );
+    const [[pendingOt]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM attendances WHERE overtime_clock_in_time IS NOT NULL AND (overtime_status IS NULL OR overtime_status = 'pending')`
+    );
+    const pendingTotal = (pendingSub ? pendingSub.total : 0) + (pendingOt ? pendingOt.total : 0);
+
     const [[activeUsers]] = await pool.query(
       `SELECT COUNT(*) AS total FROM users WHERE status = 'active' AND role = 'employee'`
     );
 
-    // Hitung Pengajuan per jenis (Izin, Sakit, Cuti)
+    // Hitung Pengajuan per jenis (Izin, Sakit, Cuti, Lembur)
     const [[izin]] = await pool.query(
       `SELECT COUNT(*) AS total FROM submissions WHERE type = 'izin' AND ${subCondition}`
     );
@@ -58,6 +65,15 @@ router.get('/dashboard/summary', ...scoped, async (req, res) => {
     const [[cuti]] = await pool.query(
       `SELECT COUNT(*) AS total FROM submissions WHERE type = 'cuti' AND ${subCondition}`
     );
+    
+    // Hitung total lembur (Form Pengajuan Lembur + Presensi Lembur Langsung)
+    const [[lemburSub]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM submissions WHERE type = 'lembur' AND ${subCondition}`
+    );
+    const [[lemburAtt]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM attendances WHERE overtime_clock_in_time IS NOT NULL AND ${attCondition}`
+    );
+    const lemburTotal = (lemburSub ? lemburSub.total : 0) + (lemburAtt ? lemburAtt.total : 0);
 
     const [chart] = await pool.query(
       `SELECT attendance_date,
@@ -76,11 +92,12 @@ router.get('/dashboard/summary', ...scoped, async (req, res) => {
       metrics: {
         on_time: onTime.total,
         late: late.total,
-        pending_submissions: pending.total,
+        pending_submissions: pendingTotal,
         total_active_employees: activeUsers.total,
         izin: izin.total,
         sakit: sakit.total,
-        cuti: cuti.total
+        cuti: cuti.total,
+        lembur: lemburTotal
       },
       chart
     });

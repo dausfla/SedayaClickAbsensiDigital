@@ -95,17 +95,18 @@ graph TD
   - *Durasi Kerja:* Selisih waktu Clock Out terhadap Clock In.
   - Seluruh durasi disimpan dalam unit **detik** di DB dan disajikan dalam format `HH:mm:ss`.
 
-### Modul 3: Formulir Pengajuan (Izin / Cuti / Sakit)
-- **FR-3.1 Pengajuan Mandiri:** Karyawan dapat mengajukan izin, cuti, atau sakit dengan mengisi tipe, tanggal mulai, tanggal selesai, alasan, dan berkas lampiran (surat sakit/dokumen).
-- **FR-3.2 Status Tracking:** Karyawan dapat memantau status persetujuan (`pending`, `approved`, `rejected`) beserta catatan dari Admin.
+### Modul 3: Formulir Pengajuan (Izin / Cuti / Sakit / Lembur)
+- **FR-3.1 Pengajuan Mandiri Izin / Cuti / Sakit:** Karyawan dapat mengajukan izin, cuti, atau sakit dengan mengisi tipe, tanggal mulai, tanggal selesai, alasan, dan berkas lampiran.
+- **FR-3.2 Pengajuan Lembur Mandiri:** Karyawan yang telah melengkapi absensi hari kerjanya dapat mengajukan lembur khusus melalui tab "Lembur" di PWA. Mengisi tanggal, jam mulai lembur, jam selesai lembur, alasan tugas lembur, kalkulasi durasi otomatis, dan lampiran opsional.
+- **FR-3.3 Status Tracking Real-time:** Karyawan dapat memantau status persetujuan (`pending`, `approved`, `rejected`) untuk seluruh pengajuan dan lembur beserta catatan dari Admin.
 
 ### Modul 4: Dashboard & Approval Admin Manager
-- **FR-4.1 Live Monitoring Tim:** Menampilkan status kehadiran seluruh karyawan di divisinya secara *real-time* (sinkronisasi otomatis polling 10 detik).
-- **FR-4.2 Decision Engine:** Admin Manager dapat menyetujui atau menolak pengajuan dengan mencantumkan catatan alasan keputusan.
-- **FR-4.3 Pengajuan atas Nama Karyawan:** Admin Manager dapat membuat, mengedit, atau menghapus pengajuan untuk anggota divisinya.
+- **FR-4.1 Live Monitoring Tim & Lembur:** Menampilkan status kehadiran dan pengajuan lembur/izin tim secara *real-time* (sinkronisasi otomatis polling 10 detik).
+- **FR-4.2 Decision Engine:** Admin Manager dapat menyetujui atau menolak pengajuan izin/cuti/sakit/lembur dengan mencantumkan catatan alasan keputusan.
+- **FR-4.3 Pengajuan atas Nama Karyawan:** Admin Manager dapat membuat, mengedit, atau menghapus pengajuan/lembur untuk anggota divisinya.
 
 ### Modul 5: Dashboard Executive & Master Data Super Admin
-- **FR-5.1 KPI Executive:** Menampilkan statistik akumulasi kehadiran tepat waktu, terlambat, izin, sakit, cuti, dan pengajuan pending.
+- **FR-5.1 KPI Executive:** Menampilkan statistik akumulasi kehadiran tepat waktu, terlambat, izin, sakit, cuti, lembur, dan pengajuan pending.
 - **FR-5.2 Grafik Kehadiran:** Visualisasi tren statistik harian/mingguan/bulanan menggunakan Chart.js.
 - **FR-5.3 Manajemen Akun:** Fitur aktivasi pendaftaran mandiri, pengubahan peran, penonaktifan, dan penghapusan pengguna.
 - **FR-5.4 Master Data Management:** Pengelolaan daftar Divisi, Jabatan, dan Pengaturan Shift (jam mulai, jam selesai, toleransi keterlambatan dalam menit).

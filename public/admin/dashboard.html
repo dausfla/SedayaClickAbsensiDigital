@@ -67,7 +67,7 @@
               Admin Manager
             </span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Modul Pengajuan Izin / Cuti / Sakit</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Modul Pengajuan Izin / Cuti / Sakit / Lembur</p>
         </div>
       </div>
 
@@ -192,15 +192,25 @@
     <!-- Tabs Container -->
     <div class="space-y-4">
       <!-- SubTab Navigation -->
-      <div class="flex border-b border-slate-200 dark:border-slate-700">
-        <button id="tab-btn-pending" class="tab-toggle active px-5 py-3 border-b-2 border-brand-600 text-brand-600 dark:border-brand-500 dark:text-brand-400 font-bold text-xs flex items-center gap-2 transition-colors">
-          <span>Pengajuan Masuk (Pending)</span>
+      <div class="flex overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-slate-700 gap-1 pb-0.5">
+        <button id="tab-btn-pending" class="tab-toggle active whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-brand-600 text-brand-600 dark:border-brand-500 dark:text-brand-400 font-bold text-xs flex items-center gap-2 transition-colors">
+          <span>Pengajuan Masuk</span>
           <span id="badge-pending-count" class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 font-extrabold">0</span>
         </button>
 
-        <button id="tab-btn-history" class="tab-toggle px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors">
+        <button id="tab-btn-overtime" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors">
+          <span>⚡ Presensi Lembur (Pending)</span>
+          <span id="badge-overtime-pending-count" class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 font-extrabold">0</span>
+        </button>
+
+        <button id="tab-btn-history" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors">
           <span>Riwayat Pengajuan</span>
           <span id="badge-history-count" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-extrabold">0</span>
+        </button>
+
+        <button id="tab-btn-overtime-history" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors">
+          <span>⚡ Riwayat Presensi Lembur</span>
+          <span id="badge-overtime-history-count" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-extrabold">0</span>
         </button>
       </div>
 
@@ -208,7 +218,7 @@
       <div id="panel-pending" class="block">
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+            <table class="w-full text-left text-xs min-w-[750px]">
               <thead class="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th class="px-4 py-3.5">Karyawan</th>
@@ -232,11 +242,40 @@
         </div>
       </div>
 
-      <!-- Tab Content 2: History Submissions Table -->
+      <!-- Tab Content 2: Overtime Pending Table -->
+      <div id="panel-overtime" class="hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs min-w-[850px]">
+              <thead class="bg-amber-50/60 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold uppercase tracking-wider border-b border-amber-200/60 dark:border-amber-900/60">
+                <tr>
+                  <th class="px-4 py-3.5">Karyawan</th>
+                  <th class="px-4 py-3.5">Divisi</th>
+                  <th class="px-4 py-3.5">Tanggal</th>
+                  <th class="px-4 py-3.5">Jam Masuk / Pulang Lembur</th>
+                  <th class="px-4 py-3.5">Keterangan Tugas & Catatan</th>
+                  <th class="px-4 py-3.5">Foto & GPS</th>
+                  <th class="px-4 py-3.5 text-center">Status</th>
+                  <th class="px-4 py-3.5 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-overtime" class="divide-y divide-slate-100 dark:divide-slate-700/60 font-medium">
+                <tr>
+                  <td colspan="8" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
+                    Memuat presensi lembur pending...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 3: History Submissions Table -->
       <div id="panel-history" class="hidden">
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+            <table class="w-full text-left text-xs min-w-[750px]">
               <thead class="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th class="px-4 py-3.5">Karyawan</th>
@@ -258,6 +297,34 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab Content 4: Overtime History Table -->
+      <div id="panel-overtime-history" class="hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs min-w-[800px]">
+              <thead class="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                  <th class="px-4 py-3.5">Karyawan</th>
+                  <th class="px-4 py-3.5">Divisi</th>
+                  <th class="px-4 py-3.5">Tanggal & Jam Lembur</th>
+                  <th class="px-4 py-3.5">Keterangan Tugas</th>
+                  <th class="px-4 py-3.5">Status & Catatan Review</th>
+                  <th class="px-4 py-3.5 text-right">Peninjau</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-overtime-history" class="divide-y divide-slate-100 dark:divide-slate-700/60 font-medium">
+                <tr>
+                  <td colspan="6" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
+                    Memuat riwayat presensi lembur...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 
@@ -310,6 +377,7 @@
               <option value="cuti">Cuti</option>
               <option value="izin">Izin</option>
               <option value="sakit">Sakit</option>
+              <option value="lembur">Lembur</option>
             </select>
           </div>
 
@@ -327,6 +395,18 @@
               Tanggal Selesai <span class="text-rose-500">*</span>
             </label>
             <input type="date" id="form-end-date" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all">
+          </div>
+
+          <!-- Field 4.5: Jam Lembur (Bila Type Lembur) -->
+          <div id="form-time-container" class="space-y-1.5 hidden sm:col-span-2 grid grid-cols-2 gap-4 bg-amber-50/50 dark:bg-amber-950/20 p-3 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
+            <div>
+              <label class="block text-xs font-bold text-amber-800 dark:text-amber-300">Jam Mulai Lembur</label>
+              <input type="time" id="form-start-time" class="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-amber-800 dark:text-amber-300">Jam Selesai Lembur</label>
+              <input type="time" id="form-end-time" class="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+            </div>
           </div>
 
           <!-- Field 5: Status Pengajuan -->
@@ -397,6 +477,30 @@
         </button>
         <button type="button" id="btn-confirm-decision" class="px-4 py-2 rounded-xl bg-brand-600 text-white font-bold text-xs hover:bg-brand-700 shadow-md">
           Konfirmasi Keputusan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DETAIL PRESENSI LEMBUR (FOTO & GPS)  -->
+  <!-- ========================================== -->
+  <div id="modal-overtime-detail" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3 dark:border-slate-700">
+        <h3 class="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+          <span>📸</span> <span>Detail Foto & GPS Presensi Lembur</span>
+        </h3>
+        <button id="btn-close-ot-detail" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">✕</button>
+      </div>
+
+      <div id="ot-detail-content" class="space-y-4">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button type="button" id="btn-done-ot-detail" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 transition-colors">
+          Tutup
         </button>
       </div>
     </div>
