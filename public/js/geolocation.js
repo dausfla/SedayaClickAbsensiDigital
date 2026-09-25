@@ -1,10 +1,16 @@
 // public/js/geolocation.js
-// Modul penguncian lokasi GPS LIVE menggunakan Geolocation API.
-// Dipakai untuk memastikan koordinat (lat, long) presisi tinggi didapat
-// sebelum Clock In / Clock Out diizinkan.
+// Modul penguncian lokasi GPS LIVE & Network Triangulation multi-stage fallback.
+// Kompatibel dengan seluruh browser (Chrome, Safari, Edge, Firefox, Brave)
+// dan seluruh perangkat (Smartphone, Laptop, PC Desktop, ngrok SSL).
+
+const MESSAGES = {
+  1: 'Izin lokasi ditolak. Mohon izinkan akses lokasi (GPS) di pengaturan browser Anda.',
+  2: 'Lokasi tidak dapat ditentukan. Pastikan GPS / Layanan Lokasi perangkat aktif.',
+  3: 'Waktu pengambilan lokasi habis. Coba di area dengan sinyal jaringan lebih baik.'
+};
 
 /**
- * Meminta satu pembacaan lokasi dengan akurasi tinggi.
+ * Meminta satu pembacaan lokasi dengan multi-stage fallback (High Accuracy -> Standard Accuracy).
  * @returns {Promise<{latitude:number, longitude:number, accuracy:number}>}
  */
 export function getCurrentPosition() {
@@ -13,55 +19,106 @@ export function getCurrentPosition() {
       reject(new Error('Perangkat/browser ini tidak mendukung Geolocation.'));
       return;
     }
+
+    // Stage 1: Coba High Accuracy (GPS Satelit) dengan timeout cepat (6s)
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
-        });
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      (err1) => {
+        if (err1.code === 1) {
+          reject(new Error(MESSAGES[1]));
+          return;
+        }
+
+        // Stage 2: Fallback ke Standard Accuracy (Wi-Fi / IP Network Triangulation)
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+          (err2) => {
+            const finalMsg = MESSAGES[err2.code] || 'Gagal mendapatkan lokasi perangkat.';
+            reject(new Error(finalMsg));
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
       },
-      (err) => {
-        const messages = {
-          1: 'Izin lokasi ditolak. Aktifkan izin GPS di pengaturan browser untuk melanjutkan absensi.',
-          2: 'Lokasi tidak dapat ditentukan. Pastikan GPS perangkat aktif.',
-          3: 'Waktu pengambilan lokasi habis. Coba lagi di area dengan sinyal GPS lebih baik.'
-        };
-        reject(new Error(messages[err.code] || 'Gagal mendapatkan lokasi.'));
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
     );
   });
 }
 
 /**
- * Memantau lokasi secara live (dipakai untuk menampilkan indikator "Lokasi terkunci"
- * dan koordinat yang terus diperbarui pada layar Clock In/Out).
+ * Memantau lokasi secara live dengan fallback otomatis.
  * @param {(pos:{latitude:number, longitude:number, accuracy:number})=>void} onUpdate
  * @param {(message:string)=>void} onError
- * @returns {number} watchId — gunakan navigator.geolocation.clearWatch(watchId) untuk berhenti.
+ * @returns {object} watchController — simpan untuk pembatalan kelak.
  */
 export function watchPosition(onUpdate, onError) {
   if (!navigator.geolocation) {
     onError('Perangkat/browser ini tidak mendukung Geolocation.');
     return null;
   }
-  return navigator.geolocation.watchPosition(
-    (pos) => onUpdate({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-    (err) => {
-      const messages = {
-        1: 'Izin lokasi ditolak. Mohon izinkan akses lokasi (GPS) di pengaturan browser Anda.',
-        2: 'Lokasi tidak dapat ditentukan. Pastikan GPS perangkat aktif.',
-        3: 'Waktu pengambilan lokasi habis. Coba lagi di area dengan sinyal GPS lebih baik.'
-      };
-      onError(messages[err.code] || 'Gagal memantau lokasi.');
+
+  let activeWatchId = null;
+  let hasLockedLocation = false;
+
+  const handleSuccess = (pos) => {
+    hasLockedLocation = true;
+    onUpdate({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      accuracy: pos.coords.accuracy
+    });
+  };
+
+  // Immediate Stage 1: Parallel quick fetch via getCurrentPosition (Standard/Cached)
+  // Memastikan lokasi langsung terkunci dalam 1-2 detik pada laptop/PC
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      if (!hasLockedLocation) handleSuccess(pos);
     },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    () => { /* Biarkan watchPosition menangani jika ganjalan sementara */ },
+    { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
   );
+
+  // Stage 2: Primary watch dengan high accuracy
+  activeWatchId = navigator.geolocation.watchPosition(
+    (pos) => handleSuccess(pos),
+    (err) => {
+      if (err.code === 1) {
+        onError(MESSAGES[1]);
+        return;
+      }
+
+      // Jika High Accuracy mengalami timeout/unavailable, fallback ke Standard Accuracy
+      if (activeWatchId !== null) {
+        try { navigator.geolocation.clearWatch(activeWatchId); } catch (e) {}
+      }
+
+      activeWatchId = navigator.geolocation.watchPosition(
+        (pos) => handleSuccess(pos),
+        (errFallback) => {
+          if (!hasLockedLocation) {
+            onError(MESSAGES[errFallback.code] || 'Gagal memantau lokasi.');
+          }
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    },
+    { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
+  );
+
+  return {
+    clear: () => {
+      if (activeWatchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(activeWatchId);
+      }
+    }
+  };
 }
 
-export function clearWatch(watchId) {
-  if (watchId !== null && watchId !== undefined && navigator.geolocation) {
-    navigator.geolocation.clearWatch(watchId);
+export function clearWatch(watchHandle) {
+  if (!watchHandle) return;
+  if (typeof watchHandle === 'object' && typeof watchHandle.clear === 'function') {
+    watchHandle.clear();
+  } else if (typeof watchHandle === 'number' && navigator.geolocation) {
+    navigator.geolocation.clearWatch(watchHandle);
   }
 }

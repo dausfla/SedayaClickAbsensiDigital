@@ -815,36 +815,61 @@ async function loadSubmissionsPending(silent = false) {
 
   try {
     const { submissions } = await apiGet('/admin/submissions/pending', params);
-    const newHash = JSON.stringify(submissions);
+    const filteredSubs = (submissions || []).filter(s => s.type !== 'lembur');
+    const newHash = JSON.stringify(filteredSubs);
     if (silent && lastSuperPendingHash === newHash) return;
     lastSuperPendingHash = newHash;
 
-    if (submissions.length === 0) {
+    if (filteredSubs.length === 0) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Tidak ada pengajuan yang menunggu persetujuan.</p>';
       return;
     }
-    container.innerHTML = submissions.map((s) => {
-      const timeSpan = (s.type === 'lembur' && s.start_time && s.end_time)
-        ? ` • <span class="text-amber-600 font-bold">⏱️ ${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)} WIB</span>`
-        : '';
-      return `
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
-          <div class="flex items-center justify-between mb-1">
-            <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${s.type === 'lembur' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-700'}">${escapeHtml(TYPE_LABEL[s.type] || s.type)}</span>
+    container.innerHTML = filteredSubs.map((s) => `
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2.5 shadow-xs">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-bold text-slate-900 text-sm">${escapeHtml(s.full_name)}</span>
+            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md ml-1.5">${escapeHtml(s.division_name || '-')}</span>
+            <span class="text-xs text-slate-400 block sm:inline sm:ml-2 font-normal">${escapeHtml(s.position_name || 'Staff')}</span>
           </div>
-          <p class="text-xs text-slate-400 mb-1">${escapeHtml(s.position_name || '-')} · ${escapeHtml(s.start_date)}${s.start_date !== s.end_date ? ` s/d ${escapeHtml(s.end_date)}` : ''}${timeSpan}</p>
-          <p class="text-sm text-slate-600 mb-2">${escapeHtml(s.reason)}</p>
-          ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline mb-2 inline-block">Lihat lampiran</a><br/>` : ''}
-          <div class="flex flex-wrap gap-2 pt-1">
-            <button class="btn-sub-approve flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Setujui</button>
-            <button class="btn-sub-reject flex-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}" data-name="${s.full_name}">Tolak</button>
-            <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
-            <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-2 transition-colors" data-id="${s.id}">Hapus</button>
-          </div>
+          <span class="text-xs font-extrabold px-2.5 py-1 rounded-full uppercase ${s.type === 'cuti' ? 'bg-blue-100 text-blue-800' : s.type === 'sakit' ? 'bg-rose-100 text-rose-800' : 'bg-purple-100 text-purple-800'}">
+            ${escapeHtml(TYPE_LABEL[s.type] || s.type)}
+          </span>
         </div>
-      `;
-    }).join('');
+
+        <div class="text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-1.5">
+          <span>📅</span> <span>Tanggal Mulai: <strong>${escapeHtml(s.start_date)}</strong> s/d <strong>${escapeHtml(s.end_date)}</strong></span>
+        </div>
+
+        <div class="text-xs text-slate-700 bg-slate-50/80 p-3 rounded-xl border border-slate-100 space-y-1">
+          <p class="font-bold text-slate-800">Alasan / Keterangan Detail:</p>
+          <p class="leading-relaxed text-slate-600">${escapeHtml(s.reason || '-')}</p>
+        </div>
+
+        ${s.type === 'cuti' && (s.handover_plan || s.handover_to_name) ? `
+          <div class="bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 text-xs space-y-1.5 text-slate-700">
+            <p class="font-bold text-blue-900 flex items-center gap-1">📋 Rencana Serah Terima Pekerjaan (Cuti):</p>
+            ${s.handover_plan ? `<p class="italic text-slate-600 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
+            ${s.handover_to_name ? `<p class="font-medium text-slate-800 pt-0.5">Dialihkan Kepada: <strong>${escapeHtml(s.handover_to_name)}</strong> ${s.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
+          </div>
+        ` : ''}
+
+        ${s.attachment ? `
+          <div>
+            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 border border-brand-200/60 px-3 py-1.5 rounded-xl transition-colors">
+              <span>📎</span> <span>Lihat Bukti File / Surat Dokter</span>
+            </a>
+          </div>
+        ` : ''}
+
+        <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+          <button class="btn-sub-approve flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl py-2 transition-colors shadow-xs" data-id="${s.id}" data-name="${escapeHtml(s.full_name)}">Setujui</button>
+          <button class="btn-sub-reject flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl py-2 transition-colors border border-rose-200" data-id="${s.id}" data-name="${escapeHtml(s.full_name)}">Tolak</button>
+          <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl py-2 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
+          <button class="btn-super-del-sub px-3 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold rounded-xl py-2 transition-colors" data-id="${s.id}">Hapus</button>
+        </div>
+      </div>
+    `).join('');
 
     container.querySelectorAll('.btn-sub-approve').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'approved')));
     container.querySelectorAll('.btn-sub-reject').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'rejected')));
@@ -864,34 +889,63 @@ async function loadSubmissionsHistory(silent = false) {
 
   try {
     const { submissions } = await apiGet('/admin/submissions/history', params);
-    const newHash = JSON.stringify(submissions);
+    const filteredSubs = (submissions || []).filter(s => s.type !== 'lembur');
+    const newHash = JSON.stringify(filteredSubs);
     if (silent && lastSuperHistoryHash === newHash) return;
     lastSuperHistoryHash = newHash;
 
-    if (submissions.length === 0) {
+    if (filteredSubs.length === 0) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Belum ada riwayat pengajuan.</p>';
       return;
     }
-    container.innerHTML = submissions.map((s) => {
-      const timeSpan = (s.type === 'lembur' && s.start_time && s.end_time)
-        ? ` • <span class="text-amber-600 font-bold">⏱️ ${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)} WIB</span>`
-        : '';
-      return `
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
-          <div class="flex items-center justify-between mb-1">
-            <span class="font-semibold text-slate-800">${escapeHtml(s.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(s.division_name || '-')})</span></span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || escapeHtml(s.status)}</span>
+    container.innerHTML = filteredSubs.map((s) => `
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2.5 shadow-xs">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <span class="font-bold text-slate-900 text-sm">${escapeHtml(s.full_name)}</span>
+            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md ml-1.5">${escapeHtml(s.division_name || '-')}</span>
           </div>
-          <p class="text-xs text-slate-400 mb-1">${escapeHtml(TYPE_LABEL[s.type] || s.type)} · ${escapeHtml(s.start_date)}${s.start_date !== s.end_date ? ` s/d ${escapeHtml(s.end_date)}` : ''}${timeSpan}</p>
-          ${s.review_note ? `<p class="text-xs text-slate-500 italic mb-2">Catatan: ${escapeHtml(s.review_note)}</p>` : ''}
-          
-          <div class="flex gap-2 justify-end pt-2 border-t border-slate-100">
-            <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
-            <button class="btn-super-del-sub px-3 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg py-1.5 transition-colors" data-id="${s.id}">Hapus</button>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-extrabold px-2.5 py-1 rounded-full uppercase ${s.type === 'cuti' ? 'bg-blue-100 text-blue-800' : s.type === 'sakit' ? 'bg-rose-100 text-rose-800' : 'bg-purple-100 text-purple-800'}">
+              ${escapeHtml(TYPE_LABEL[s.type] || s.type)}
+            </span>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || escapeHtml(s.status)}</span>
           </div>
         </div>
-      `;
-    }).join('');
+
+        <div class="text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-1.5">
+          <span>📅</span> <span>Tanggal Mulai: <strong>${escapeHtml(s.start_date)}</strong> s/d <strong>${escapeHtml(s.end_date)}</strong></span>
+        </div>
+
+        <div class="text-xs text-slate-700 bg-slate-50/80 p-3 rounded-xl border border-slate-100 space-y-1">
+          <p class="font-bold text-slate-800">Alasan / Keterangan Detail:</p>
+          <p class="leading-relaxed text-slate-600">${escapeHtml(s.reason || '-')}</p>
+        </div>
+
+        ${s.type === 'cuti' && (s.handover_plan || s.handover_to_name) ? `
+          <div class="bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 text-xs space-y-1.5 text-slate-700">
+            <p class="font-bold text-blue-900 flex items-center gap-1">📋 Rencana Serah Terima Pekerjaan (Cuti):</p>
+            ${s.handover_plan ? `<p class="italic text-slate-600 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
+            ${s.handover_to_name ? `<p class="font-medium text-slate-800 pt-0.5">Dialihkan Kepada: <strong>${escapeHtml(s.handover_to_name)}</strong> ${s.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
+          </div>
+        ` : ''}
+
+        ${s.attachment ? `
+          <div>
+            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 border border-brand-200/60 px-3 py-1.5 rounded-xl transition-colors">
+              <span>📎</span> <span>Lihat Bukti File / Surat Dokter</span>
+            </a>
+          </div>
+        ` : ''}
+
+        ${s.review_note ? `<p class="text-xs text-slate-500 italic bg-amber-50/60 p-2.5 rounded-xl border border-amber-100"><span class="font-bold not-italic text-slate-700">Catatan Review Admin:</span> ${escapeHtml(s.review_note)}</p>` : ''}
+        
+        <div class="flex gap-2 justify-end pt-2 border-t border-slate-100">
+          <button class="btn-super-edit-sub px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl py-1.5 transition-colors" data-sub='${JSON.stringify(s).replace(/'/g, "&apos;")}'>Edit</button>
+          <button class="btn-super-del-sub px-3 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold rounded-xl py-1.5 transition-colors" data-id="${s.id}">Hapus</button>
+        </div>
+      </div>
+    `).join('');
 
     container.querySelectorAll('.btn-super-edit-sub').forEach((b) => b.addEventListener('click', () => openSuperSubModal(JSON.parse(b.dataset.sub))));
     container.querySelectorAll('.btn-super-del-sub').forEach((b) => b.addEventListener('click', () => deleteSuperSubmission(b.dataset.id)));
@@ -1023,7 +1077,7 @@ function renderSAOvertimePendingTable() {
         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}</td>
         <td class="px-4 py-3 text-slate-700 dark:text-slate-200 whitespace-nowrap"><div class="font-bold text-amber-700 dark:text-amber-400">In: ${inTime} | Out: ${outTime}</div><div class="text-[11px] text-slate-500 font-medium">Durasi: <span class="font-bold">${durStr}</span></div></td>
         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}"><div class="font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(item.overtime_task_reason || '-')}</div>${item.overtime_clock_out_note ? `<div class="text-[11px] text-slate-500 italic">Catatan: ${escapeHtml(item.overtime_clock_out_note)}</div>` : ''}</td>
-        <td class="px-4 py-3 whitespace-nowrap"><button data-id="${item.id}" class="btn-sa-ot-detail px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors flex items-center gap-1"><span>📸</span> <span>Detail</span></button></td>
+        <td class="px-4 py-3 whitespace-nowrap"><button onclick="openSAOvertimeDetailModal('${item.id}')" data-id="${item.id}" class="btn-sa-ot-detail px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors flex items-center gap-1 cursor-pointer"><span>📸</span> <span>Lihat Foto & GPS</span></button></td>
         <td class="px-4 py-3 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">Pending</span></td>
         <td class="px-4 py-3 text-right whitespace-nowrap"><div class="flex items-center justify-end gap-1.5"><button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="approved" class="btn-sa-ot-decide px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px]">Setujui</button><button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="rejected" class="btn-sa-ot-decide px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px]">Tolak</button><button data-id="${item.id}" class="btn-sa-ot-delete px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] border border-rose-200">Hapus</button></div></td>
       </tr>
@@ -1062,7 +1116,19 @@ function renderSAOvertimeHistoryTable() {
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300"><span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-[11px] font-semibold">${escapeHtml(item.division_name || '-')}</span></td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400">⏱️ ${inTime} - ${outTime} (${durStr})</div></td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}">${escapeHtml(item.overtime_task_reason || '-')}</td>
-        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300"><div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}</span><span class="text-xs text-slate-500 truncate max-w-xs" title="${escapeHtml(item.overtime_review_note)}">${escapeHtml(item.overtime_review_note || '-')}</span></div></td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
+              ${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}
+            </span>
+            <span class="text-xs text-slate-500 truncate max-w-xs" title="${escapeHtml(item.overtime_review_note)}">
+              ${escapeHtml(item.overtime_review_note || '-')}
+            </span>
+          </div>
+          <button onclick="openSAOvertimeDetailModal('${item.id}')" data-id="${item.id}" class="btn-sa-ot-detail px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] hover:bg-slate-200 transition-colors inline-flex items-center gap-1 cursor-pointer">
+            📸 Lihat Foto & GPS
+          </button>
+        </td>
         <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
           <div>${escapeHtml(item.reviewed_by_name || 'Admin')}</div>
           <button data-id="${item.id}" class="btn-sa-ot-delete mt-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] border border-rose-200 transition-colors">Hapus</button>
@@ -1071,6 +1137,7 @@ function renderSAOvertimeHistoryTable() {
     `;
   }).join('');
 
+  tbody.querySelectorAll('.btn-sa-ot-detail').forEach(b => b.addEventListener('click', () => openSAOvertimeDetailModal(b.dataset.id)));
   tbody.querySelectorAll('.btn-sa-ot-delete').forEach(b => b.addEventListener('click', () => deleteSAOvertime(b.dataset.id)));
 }
 
@@ -1097,13 +1164,67 @@ function openSAOvertimeDetailModal(id) {
   const item = saOtPendingList.find(o => String(o.id) === String(id)) || saOtHistoryList.find(o => String(o.id) === String(id));
   if (!item) return;
 
+  const content = document.getElementById('ot-detail-content');
+  if (!content) return;
+
   const inPhoto = item.overtime_clock_in_photo ? item.overtime_clock_in_photo.replace('/uploads/', '/secure-uploads/') : null;
   const outPhoto = item.overtime_clock_out_photo ? item.overtime_clock_out_photo.replace('/uploads/', '/secure-uploads/') : null;
 
-  if (inPhoto) openLightbox(inPhoto);
-  else if (outPhoto) openLightbox(outPhoto);
-  else showAlert('Tidak ada foto presensi lembur.');
+  const inGpsStr = (item.overtime_clock_in_lat && item.overtime_clock_in_lng)
+    ? `${Number(item.overtime_clock_in_lat).toFixed(6)}, ${Number(item.overtime_clock_in_lng).toFixed(6)}`
+    : null;
+
+  const outGpsStr = (item.overtime_clock_out_lat && item.overtime_clock_out_lng)
+    ? `${Number(item.overtime_clock_out_lat).toFixed(6)}, ${Number(item.overtime_clock_out_lng).toFixed(6)}`
+    : null;
+
+  const inGpsLink = inGpsStr ? `https://maps.google.com/?q=${item.overtime_clock_in_lat},${item.overtime_clock_in_lng}` : null;
+  const outGpsLink = outGpsStr ? `https://maps.google.com/?q=${item.overtime_clock_out_lat},${item.overtime_clock_out_lng}` : null;
+
+  content.innerHTML = `
+    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl space-y-1 text-xs border border-slate-200 dark:border-slate-800">
+      <div class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)} (${escapeHtml(item.division_name || '-')})</div>
+      <div class="text-slate-500">Tanggal: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.attendance_date)}</span></div>
+      <div class="text-slate-500">Tugas Lembur: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.overtime_task_reason || '-')}</span></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
+        <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Absen Masuk Lembur</span>
+        ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Masuk Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
+        ${inGpsStr ? `
+          <div class="space-y-1">
+            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${inGpsStr}</div>
+            <a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
+              🗺️ Buka Maps GPS Masuk
+            </a>
+          </div>
+        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Masuk tak melacak</span>'}
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
+        <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Absen Pulang Lembur</span>
+        ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Pulang Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
+        ${outGpsStr ? `
+          <div class="space-y-1">
+            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${outGpsStr}</div>
+            <a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
+              🗺️ Buka Maps GPS Pulang
+            </a>
+          </div>
+        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Pulang tak melacak</span>'}
+      </div>
+    </div>
+  `;
+
+  const modal = document.getElementById('modal-overtime-detail');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
 }
+
+window.openSAOvertimeDetailModal = openSAOvertimeDetailModal;
 
 // Subtab & Event Listeners for Super Admin Overtime
 document.getElementById('sa-ot-tab-pending')?.addEventListener('click', () => {
@@ -1145,7 +1266,24 @@ function toggleSuperSubTimeContainer() {
     timeWrapper.classList.toggle('hidden', type !== 'lembur');
   }
 }
-document.getElementById('super-sub-type')?.addEventListener('change', toggleSuperSubTimeContainer);
+
+function toggleSuperSubHandoverContainer() {
+  const type = document.getElementById('super-sub-type')?.value;
+  const handoverWrapper = document.getElementById('wrapper-super-sub-handover');
+  if (handoverWrapper) {
+    handoverWrapper.classList.toggle('hidden', type !== 'cuti');
+    if (type !== 'cuti') {
+      if (document.getElementById('super-sub-handover-plan')) document.getElementById('super-sub-handover-plan').value = '';
+      if (document.getElementById('super-sub-handover-to-name')) document.getElementById('super-sub-handover-to-name').value = '';
+      if (document.getElementById('super-sub-handover-to-position')) document.getElementById('super-sub-handover-to-position').value = '';
+    }
+  }
+}
+
+document.getElementById('super-sub-type')?.addEventListener('change', () => {
+  toggleSuperSubTimeContainer();
+  toggleSuperSubHandoverContainer();
+});
 
 async function openSuperSubModal(sub = null) {
   hideAlert();
@@ -1171,16 +1309,20 @@ async function openSuperSubModal(sub = null) {
     userSelect.removeAttribute('required');
   }
 
-  document.getElementById('super-sub-type').value = sub ? sub.type : 'izin';
+  document.getElementById('super-sub-type').value = sub ? sub.type : 'cuti';
   document.getElementById('super-sub-start').value = sub && sub.start_date ? sub.start_date.split('T')[0] : '';
   document.getElementById('super-sub-end').value = sub && sub.end_date ? sub.end_date.split('T')[0] : '';
   if (document.getElementById('super-sub-start-time')) document.getElementById('super-sub-start-time').value = sub ? sub.start_time || '' : '';
   if (document.getElementById('super-sub-end-time')) document.getElementById('super-sub-end-time').value = sub ? sub.end_time || '' : '';
+  if (document.getElementById('super-sub-handover-plan')) document.getElementById('super-sub-handover-plan').value = sub ? sub.handover_plan || '' : '';
+  if (document.getElementById('super-sub-handover-to-name')) document.getElementById('super-sub-handover-to-name').value = sub ? sub.handover_to_name || '' : '';
+  if (document.getElementById('super-sub-handover-to-position')) document.getElementById('super-sub-handover-to-position').value = sub ? sub.handover_to_position || '' : '';
   document.getElementById('super-sub-reason').value = sub ? sub.reason || '' : '';
   document.getElementById('super-sub-status').value = sub ? sub.status || 'pending' : 'pending';
   document.getElementById('super-sub-note').value = sub ? sub.review_note || '' : '';
 
   toggleSuperSubTimeContainer();
+  toggleSuperSubHandoverContainer();
 
   superSubModal.classList.remove('hidden');
 }
@@ -1201,6 +1343,9 @@ if (formSuperSub) {
       end_date: document.getElementById('super-sub-end').value,
       start_time: document.getElementById('super-sub-start-time')?.value || null,
       end_time: document.getElementById('super-sub-end-time')?.value || null,
+      handover_plan: document.getElementById('super-sub-handover-plan')?.value || null,
+      handover_to_name: document.getElementById('super-sub-handover-to-name')?.value || null,
+      handover_to_position: document.getElementById('super-sub-handover-to-position')?.value || null,
       reason: document.getElementById('super-sub-reason').value.trim(),
       status: document.getElementById('super-sub-status').value,
       review_note: document.getElementById('super-sub-note').value.trim()
@@ -1416,5 +1561,15 @@ if (btnCollapse) btnCollapse.addEventListener('click', toggleSidebarCollapse);
 if (btnCollapseTop) btnCollapseTop.addEventListener('click', toggleSidebarCollapse);
 if (btnHide) btnHide.addEventListener('click', toggleSidebarHide);
 if (btnShow) btnShow.addEventListener('click', () => applySidebarState('full'));
+
+const closeOtDetail = () => {
+  const modal = document.getElementById('modal-overtime-detail');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+document.getElementById('btn-close-ot-detail')?.addEventListener('click', closeOtDetail);
+document.getElementById('btn-done-ot-detail')?.addEventListener('click', closeOtDetail);
 
 initSidebar();

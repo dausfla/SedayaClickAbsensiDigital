@@ -7,6 +7,8 @@
   <title>SedayaClick — Super Admin</title>
   <meta name="theme-color" content="#4338CA" />
   <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -182,8 +184,7 @@
     <div
       class="sidebar-header px-4 py-4 flex items-center justify-between font-bold text-brand-700 dark:text-brand-500 text-lg border-b border-slate-100 dark:border-slate-700">
       <div class="flex items-center gap-2 overflow-hidden">
-        <span
-          class="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center shrink-0">⏱</span>
+        <img src="/icons/icon-192.png" alt="SedayaClick Logo" class="w-8 h-8 rounded-lg object-cover shrink-0 shadow-sm border border-slate-200 dark:border-slate-700" />
         <span class="sidebar-brand-text truncate">SedayaClick</span>
       </div>
       <div class="flex items-center gap-1">
@@ -559,7 +560,7 @@
       <!-- PANEL: PENGAJUAN -->
       <section id="panel-submissions" class="hidden">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <h1 class="text-xl font-bold text-slate-800">Pengajuan Izin / Cuti / Sakit / Lembur</h1>
+          <h1 class="text-xl font-bold text-slate-800 dark:text-white">Pengajuan Izin / Cuti / Sakit</h1>
           <div class="flex flex-wrap items-center gap-2">
             <button id="btn-super-create-submission"
               class="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
@@ -733,22 +734,10 @@
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Pengajuan</label>
           <select id="super-sub-type" required
             class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
-            <option value="izin">Izin Khusus</option>
             <option value="cuti">Cuti Tahunan</option>
+            <option value="izin">Izin Khusus</option>
             <option value="sakit">Sakit</option>
-            <option value="lembur">Pengajuan Lembur</option>
           </select>
-        </div>
-
-        <div id="wrapper-super-sub-time" class="hidden grid grid-cols-2 gap-2 bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
-          <div>
-            <label class="block text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1">Jam Mulai</label>
-            <input type="time" id="super-sub-start-time" class="w-full box-border rounded-lg border border-amber-300 dark:border-amber-700 px-2 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-amber-500">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1">Jam Selesai</label>
-            <input type="time" id="super-sub-end-time" class="w-full box-border rounded-lg border border-amber-300 dark:border-amber-700 px-2 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-amber-500">
-          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
@@ -771,6 +760,27 @@
           <textarea id="super-sub-reason" required rows="2"
             class="w-full box-border rounded-xl border border-slate-300 dark:border-slate-600 px-3.5 py-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
             placeholder="Tuliskan alasan pengajuan..."></textarea>
+        </div>
+
+        <!-- Form Input Tambahan Khusus Cuti (Handover / Serah Terima Pekerjaan) -->
+        <div id="wrapper-super-sub-handover" class="hidden space-y-2 bg-blue-50/60 dark:bg-blue-950/30 p-3 rounded-xl border border-blue-200/80 dark:border-blue-900/40">
+          <p class="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+            <span>📋</span> Rencana Serah Terima Pekerjaan (Khusus Cuti)
+          </p>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Rencana Serah Terima Pekerjaan</label>
+            <textarea id="super-sub-handover-plan" rows="2" placeholder="Detail rencana serah terima pekerjaan..." class="w-full box-border rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-brand-500"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Dialihkan Kepada: Nama</label>
+              <input type="text" id="super-sub-handover-to-name" placeholder="Nama rekan kerja..." class="w-full box-border rounded-lg border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Dialihkan Kepada: Jabatan</label>
+              <input type="text" id="super-sub-handover-to-position" placeholder="Jabatan rekan kerja..." class="w-full box-border rounded-lg border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-brand-500">
+            </div>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
@@ -1163,6 +1173,28 @@
       </div>
       <div id="lightbox-location" class="text-center pt-0.5">
         <!-- Dynamic Location Button Injected Here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Presensi Lembur Super Admin (Foto & GPS) -->
+  <div id="modal-overtime-detail" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3 dark:border-slate-700">
+        <h3 class="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+          <span>📸</span> <span>Detail Foto & GPS Presensi Lembur</span>
+        </h3>
+        <button id="btn-close-ot-detail" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">✕</button>
+      </div>
+
+      <div id="ot-detail-content" class="space-y-4">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button type="button" id="btn-done-ot-detail" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 transition-colors">
+          Tutup
+        </button>
       </div>
     </div>
   </div>

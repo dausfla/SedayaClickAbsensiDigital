@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 
 const pool = require('./config/db');
+const multer = require('multer');
 
 const authRoutes = require('./routes/auth');
 const attendanceRoutes = require('./routes/attendance');
@@ -76,7 +77,7 @@ app.use(
       maxAge: 1000 * 60 * 60 * 12, // 12 jam
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production'
+      secure: false
     }
   })
 );
@@ -105,6 +106,23 @@ app.get('*', (req, res, next) => {
 
 // Error handler terpusat (mis. error dari Multer seperti ukuran file terlalu besar).
 app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ukuran file terlalu besar! Maksimal 10 MB.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: `Terjadi kesalahan saat upload file: ${err.message}`
+    });
+  }
+
+  if (err.message && err.message.includes('Format file harus')) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
   console.error(err);
   const message = process.env.NODE_ENV === 'production'
     ? 'Terjadi kesalahan pada server.'

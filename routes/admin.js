@@ -44,7 +44,7 @@ router.get('/submissions/pending', ...scoped, async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
-      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.reason, s.attachment, s.status, s.created_at,
+      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.reason, s.attachment, s.handover_plan, s.handover_to_name, s.handover_to_position, s.status, s.created_at,
               u.full_name, u.id AS user_id, p.name AS position_name, d.name AS division_name
        FROM submissions s
        JOIN users u ON u.id = s.user_id
@@ -80,7 +80,7 @@ router.get('/submissions/history', ...scoped, async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
-      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.reason, s.status, s.review_note, s.reviewed_at,
+      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.reason, s.handover_plan, s.handover_to_name, s.handover_to_position, s.status, s.review_note, s.reviewed_at,
               u.full_name, d.name AS division_name
        FROM submissions s
        JOIN users u ON u.id = s.user_id
@@ -196,7 +196,7 @@ router.get('/employees', ...scoped, async (req, res) => {
  */
 router.post('/submissions', ...scoped, async (req, res) => {
   try {
-    const { user_id, type, start_date, end_date, start_time, end_time, reason, status = 'pending', review_note = '' } = req.body;
+    const { user_id, type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status = 'pending', review_note = '' } = req.body;
 
     if (!user_id || !type || !start_date || !end_date || !reason) {
       return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
@@ -205,10 +205,14 @@ router.post('/submissions', ...scoped, async (req, res) => {
     const reviewedBy = status !== 'pending' ? req.session.user.id : null;
     const reviewedAt = status !== 'pending' ? new Date() : null;
 
+    const finalHandoverPlan = type === 'cuti' && handover_plan ? handover_plan.trim() : null;
+    const finalHandoverToName = type === 'cuti' && handover_to_name ? handover_to_name.trim() : null;
+    const finalHandoverToPos = type === 'cuti' && handover_to_position ? handover_to_position.trim() : null;
+
     const [result] = await pool.query(
-      `INSERT INTO submissions (user_id, type, start_date, end_date, start_time, end_time, reason, status, review_note, reviewed_by, reviewed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, type, start_date, end_date, start_time || null, end_time || null, reason, status, review_note || null, reviewedBy, reviewedAt]
+      `INSERT INTO submissions (user_id, type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status, review_note, reviewed_by, reviewed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, type, start_date, end_date, start_time || null, end_time || null, reason, finalHandoverPlan, finalHandoverToName, finalHandoverToPos, status, review_note || null, reviewedBy, reviewedAt]
     );
 
     res.json({ success: true, message: 'Pengajuan berhasil dibuat.', id: result.insertId });
@@ -225,7 +229,7 @@ router.post('/submissions', ...scoped, async (req, res) => {
 router.put('/submissions/:id', ...scoped, async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, start_date, end_date, start_time, end_time, reason, status, review_note } = req.body;
+    const { type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status, review_note } = req.body;
 
     const [check] = await pool.query(
       `SELECT s.id FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`,
@@ -237,6 +241,10 @@ router.put('/submissions/:id', ...scoped, async (req, res) => {
 
     const reviewedBy = status && status !== 'pending' ? req.session.user.id : null;
 
+    const finalHandoverPlan = type === 'cuti' ? (handover_plan ? handover_plan.trim() : null) : null;
+    const finalHandoverToName = type === 'cuti' ? (handover_to_name ? handover_to_name.trim() : null) : null;
+    const finalHandoverToPos = type === 'cuti' ? (handover_to_position ? handover_to_position.trim() : null) : null;
+
     await pool.query(
       `UPDATE submissions 
        SET type = COALESCE(?, type),
@@ -245,12 +253,15 @@ router.put('/submissions/:id', ...scoped, async (req, res) => {
            start_time = COALESCE(?, start_time),
            end_time = COALESCE(?, end_time),
            reason = COALESCE(?, reason),
+           handover_plan = ?,
+           handover_to_name = ?,
+           handover_to_position = ?,
            status = COALESCE(?, status),
            review_note = COALESCE(?, review_note),
            reviewed_by = IF(? IS NOT NULL AND ? != 'pending', ?, reviewed_by),
            reviewed_at = IF(? IS NOT NULL AND ? != 'pending', NOW(), reviewed_at)
        WHERE id = ?`,
-      [type, start_date, end_date, start_time, end_time, reason, status, review_note, status, status, reviewedBy, status, status, id]
+      [type, start_date, end_date, start_time, end_time, reason, finalHandoverPlan, finalHandoverToName, finalHandoverToPos, status, review_note, status, status, reviewedBy, status, status, id]
     );
 
     res.json({ success: true, message: 'Pengajuan berhasil diperbarui.' });
@@ -346,7 +357,8 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT a.id, a.user_id, a.attendance_date, a.overtime_clock_in_time, a.overtime_clock_out_time,
-              a.overtime_clock_in_photo, a.overtime_clock_out_photo, a.overtime_task_reason,
+              a.overtime_clock_in_photo, a.overtime_clock_out_photo, a.overtime_clock_in_lat, a.overtime_clock_in_lng,
+              a.overtime_clock_out_lat, a.overtime_clock_out_lng, a.overtime_task_reason,
               a.overtime_clock_in_note, a.overtime_clock_out_note, a.overtime_duration_seconds,
               a.overtime_status, a.overtime_review_note, a.overtime_reviewed_at,
               u.full_name, d.name AS division_name, p.name AS position_name,

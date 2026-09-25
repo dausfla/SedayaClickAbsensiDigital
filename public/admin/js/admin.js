@@ -140,6 +140,17 @@ function initEventListeners() {
     renderTables();
   });
 
+  // Terapkan Filter Button
+  document.getElementById('btn-apply-filter')?.addEventListener('click', async () => {
+    const divSelect = document.getElementById('filter-division');
+    const searchInp = document.getElementById('search-input');
+    if (divSelect) state.selectedDivisionId = divSelect.value;
+    if (searchInp) state.searchKeyword = searchInp.value.toLowerCase().trim();
+    await loadEmployees();
+    await refreshAllData();
+    showToast('Filter berhasil diterapkan', 'info');
+  });
+
   // Refresh Button
   document.getElementById('btn-refresh')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-refresh');
@@ -310,7 +321,7 @@ function renderPendingTable() {
   const tbody = document.getElementById('tbody-pending');
   if (!tbody) return;
 
-  let list = state.pendingSubmissions;
+  let list = (state.pendingSubmissions || []).filter(s => s.type !== 'lembur');
   if (state.searchKeyword) {
     list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
   }
@@ -341,13 +352,25 @@ function renderPendingTable() {
           ${escapeHtml(item.type)}
         </span>
       </td>
-      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap font-medium">
         ${formatDate(item.start_date)} ${item.start_date !== item.end_date ? `- ${formatDate(item.end_date)}` : ''}
-        ${item.type === 'lembur' && item.start_time && item.end_time ? `<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">⏱️ ${item.start_time.slice(0,5)} - ${item.end_time.slice(0,5)} WIB</div>` : ''}
       </td>
-      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.reason)}">
-        ${escapeHtml(item.reason || '-')}
-        ${item.attachment ? `<br/><a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline">Lihat Lampiran</a>` : ''}
+      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs" title="${escapeHtml(item.reason)}">
+        <div class="font-medium text-slate-800 dark:text-slate-200 leading-snug">${escapeHtml(item.reason || '-')}</div>
+        ${item.type === 'cuti' && (item.handover_plan || item.handover_to_name) ? `
+          <div class="mt-1.5 p-2 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300">
+            <div class="font-bold text-blue-900 dark:text-blue-300">📋 Serah Terima:</div>
+            ${item.handover_plan ? `<div class="italic text-slate-600 dark:text-slate-400">${escapeHtml(item.handover_plan)}</div>` : ''}
+            ${item.handover_to_name ? `<div>Diserahkan ke: <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(item.handover_to_name)}</span> ${item.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(item.handover_to_position)})</span>` : ''}</div>` : ''}
+          </div>
+        ` : ''}
+        ${item.attachment ? `
+          <div class="mt-1.5">
+            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
+              📎 <span>Lihat Bukti File / Surat Dokter</span>
+            </a>
+          </div>
+        ` : ''}
       </td>
       <td class="px-4 py-3.5 text-center">
         <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
@@ -379,7 +402,7 @@ function renderHistoryTable() {
   const tbody = document.getElementById('tbody-history');
   if (!tbody) return;
 
-  let list = state.historySubmissions;
+  let list = (state.historySubmissions || []).filter(s => s.type !== 'lembur');
   if (state.searchKeyword) {
     list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
   }
@@ -409,19 +432,32 @@ function renderHistoryTable() {
           ${escapeHtml(item.type)}
         </span>
       </td>
-      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap font-medium">
         ${formatDate(item.start_date)} ${item.start_date !== item.end_date ? `- ${formatDate(item.end_date)}` : ''}
-        ${item.type === 'lembur' && item.start_time && item.end_time ? `<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">⏱️ ${item.start_time.slice(0,5)} - ${item.end_time.slice(0,5)} WIB</div>` : ''}
       </td>
-      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
-        <div class="flex items-center gap-2">
+      <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs">
+        <div class="flex items-center gap-2 mb-1">
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
             ${item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
           </span>
-          <span class="text-xs text-slate-500 truncate max-w-xs" title="${escapeHtml(item.review_note)}">
+          <span class="text-xs text-slate-500 truncate" title="${escapeHtml(item.review_note)}">
             ${escapeHtml(item.review_note || '-')}
           </span>
         </div>
+        ${item.type === 'cuti' && (item.handover_plan || item.handover_to_name) ? `
+          <div class="p-2 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300 mt-1">
+            <div class="font-bold text-blue-900 dark:text-blue-300">📋 Serah Terima:</div>
+            ${item.handover_plan ? `<div class="italic text-slate-600 dark:text-slate-400">${escapeHtml(item.handover_plan)}</div>` : ''}
+            ${item.handover_to_name ? `<div>Diserahkan ke: <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(item.handover_to_name)}</span> ${item.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(item.handover_to_position)})</span>` : ''}</div>` : ''}
+          </div>
+        ` : ''}
+        ${item.attachment ? `
+          <div class="mt-1">
+            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
+              📎 <span>Lihat Bukti File / Surat Dokter</span>
+            </a>
+          </div>
+        ` : ''}
       </td>
       <td class="px-4 py-3.5 text-right whitespace-nowrap">
         <div class="flex items-center justify-end gap-1.5">
@@ -561,7 +597,7 @@ function renderOvertimeHistoryTable() {
           ${escapeHtml(item.overtime_task_reason || '-')}
         </td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 mb-1">
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
               ${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}
             </span>
@@ -569,6 +605,9 @@ function renderOvertimeHistoryTable() {
               ${escapeHtml(item.overtime_review_note || '-')}
             </span>
           </div>
+          <button onclick="openOvertimeDetailModal(${item.id})" class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] hover:bg-slate-200 transition-colors inline-flex items-center gap-1">
+            📸 Lihat Foto & GPS
+          </button>
         </td>
         <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
           <div>${escapeHtml(item.reviewed_by_name || 'Admin')}</div>
@@ -599,43 +638,69 @@ window.deleteOvertime = async function(id) {
   }
 };
 
+function getSecureUrl(url) {
+  if (!url || typeof url !== 'string' || !url.trim()) return null;
+  let clean = url.trim();
+  if (clean.startsWith('/uploads/')) return clean.replace('/uploads/', '/secure-uploads/');
+  if (clean.startsWith('uploads/')) return '/' + clean.replace('uploads/', 'secure-uploads/');
+  if (clean.startsWith('/secure-uploads/')) return clean;
+  return '/secure-uploads/attendance/' + clean.split('/').pop();
+}
+
 // Modal Detail Presensi Lembur (Foto Selfie & GPS Map Link)
 function openOvertimeDetailModal(id) {
-  const item = state.pendingOvertimes.find(o => o.id === id) || state.historyOvertimes.find(o => o.id === id);
+  const item = (state.pendingOvertimes || []).find(o => String(o.id) === String(id)) || (state.historyOvertimes || []).find(o => String(o.id) === String(id));
   if (!item) return;
 
   const content = document.getElementById('ot-detail-content');
   if (!content) return;
 
-  const inPhoto = item.overtime_clock_in_photo ? item.overtime_clock_in_photo.replace('/uploads/', '/secure-uploads/') : null;
-  const outPhoto = item.overtime_clock_out_photo ? item.overtime_clock_out_photo.replace('/uploads/', '/secure-uploads/') : null;
+  const inPhoto = getSecureUrl(item.overtime_clock_in_photo);
+  const outPhoto = getSecureUrl(item.overtime_clock_out_photo);
 
-  const inGpsLink = (item.overtime_clock_in_lat && item.overtime_clock_in_lng)
-    ? `https://maps.google.com/?q=${item.overtime_clock_in_lat},${item.overtime_clock_in_lng}`
+  const inGpsStr = (item.overtime_clock_in_lat && item.overtime_clock_in_lng)
+    ? `${Number(item.overtime_clock_in_lat).toFixed(6)}, ${Number(item.overtime_clock_in_lng).toFixed(6)}`
     : null;
 
-  const outGpsLink = (item.overtime_clock_out_lat && item.overtime_clock_out_lng)
-    ? `https://maps.google.com/?q=${item.overtime_clock_out_lat},${item.overtime_clock_out_lng}`
+  const outGpsStr = (item.overtime_clock_out_lat && item.overtime_clock_out_lng)
+    ? `${Number(item.overtime_clock_out_lat).toFixed(6)}, ${Number(item.overtime_clock_out_lng).toFixed(6)}`
     : null;
+
+  const inGpsLink = inGpsStr ? `https://maps.google.com/?q=${item.overtime_clock_in_lat},${item.overtime_clock_in_lng}` : null;
+  const outGpsLink = outGpsStr ? `https://maps.google.com/?q=${item.overtime_clock_out_lat},${item.overtime_clock_out_lng}` : null;
 
   content.innerHTML = `
-    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl space-y-1 text-xs">
+    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl space-y-1 text-xs border border-slate-200 dark:border-slate-800">
       <div class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)} (${escapeHtml(item.division_name || '-')})</div>
-      <div class="text-slate-500">Tanggal: <span class="font-semibold">${formatDate(item.attendance_date)}</span></div>
+      <div class="text-slate-500">Tanggal: <span class="font-semibold text-slate-800 dark:text-slate-200">${formatDate(item.attendance_date)}</span></div>
       <div class="text-slate-500">Tugas Lembur: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.overtime_task_reason || '-')}</span></div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2">
-        <span class="text-xs font-bold text-amber-600 block">Absen Masuk Lembur</span>
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
+        <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Absen Masuk Lembur</span>
         ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Masuk Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
-        ${inGpsLink ? `<a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">📍 Buka GPS Masuk</a>` : '<span class="text-xs text-slate-400">GPS tak melacak</span>'}
+        ${inGpsStr ? `
+          <div class="space-y-1">
+            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${inGpsStr}</div>
+            <a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
+              🗺️ Buka Maps GPS Masuk
+            </a>
+          </div>
+        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Masuk tak melacak</span>'}
       </div>
 
-      <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2">
-        <span class="text-xs font-bold text-rose-600 block">Absen Pulang Lembur</span>
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
+        <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Absen Pulang Lembur</span>
         ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Pulang Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
-        ${outGpsLink ? `<a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">📍 Buka GPS Pulang</a>` : '<span class="text-xs text-slate-400">GPS tak melacak</span>'}
+        ${outGpsStr ? `
+          <div class="space-y-1">
+            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${outGpsStr}</div>
+            <a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
+              🗺️ Buka Maps GPS Pulang
+            </a>
+          </div>
+        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Pulang tak melacak</span>'}
       </div>
     </div>
   `;
@@ -654,6 +719,13 @@ function closeOvertimeDetailModal() {
     modal.classList.remove('flex');
   }
 }
+
+window.openOvertimeDetailModal = openOvertimeDetailModal;
+window.closeOvertimeDetailModal = closeOvertimeDetailModal;
+window.openOvertimeDecisionModal = openOvertimeDecisionModal;
+
+document.getElementById('btn-close-ot-detail')?.addEventListener('click', closeOvertimeDetailModal);
+document.getElementById('btn-done-ot-detail')?.addEventListener('click', closeOvertimeDetailModal);
 
 // Open Decision Modal for Overtime
 function openOvertimeDecisionModal(id, decision) {
@@ -699,7 +771,24 @@ function toggleFormTimeContainer() {
   }
 }
 
-document.getElementById('form-type')?.addEventListener('change', toggleFormTimeContainer);
+function toggleFormHandoverContainer() {
+  const type = document.getElementById('form-type')?.value;
+  const container = document.getElementById('form-handover-container');
+  if (!container) return;
+  if (type === 'cuti') {
+    container.classList.remove('hidden');
+  } else {
+    container.classList.add('hidden');
+    if (document.getElementById('form-handover-plan')) document.getElementById('form-handover-plan').value = '';
+    if (document.getElementById('form-handover-to-name')) document.getElementById('form-handover-to-name').value = '';
+    if (document.getElementById('form-handover-to-position')) document.getElementById('form-handover-to-position').value = '';
+  }
+}
+
+document.getElementById('form-type')?.addEventListener('change', () => {
+  toggleFormTimeContainer();
+  toggleFormHandoverContainer();
+});
 
 // Open Submission Modal for Creating New
 function openSubmissionModal() {
@@ -712,11 +801,15 @@ function openSubmissionModal() {
   document.getElementById('form-end-date').value = '';
   if (document.getElementById('form-start-time')) document.getElementById('form-start-time').value = '';
   if (document.getElementById('form-end-time')) document.getElementById('form-end-time').value = '';
+  if (document.getElementById('form-handover-plan')) document.getElementById('form-handover-plan').value = '';
+  if (document.getElementById('form-handover-to-name')) document.getElementById('form-handover-to-name').value = '';
+  if (document.getElementById('form-handover-to-position')) document.getElementById('form-handover-to-position').value = '';
   document.getElementById('form-status').value = 'pending';
   document.getElementById('form-review-note').value = '';
   document.getElementById('form-reason').value = '';
 
   toggleFormTimeContainer();
+  toggleFormHandoverContainer();
 
   const modal = document.getElementById('modal-submission');
   modal.classList.remove('hidden');
@@ -745,11 +838,15 @@ function editSubmission(id, sourceTab) {
   document.getElementById('form-end-date').value = formatInputDate(item.end_date);
   if (document.getElementById('form-start-time')) document.getElementById('form-start-time').value = item.start_time || '';
   if (document.getElementById('form-end-time')) document.getElementById('form-end-time').value = item.end_time || '';
+  if (document.getElementById('form-handover-plan')) document.getElementById('form-handover-plan').value = item.handover_plan || '';
+  if (document.getElementById('form-handover-to-name')) document.getElementById('form-handover-to-name').value = item.handover_to_name || '';
+  if (document.getElementById('form-handover-to-position')) document.getElementById('form-handover-to-position').value = item.handover_to_position || '';
   document.getElementById('form-status').value = item.status || 'pending';
   document.getElementById('form-review-note').value = item.review_note || '';
   document.getElementById('form-reason').value = item.reason || '';
 
   toggleFormTimeContainer();
+  toggleFormHandoverContainer();
 
   const modal = document.getElementById('modal-submission');
   modal.classList.remove('hidden');
@@ -767,6 +864,9 @@ async function handleFormSubmit(e) {
   const end_date = document.getElementById('form-end-date').value;
   const start_time = document.getElementById('form-start-time')?.value || null;
   const end_time = document.getElementById('form-end-time')?.value || null;
+  const handover_plan = document.getElementById('form-handover-plan')?.value || null;
+  const handover_to_name = document.getElementById('form-handover-to-name')?.value || null;
+  const handover_to_position = document.getElementById('form-handover-to-position')?.value || null;
   const status = document.getElementById('form-status').value;
   const review_note = document.getElementById('form-review-note').value;
   const reason = document.getElementById('form-reason').value;
@@ -789,8 +889,8 @@ async function handleFormSubmit(e) {
   const method = isEdit ? 'PUT' : 'POST';
 
   const payload = isEdit 
-    ? { type, start_date, end_date, start_time, end_time, reason, status, review_note }
-    : { user_id, type, start_date, end_date, start_time, end_time, reason, status, review_note };
+    ? { type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status, review_note }
+    : { user_id, type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status, review_note };
 
   try {
     const res = await fetch(url, {

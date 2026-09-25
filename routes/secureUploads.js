@@ -30,8 +30,8 @@ router.get('/attendance/:filename', requireAuth, async (req, res) => {
     const filePattern = `%${safeFilename}`;
     let isAuthorized = false;
 
-    if (user.role === 'super_admin') {
-      // Super admin memiliki akses ke seluruh foto absensi
+    if (user.role === 'super_admin' || user.role === 'admin_manager') {
+      // Super admin dan Admin Manager memiliki akses ke seluruh foto absensi & lembur
       isAuthorized = true;
     } else if (user.role === 'employee') {
       // Karyawan HANYA boleh akses foto absensi miliknya sendiri
@@ -43,19 +43,6 @@ router.get('/attendance/:filename', requireAuth, async (req, res) => {
          ) 
          LIMIT 1`,
         [user.id, filePattern, filePattern, filePattern, filePattern]
-      );
-      isAuthorized = rows.length > 0;
-    } else if (user.role === 'admin_manager') {
-      // Admin Manager HANYA boleh akses foto absensi karyawan di divisinya
-      const [rows] = await pool.query(
-        `SELECT a.id FROM attendances a 
-         JOIN users u ON u.id = a.user_id 
-         WHERE u.division_id = ? AND (
-           a.clock_in_photo LIKE ? OR a.clock_out_photo LIKE ? OR 
-           a.overtime_clock_in_photo LIKE ? OR a.overtime_clock_out_photo LIKE ?
-         ) 
-         LIMIT 1`,
-        [user.division_id, filePattern, filePattern, filePattern, filePattern]
       );
       isAuthorized = rows.length > 0;
     }
@@ -93,8 +80,8 @@ router.get('/submissions/:filename', requireAuth, async (req, res) => {
     const filePattern = `%${safeFilename}`;
     let isAuthorized = false;
 
-    if (user.role === 'super_admin') {
-      // Super admin memiliki akses ke seluruh lampiran pengajuan
+    if (user.role === 'super_admin' || user.role === 'admin_manager') {
+      // Super admin dan Admin Manager memiliki akses ke seluruh lampiran pengajuan
       isAuthorized = true;
     } else if (user.role === 'employee') {
       // Karyawan HANYA boleh akses lampiran pengajuan miliknya sendiri
@@ -103,16 +90,6 @@ router.get('/submissions/:filename', requireAuth, async (req, res) => {
          WHERE user_id = ? AND attachment LIKE ? 
          LIMIT 1`,
         [user.id, filePattern]
-      );
-      isAuthorized = rows.length > 0;
-    } else if (user.role === 'admin_manager') {
-      // Admin Manager HANYA boleh akses lampiran karyawan di divisinya
-      const [rows] = await pool.query(
-        `SELECT s.id FROM submissions s 
-         JOIN users u ON u.id = s.user_id 
-         WHERE u.division_id = ? AND s.attachment LIKE ? 
-         LIMIT 1`,
-        [user.division_id, filePattern]
       );
       isAuthorized = rows.length > 0;
     }

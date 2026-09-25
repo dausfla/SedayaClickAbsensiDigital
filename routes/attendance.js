@@ -143,9 +143,6 @@ router.post(
       if (!latitude || !longitude) {
         return res.status(400).json({ success: false, message: 'Lokasi GPS wajib aktif dan terkunci.' });
       }
-      if (!note || !note.trim()) {
-        return res.status(400).json({ success: false, message: 'Catatan/keterangan wajib diisi saat Clock Out.' });
-      }
 
       const [existing] = await pool.query(
         'SELECT id, clock_in_time, clock_out_time FROM attendances WHERE user_id = ? AND attendance_date = ?',
@@ -168,11 +165,12 @@ router.post(
       const overtimeSeconds = calculateOvertime(date, now, shiftEnd);
       const workDurationSeconds = calculateWorkDuration(existing[0].clock_in_time, now);
       const photoPath = `/uploads/attendance/${req.file.filename}`;
+      const clockOutNote = note && note.trim() ? note.trim() : null;
 
       await pool.query(
         `UPDATE attendances SET clock_out_time = ?, clock_out_photo = ?, clock_out_lat = ?, clock_out_lng = ?,
          clock_out_note = ?, work_duration_seconds = ?, overtime_seconds = ? WHERE id = ?`,
-        [now, photoPath, latitude, longitude, note, workDurationSeconds, overtimeSeconds, existing[0].id]
+        [now, photoPath, latitude, longitude, clockOutNote, workDurationSeconds, overtimeSeconds, existing[0].id]
       );
 
       res.json({
@@ -306,9 +304,6 @@ router.post(
       if (!latitude || !longitude) {
         return res.status(400).json({ success: false, message: 'Lokasi GPS wajib aktif dan terkunci.' });
       }
-      if (!note || !note.trim()) {
-        return res.status(400).json({ success: false, message: 'Catatan/keterangan wajib diisi saat Absen Pulang Lembur.' });
-      }
 
       const [existing] = await pool.query(
         'SELECT id, overtime_clock_in_time, overtime_clock_out_time FROM attendances WHERE user_id = ? AND attendance_date = ?',
@@ -325,6 +320,7 @@ router.post(
       const now = new Date();
       const overtimeDurationSeconds = calculateWorkDuration(existing[0].overtime_clock_in_time, now);
       const photoPath = `/uploads/attendance/${req.file.filename}`;
+      const overtimeClockOutNote = note && note.trim() ? note.trim() : null;
 
       await pool.query(
         `UPDATE attendances SET 
@@ -336,7 +332,7 @@ router.post(
            overtime_duration_seconds = ?,
            overtime_status = 'pending'
          WHERE id = ?`,
-        [now, photoPath, latitude, longitude, note.trim(), overtimeDurationSeconds, existing[0].id]
+        [now, photoPath, latitude, longitude, overtimeClockOutNote, overtimeDurationSeconds, existing[0].id]
       );
 
       res.json({

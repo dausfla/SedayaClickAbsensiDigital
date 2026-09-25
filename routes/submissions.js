@@ -21,7 +21,7 @@ router.post(
   uploadSubmissionAttachment.single('attachment'),
   async (req, res) => {
     try {
-      const { type, start_date, end_date, start_time, end_time, reason } = req.body;
+      const { type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position } = req.body;
       const userId = req.session.user.id;
 
       if (!type || !['izin', 'cuti', 'sakit', 'lembur'].includes(type)) {
@@ -44,10 +44,14 @@ router.post(
 
       const attachmentPath = req.file ? `/uploads/submissions/${req.file.filename}` : null;
 
+      const finalHandoverPlan = type === 'cuti' && handover_plan ? handover_plan.trim() : null;
+      const finalHandoverToName = type === 'cuti' && handover_to_name ? handover_to_name.trim() : null;
+      const finalHandoverToPos = type === 'cuti' && handover_to_position ? handover_to_position.trim() : null;
+
       const [result] = await pool.query(
-        `INSERT INTO submissions (user_id, type, start_date, end_date, start_time, end_time, reason, attachment, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-        [userId, type, effectiveStartDate, effectiveEndDate, start_time || null, end_time || null, reason.trim(), attachmentPath]
+        `INSERT INTO submissions (user_id, type, start_date, end_date, start_time, end_time, reason, attachment, handover_plan, handover_to_name, handover_to_position, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        [userId, type, effectiveStartDate, effectiveEndDate, start_time || null, end_time || null, reason.trim(), attachmentPath, finalHandoverPlan, finalHandoverToName, finalHandoverToPos]
       );
 
       res.status(201).json({
@@ -71,7 +75,7 @@ router.post(
 router.get('/mine', requireAuth, requireRole('employee'), requireActiveAccount, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, type, start_date, end_date, start_time, end_time, reason, attachment, status, review_note, reviewed_at, created_at
+      `SELECT id, type, start_date, end_date, start_time, end_time, reason, attachment, handover_plan, handover_to_name, handover_to_position, status, review_note, reviewed_at, created_at
        FROM submissions WHERE user_id = ? ORDER BY created_at DESC`,
       [req.session.user.id]
     );

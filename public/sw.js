@@ -3,11 +3,15 @@
 // Strategi: cache "app shell" (halaman statis + JS/CSS), sedangkan panggilan
 // ke /api/* SELALU diambil langsung dari network (data absensi tidak boleh basi/cache).
 
-const CACHE_NAME = 'sedayaclick-shell-v1';
+const CACHE_NAME = 'sedayaclick-shell-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
   '/employee/dashboard.html',
   '/admin/dashboard.html',
   '/superadmin/dashboard.html'

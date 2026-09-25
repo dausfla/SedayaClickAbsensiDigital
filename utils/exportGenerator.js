@@ -89,6 +89,21 @@ function prepareRows(rawRows) {
       else otStatusLabel = 'Menunggu Review';
     }
 
+    const otInStr = formatTimeOnly(r.overtime_clock_in_time);
+    const otOutStr = formatTimeOnly(r.overtime_clock_out_time);
+    const otDurHms = secondsToHMS(otSec);
+
+    let overtimeHmsDisplay = '-';
+    if (r.overtime_clock_in_time || otSec > 0) {
+      if (otInStr !== '-' && otOutStr !== '-') {
+        overtimeHmsDisplay = `${otInStr.slice(0, 5)} - ${otOutStr.slice(0, 5)} (${otDurHms})`;
+      } else if (otInStr !== '-') {
+        overtimeHmsDisplay = `Masuk: ${otInStr.slice(0, 5)}`;
+      } else {
+        overtimeHmsDisplay = otDurHms;
+      }
+    }
+
     return {
       ...r,
       full_name: r.full_name || '-',
@@ -103,9 +118,10 @@ function prepareRows(rawRows) {
       late_duration_hms: secondsToHMS(lateSec),
       late_duration_minutes: lateMinutes,
       overtime_status_label: otStatusLabel,
-      overtime_clock_in_display: formatTimeOnly(r.overtime_clock_in_time),
-      overtime_clock_out_display: formatTimeOnly(r.overtime_clock_out_time),
-      overtime_duration_hms: secondsToHMS(otSec),
+      overtime_clock_in_display: otInStr,
+      overtime_clock_out_display: otOutStr,
+      overtime_hms: overtimeHmsDisplay,
+      overtime_duration_hms: otDurHms,
       overtime_duration_hours: otHours,
       overtime_task_reason: r.overtime_task_reason || '-',
       overtime_note: otNote,
@@ -342,7 +358,6 @@ const SUBMISSION_REPORT_FIELDS = [
   { label: 'Mulai Dari', value: 'start_date', key: 'start_date', align: 'center' },
   { label: 'Sampai Dengan', value: 'end_date', key: 'end_date', align: 'center' },
   { label: 'Total (Hari)', value: 'total_days', key: 'total_days', align: 'right', numFmt: '#,##0' },
-  { label: 'Jam Lembur', value: 'overtime_time_span', key: 'overtime_time_span', align: 'center' },
   { label: 'Alasan Pengajuan', value: 'reason', key: 'reason', align: 'left' },
   { label: 'Catatan Review Admin', value: 'review_note', key: 'review_note', align: 'left' },
   { label: 'Status Persetujuan', value: 'status_label', key: 'status_label', align: 'center' },

@@ -29,13 +29,13 @@ const imageFileFilter = (req, file, cb) => {
 const uploadAttendancePhoto = multer({
   storage: makeStorage('attendance'),
   fileFilter: imageFileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 const uploadSubmissionAttachment = multer({
   storage: makeStorage('submissions'),
   fileFilter: imageFileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 module.exports = { uploadAttendancePhoto, uploadSubmissionAttachment };

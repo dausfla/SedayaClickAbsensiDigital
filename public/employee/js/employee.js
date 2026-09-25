@@ -197,9 +197,10 @@ startBtn.addEventListener('click', async () => {
         gpsText.textContent = `GPS Terkunci (±${Math.round(pos.accuracy)}m) — ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`;
       },
       (msg) => {
-        gpsDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
-        gpsText.textContent = msg;
-        currentPosition = null;
+        if (!currentPosition) {
+          gpsDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
+          gpsText.textContent = msg;
+        }
       }
     );
 
@@ -265,6 +266,29 @@ captureBtn.addEventListener('click', async () => {
 /* ---------------------------------------------------------
    Submissions & Overtime
 --------------------------------------------------------- */
+const subTypeSelect = document.getElementById('sub-type');
+const wrapperHandover = document.getElementById('wrapper-handover-cuti');
+
+function toggleHandoverSection() {
+  if (!subTypeSelect || !wrapperHandover) return;
+  if (subTypeSelect.value === 'cuti') {
+    wrapperHandover.classList.remove('hidden');
+  } else {
+    wrapperHandover.classList.add('hidden');
+    const planInput = document.getElementById('sub-handover-plan');
+    const nameInput = document.getElementById('sub-handover-to-name');
+    const posInput = document.getElementById('sub-handover-to-position');
+    if (planInput) planInput.value = '';
+    if (nameInput) nameInput.value = '';
+    if (posInput) posInput.value = '';
+  }
+}
+
+if (subTypeSelect) {
+  subTypeSelect.addEventListener('change', toggleHandoverSection);
+  toggleHandoverSection(); // Run on init
+}
+
 const formSub = document.getElementById('form-submission');
 if (formSub) {
   formSub.addEventListener('submit', async (e) => {
@@ -274,17 +298,37 @@ if (formSub) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Mengirim...';
     try {
+      const typeVal = document.getElementById('sub-type').value;
       const formData = new FormData();
-      formData.append('type', document.getElementById('sub-type').value);
+      formData.append('type', typeVal);
       formData.append('start_date', document.getElementById('sub-start').value);
       formData.append('end_date', document.getElementById('sub-end').value);
       formData.append('reason', document.getElementById('sub-reason').value);
+
+      if (typeVal === 'cuti') {
+        const hPlan = document.getElementById('sub-handover-plan')?.value || '';
+        const hName = document.getElementById('sub-handover-to-name')?.value || '';
+        const hPos = document.getElementById('sub-handover-to-position')?.value || '';
+        formData.append('handover_plan', hPlan);
+        formData.append('handover_to_name', hName);
+        formData.append('handover_to_position', hPos);
+      }
+
       const fileInput = document.getElementById('sub-attachment');
-      if (fileInput.files[0]) formData.append('attachment', fileInput.files[0]);
+      if (fileInput.files[0]) {
+        if (fileInput.files[0].size > 10 * 1024 * 1024) {
+          showAlert('Ukuran berkas terlalu besar! Maksimal 10 MB. Silakan kompres atau pilih berkas yang lebih kecil.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Kirim Pengajuan';
+          return;
+        }
+        formData.append('attachment', fileInput.files[0]);
+      }
 
       const result = await apiPostForm('/submissions', formData);
       showAlert(result.message, 'success');
       e.target.reset();
+      toggleHandoverSection();
       await loadSubmissions();
     } catch (err) {
       showAlert(err.message);
@@ -407,9 +451,10 @@ if (otStartBtn) {
           if (otGpsText) otGpsText.textContent = `GPS Terkunci (±${Math.round(pos.accuracy)}m) — ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`;
         },
         (msg) => {
-          if (otGpsDot) otGpsDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
-          if (otGpsText) otGpsText.textContent = msg;
-          overtimePosition = null;
+          if (!overtimePosition) {
+            if (otGpsDot) otGpsDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
+            if (otGpsText) otGpsText.textContent = msg;
+          }
         }
       );
 
@@ -450,11 +495,6 @@ if (otCaptureBtn) {
 
     const noteEl = document.getElementById('overtime-attendance-note');
     const note = noteEl ? noteEl.value.trim() : '';
-
-    if (overtimeMode === 'clock-out' && !note) {
-      showAlert('Catatan/keterangan presensi lembur wajib diisi saat Absen Pulang Lembur.');
-      return;
-    }
 
     otCaptureBtn.disabled = true;
     otCaptureBtn.textContent = 'Mengirim...';
@@ -528,6 +568,13 @@ async function loadSubmissions(silent = false) {
         </div>
         <p class="text-[11px] text-slate-500 font-medium">Periode: ${escapeHtml(s.start_date)} s/d ${escapeHtml(s.end_date)}</p>
         <p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">${escapeHtml(s.reason)}</p>
+        ${s.type === 'cuti' && (s.handover_plan || s.handover_to_name) ? `
+          <div class="bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 text-[11px] space-y-1 text-slate-700">
+            <p class="font-bold text-blue-900 flex items-center gap-1">📋 Rencana Serah Terima Pekerjaan:</p>
+            ${s.handover_plan ? `<p class="italic text-slate-600 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
+            ${s.handover_to_name ? `<p class="font-medium text-slate-700 mt-1">Dialihkan Kepada: <span class="font-bold text-slate-900">${escapeHtml(s.handover_to_name)}</span> ${s.handover_to_position ? `<span class="text-slate-500 font-normal">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
+          </div>
+        ` : ''}
         ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline inline-block">Lihat Lampiran</a>` : ''}
         ${s.review_note ? `<p class="text-[11px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-100"><span class="font-semibold not-italic text-slate-700">Catatan Admin:</span> ${escapeHtml(s.review_note)}</p>` : ''}
       </div>
