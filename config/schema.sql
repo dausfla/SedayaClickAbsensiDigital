@@ -69,13 +69,7 @@ CREATE TABLE IF NOT EXISTS `attendances` (
 
 --
 -- Dumping data for table `attendances`
---
-
-INSERT IGNORE INTO `attendances` (`id`, `user_id`, `attendance_date`, `clock_in_time`, `clock_in_photo`, `clock_in_lat`, `clock_in_lng`, `clock_in_note`, `clock_out_time`, `clock_out_photo`, `clock_out_lat`, `clock_out_lng`, `clock_out_note`, `work_duration_seconds`, `late_duration_seconds`, `overtime_seconds`, `status`, `created_at`, `updated_at`, `overtime_clock_in_time`, `overtime_clock_out_time`, `overtime_clock_in_photo`, `overtime_clock_out_photo`, `overtime_clock_in_lat`, `overtime_clock_in_lng`, `overtime_clock_out_lat`, `overtime_clock_out_lng`, `overtime_task_reason`, `overtime_clock_in_note`, `overtime_clock_out_note`, `overtime_duration_seconds`, `overtime_status`, `overtime_review_note`, `overtime_reviewed_by`, `overtime_reviewed_at`) VALUES
-(8, 8, '2026-09-21', '2026-09-21 08:44:45', '/uploads/attendance/attendance-1789955085545-896292.jpg', -6.5983992, 106.7759400, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2685, 0, 'late', '2026-09-21 01:44:45', '2026-09-21 01:44:45', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 'pending', NULL, NULL, NULL),
-(13, 13, '2026-09-23', '2026-09-23 11:32:06', '/uploads/attendance/attendance-1790137925944-195016334.jpg', -6.5678793, 106.7299137, NULL, '2026-09-23 21:23:07', '/uploads/attendance/attendance-1790173387236-352093020.jpg', -6.5537561, 106.7347731, 'daus', 35461, 12726, 15787, 'late', '2026-09-23 04:32:06', '2026-09-23 14:23:07', '2026-09-23 11:33:02', '2026-09-23 15:19:06', '/uploads/attendance/attendance-1790137982317-624604273.jpg', '/uploads/attendance/attendance-1790151546339-771097018.jpg', -6.5678793, 106.7299137, -6.5679018, 106.7298927, 'audit laoporan', '2', 'oke testing', 13564, 'approved', 'Lembur Disetujui', 5, '2026-09-23 15:23:13'),
-(14, 13, '2026-09-24', '2026-09-24 08:53:48', '/uploads/attendance/attendance-1790214828318-176422412.jpg', -6.5678787, 106.7298578, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 3228, 0, 'late', '2026-09-24 01:53:48', '2026-09-24 01:54:45', '2026-09-24 08:54:45', NULL, '/uploads/attendance/attendance-1790214884984-281570056.jpg', NULL, -6.5679246, 106.7298713, NULL, NULL, 'daus', NULL, NULL, 0, 'pending', NULL, NULL, NULL),
-(15, 8, '2026-09-24', '2026-09-24 15:14:17', '/uploads/attendance/attendance-1790237657894-966761074.jpg', -6.5983850, 106.7758580, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 26057, 0, 'late', '2026-09-24 08:14:17', '2026-09-24 08:34:23', '2026-09-24 15:34:23', NULL, '/uploads/attendance/attendance-1790238863381-939759397.jpg', NULL, -6.5983850, 106.7758580, NULL, NULL, 'Keperluan meeting dengan klien', NULL, NULL, 0, 'pending', NULL, NULL, NULL);
+-- (Clean for production)
 
 -- --------------------------------------------------------
 
