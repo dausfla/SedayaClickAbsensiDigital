@@ -378,8 +378,8 @@ async function loadTodayOvertimeStatus() {
 
       if (startBtn) {
         startBtn.disabled = false;
-        startBtn.textContent = '⚡ ABSEN MASUK LEMBUR (Aktifkan Kamera)';
-        startBtn.className = 'col-span-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold rounded-xl py-3.5 shadow-md shadow-amber-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2';
+        startBtn.innerHTML = '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg> <span>Mulai Absen Masuk Lembur</span>';
+        startBtn.className = 'col-span-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold rounded-xl py-3.5 shadow-md shadow-amber-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer';
       }
     } else if (!overtime.overtime_clock_out_time) {
       overtimeMode = 'clock-out';
@@ -395,8 +395,8 @@ async function loadTodayOvertimeStatus() {
 
       if (startBtn) {
         startBtn.disabled = false;
-        startBtn.textContent = '⚡ ABSEN PULANG LEMBUR (Aktifkan Kamera)';
-        startBtn.className = 'col-span-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold rounded-xl py-3.5 shadow-md shadow-rose-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2';
+        startBtn.innerHTML = '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg> <span>Mulai Absen Pulang Lembur</span>';
+        startBtn.className = 'col-span-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold rounded-xl py-3.5 shadow-md shadow-rose-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer';
       }
     } else {
       overtimeMode = 'done';
@@ -472,7 +472,9 @@ if (otStartBtn) {
     } catch (err) {
       showAlert(err.message);
       otStartBtn.disabled = false;
-      otStartBtn.textContent = overtimeMode === 'clock-out' ? '⚡ ABSEN PULANG LEMBUR (Aktifkan Kamera)' : '⚡ ABSEN MASUK LEMBUR (Aktifkan Kamera)';
+      otStartBtn.innerHTML = overtimeMode === 'clock-out'
+        ? '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg> <span>Mulai Absen Pulang Lembur</span>'
+        : '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg> <span>Mulai Absen Masuk Lembur</span>';
     }
   });
 }
@@ -570,7 +572,7 @@ async function loadSubmissions(silent = false) {
         <p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">${escapeHtml(s.reason)}</p>
         ${s.type === 'cuti' && (s.handover_plan || s.handover_to_name) ? `
           <div class="bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 text-[11px] space-y-1 text-slate-700">
-            <p class="font-bold text-blue-900 flex items-center gap-1">📋 Rencana Serah Terima Pekerjaan:</p>
+            <p class="font-bold text-blue-900 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012 2"/></svg> <span>Rencana Serah Terima Pekerjaan:</span></p>
             ${s.handover_plan ? `<p class="italic text-slate-600 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
             ${s.handover_to_name ? `<p class="font-medium text-slate-700 mt-1">Dialihkan Kepada: <span class="font-bold text-slate-900">${escapeHtml(s.handover_to_name)}</span> ${s.handover_to_position ? `<span class="text-slate-500 font-normal">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
           </div>

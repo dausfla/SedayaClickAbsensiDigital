@@ -9,7 +9,9 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
@@ -17,16 +19,36 @@
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: { brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#4f46e5', 600: '#4338CA', 700: '#3730a3' } }
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#4f46e5',
+              600: '#4338CA',
+              700: '#3730a3',
+              900: '#1e1b4b'
+            }
+          }
         }
       }
     };
   </script>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      transition: background-color 0.3s, color 0.3s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      letter-spacing: -0.011em;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .font-mono, .tabular-nums {
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "tnum";
     }
 
     .nav-btn.active {
@@ -35,8 +57,8 @@
     }
 
     .dark .nav-btn.active {
-      background: rgba(79, 70, 229, 0.25);
-      color: #818cf8;
+      background: rgba(79, 70, 229, 0.2);
+      color: #a5b4fc;
       border: 1px solid rgba(99, 102, 241, 0.3);
     }
 
@@ -50,50 +72,54 @@
       border-color: #818cf8;
     }
 
-    /* Dark mode style overrides */
+    /* Precision Dark Mode Styles */
     .dark body {
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #0b0f19;
+      color: #f1f5f9;
     }
 
     .dark aside,
     .dark header,
     .dark nav {
-      background-color: #1e293b;
-      border-color: #334155;
+      background-color: #0f172a;
+      border-color: #1e293b;
     }
 
     .dark .bg-white {
-      background-color: #1e293b !important;
-      color: #f8fafc !important;
-      border-color: #334155 !important;
+      background-color: #111827 !important;
+      border-color: #1e293b !important;
     }
 
     .dark .bg-slate-50 {
-      background-color: #0f172a !important;
-      color: #f8fafc !important;
+      background-color: #0b0f19 !important;
     }
 
     .dark .bg-slate-100 {
-      background-color: #334155 !important;
-      color: #f8fafc !important;
+      background-color: #1f2937 !important;
     }
 
     .dark .border-slate-100,
     .dark .border-slate-200,
     .dark .border-slate-300 {
-      border-color: #334155 !important;
+      border-color: #1e293b !important;
     }
 
-    .dark .text-slate-800,
+    .dark .text-slate-900,
+    .dark .text-slate-800 {
+      color: #f8fafc !important;
+    }
+
     .dark .text-slate-700,
     .dark .text-slate-600 {
-      color: #f1f5f9 !important;
+      color: #cbd5e1 !important;
     }
 
-    .dark .text-slate-500,
-    .dark .text-slate-400 {
+    .dark .text-slate-500 {
       color: #94a3b8 !important;
+    }
+
+    .dark .text-slate-400 {
+      color: #64748b !important;
     }
 
     .dark input,
@@ -101,7 +127,7 @@
     .dark textarea {
       background-color: #0f172a !important;
       color: #f8fafc !important;
-      border-color: #475569 !important;
+      border-color: #334155 !important;
     }
 
     .dark table thead {
@@ -194,55 +220,54 @@
           <span id="sidebar-collapse-icon" class="text-sm">◀</span>
         </button>
         <button id="btn-toggle-sidebar-hide"
-          class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           title="Sembunyikan Sidebar">
-          <span class="text-sm">✕</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
     </div>
     <nav class="flex-1 px-3 py-4 space-y-1 text-sm font-medium text-slate-600 dark:text-slate-300 overflow-y-auto">
       <button data-nav="dashboard"
-        class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+        class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
         title="Dashboard">
-        <span class="text-base shrink-0">📊</span>
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         <span class="sidebar-label truncate">Dashboard</span>
       </button>
-      <button data-nav="users" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+      <button data-nav="users" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
         title="Manajemen User">
-        <span class="text-base shrink-0">👥</span>
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         <span class="sidebar-label truncate">Manajemen User</span>
       </button>
       <button data-nav="submissions"
-        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Pengajuan">
-        <span class="text-base shrink-0">📝</span>
+        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all" title="Pengajuan">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <span class="sidebar-label truncate">Pengajuan</span>
       </button>
       <button data-nav="overtime"
-        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" title="Presensi Lembur">
-        <span class="text-base shrink-0">⚡</span>
+        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all" title="Presensi Lembur">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span class="sidebar-label truncate">Presensi Lembur</span>
       </button>
-      <button data-nav="master" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+      <button data-nav="master" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
         title="Master Data">
-        <span class="text-base shrink-0">📁</span>
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
         <span class="sidebar-label truncate">Pengaturan</span>
       </button>
-      <button data-nav="reports" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+      <button data-nav="reports" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
         title="Penggajian & Pelaporan">
-        <span class="text-base shrink-0">💰</span>
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         <span class="sidebar-label truncate">Pelaporan</span>
       </button>
     </nav>
-    <div class="p-4 border-t border-slate-100 dark:border-slate-700">
+    <div class="p-4 border-t border-slate-100 dark:border-slate-800">
       <button id="btn-toggle-theme"
-        class="relative inline-flex items-center justify-between w-full h-9 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-[1.02] shrink-0 mb-3"
+        class="relative inline-flex items-center justify-between w-full h-9 px-1 rounded-full bg-[#EBEBEB] dark:bg-slate-800 border border-[#D1D1D1] dark:border-slate-700 cursor-pointer select-none transition-all duration-300 shadow-xs hover:scale-[1.02] shrink-0 mb-3"
         title="Ubah Mode Gelap/Terang">
         <span
-          class="sidebar-label text-[10px] font-black tracking-wider text-slate-900 pl-2.5 uppercase select-none">DAY
-          MODE</span>
+          class="sidebar-label text-[10px] font-black tracking-wider text-slate-900 dark:text-slate-200 pl-2.5 uppercase select-none">TEMA</span>
         <div
-          class="w-7 h-7 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
-          <svg class="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          class="w-7 h-7 rounded-full bg-white dark:bg-slate-700 shadow-md flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-600">
+          <svg class="w-4 h-4 text-slate-900 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="4.5"></circle>
             <line x1="12" y1="2" x2="12" y2="4"></line>
@@ -258,9 +283,10 @@
       </button>
       <p class="sidebar-user-name text-xs text-slate-400 mb-2 truncate" id="sa-name">—</p>
       <button id="btn-logout"
-        class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400 px-3 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+        class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 px-3 py-2.5 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors"
         title="Keluar">
-        <span class="shrink-0">🚪</span> <span id="btn-logout-text" class="truncate">Keluar</span>
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <span id="btn-logout-text" class="truncate">Keluar</span>
       </button>
     </div>
   </aside>
@@ -273,7 +299,8 @@
         <button id="btn-show-sidebar"
           class="hidden items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
           title="Tampilkan Sidebar">
-          <span>📑</span> <span>Tampilkan Sidebar</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <span>Tampilkan Sidebar</span>
         </button>
         <button id="btn-toggle-sidebar-collapse-top"
           class="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
@@ -320,7 +347,7 @@
         class="nav-btn active px-4 py-3 text-sm font-medium whitespace-nowrap">Dashboard</button>
       <button data-nav="users" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">User</button>
       <button data-nav="submissions" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Pengajuan</button>
-      <button data-nav="overtime" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">⚡ Presensi Lembur</button>
+      <button data-nav="overtime" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Presensi Lembur</button>
       <button data-nav="master" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Master Data</button>
       <button data-nav="reports" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Laporan</button>
     </nav>
@@ -338,92 +365,100 @@
       <section id="panel-dashboard">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
-            <h1 class="text-xl font-bold text-slate-800">Ringkasan </h1>
-            <p class="text-xs text-slate-500 mt-0.5">Statistik kehadiran & pengajuan karyawan secara real-time</p>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white">Ringkasan</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Statistik kehadiran & pengajuan karyawan secara real-time</p>
           </div>
-          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200"
+          <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700"
             id="dashboard-period-buttons">
             <button data-dashboardperiod="daily"
-              class="period-btn active text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-white text-brand-600 shadow-sm">Harian</button>
+              class="period-btn active text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm">Harian</button>
             <button data-dashboardperiod="weekly"
-              class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Mingguan</button>
+              class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">Mingguan</button>
             <button data-dashboardperiod="monthly"
-              class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Bulanan</button>
+              class="period-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">Bulanan</button>
           </div>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 mb-6">
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Hadir Tepat Waktu</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">⏱</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Hadir Tepat Waktu</span>
+              <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-emerald-600" id="kpi-on-time">0</p>
+            <p class="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="kpi-on-time">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Terlambat</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⚠️</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Terlambat</span>
+              <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-amber-600" id="kpi-late">0</p>
+            <p class="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400" id="kpi-late">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Izin</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center text-xs font-bold">📋</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Izin</span>
+              <div class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-sky-600" id="kpi-izin">0</p>
+            <p class="text-2xl font-bold font-mono text-sky-600 dark:text-sky-400" id="kpi-izin">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Sakit</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-bold">🏥</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Sakit</span>
+              <div class="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-purple-600" id="kpi-sakit">0</p>
+            <p class="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400" id="kpi-sakit">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Cuti</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold">🏖</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cuti</span>
+              <div class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-rose-600" id="kpi-cuti">0</p>
+            <p class="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400" id="kpi-cuti">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Lembur</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⏱</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Lembur</span>
+              <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-amber-600" id="kpi-lembur">0</p>
+            <p class="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400" id="kpi-lembur">0</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Pengajuan Pending</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">⏳</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Pengajuan Pending</span>
+              <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-indigo-600" id="kpi-pending">0</p>
+            <p class="text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400" id="kpi-pending">0</p>
           </div>
 
           <div
-            class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+            class="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-slate-400">Total Karyawan Aktif</span>
-              <span
-                class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">👥</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Karyawan Aktif</span>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              </div>
             </div>
-            <p class="text-2xl font-extrabold text-slate-800" id="kpi-active">0</p>
+            <p class="text-2xl font-bold font-mono text-slate-900 dark:text-white" id="kpi-active">0</p>
           </div>
         </div>
 
@@ -606,8 +641,11 @@
       <section id="panel-overtime" class="hidden space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
           <div>
-            <h1 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <span>⚡</span> <span>Presensi Lembur (Overtime)</span>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span>Presensi Lembur (Overtime)</span>
             </h1>
             <p class="text-xs text-slate-500 dark:text-slate-400">Verifikasi foto selfie, GPS lokasi, dan persetujuan lembur karyawan seluruh divisi</p>
           </div>
@@ -765,7 +803,8 @@
         <!-- Form Input Tambahan Khusus Cuti (Handover / Serah Terima Pekerjaan) -->
         <div id="wrapper-super-sub-handover" class="hidden space-y-2 bg-blue-50/60 dark:bg-blue-950/30 p-3 rounded-xl border border-blue-200/80 dark:border-blue-900/40">
           <p class="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
-            <span>📋</span> Rencana Serah Terima Pekerjaan (Khusus Cuti)
+            <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <span>Rencana Serah Terima Pekerjaan (Khusus Cuti)</span>
           </p>
           <div>
             <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Rencana Serah Terima Pekerjaan</label>
@@ -897,77 +936,119 @@
   </div>
 
   <!-- Modal: Detail Absensi -->
+  <!-- Modal Detail Absensi (Elevated Precision Workstation UI) -->
   <div id="detail-modal"
-    class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+    class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 z-50 transition-opacity">
     <div
-      class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
       <!-- Modal Header -->
-      <div class="flex items-start justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-        <div>
-          <h3 id="detail-modal-title" class="font-bold text-slate-800 text-lg flex items-center gap-2">Detail Absensi
-          </h3>
-          <p id="detail-date" class="text-xs text-slate-400 mt-0.5"></p>
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-500/20 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <div>
+            <h3 id="detail-modal-title" class="font-bold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">Detail Kehadiran</h3>
+            <p id="detail-date" class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 font-mono"></p>
+          </div>
         </div>
         <button id="btn-close-detail"
-          class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors focus:outline-none"
+          class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-all focus:outline-none cursor-pointer"
           title="Tutup">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
       </div>
 
       <!-- Modal Body (Scrollable) -->
-      <div class="p-6 overflow-y-auto space-y-5">
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-5 custom-scrollbar">
         <!-- Employee Info Badge -->
-        <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 flex items-center justify-between">
-          <div>
-            <p id="detail-employee-info" class="font-semibold text-slate-800 text-sm"></p>
+        <div class="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm tracking-wider uppercase shrink-0" id="detail-employee-avatar">
+              ID
+            </div>
+            <div>
+              <p id="detail-employee-info" class="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-snug"></p>
+              <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Verifikasi Presensi Digital</span>
+            </div>
           </div>
           <div class="text-right">
-            <span class="text-xs font-medium text-slate-400 block mb-0.5">Status</span>
-            <span id="detail-status" class="font-bold text-sm"></span>
+            <span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Status</span>
+            <span id="detail-status" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide border bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"></span>
           </div>
         </div>
 
         <!-- Photos Section -->
         <div>
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Foto Presensi</h4>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-              <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Clock In
-              </span>
-              <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-[4/3]">
+          <div class="flex items-center justify-between mb-2.5">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Foto Presensi Kamera
+            </h4>
+            <span class="text-[11px] text-slate-400 font-mono">200 OK Verified</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
+            <!-- Clock In Frame -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20"></span> Masuk
+                </span>
+                <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Clock In</span>
+              </div>
+              <div class="relative group rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 aspect-[4/3] shadow-xs">
                 <img id="detail-clock-in-photo"
                   class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
-                  alt="Foto Clock In" />
-                <span id="detail-clock-in-time"
-                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+                  alt="Foto Absen Masuk" />
+                <div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md text-white font-mono text-xs font-semibold tracking-wider flex items-center gap-1.5 shadow-md border border-white/10">
+                  <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span id="detail-clock-in-time">--:--</span>
+                </div>
               </div>
-              <div class="text-center pt-0.5">
+              <div class="pt-0.5">
                 <a id="detail-clock-in-photo-map" href="#" target="_blank"
-                  class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">
-                  📍 Buka GPS Masuk
+                  class="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/50 dark:hover:text-brand-400 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/60 transition-all cursor-pointer">
+                  <svg class="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span>Peta Lokasi Masuk</span>
                 </a>
               </div>
             </div>
-            <div class="space-y-1.5">
-              <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Clock Out
-              </span>
-              <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-[4/3]">
+            <!-- Clock Out Frame -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20"></span> Pulang
+                </span>
+                <span class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Clock Out</span>
+              </div>
+              <div class="relative group rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 aspect-[4/3] shadow-xs">
                 <img id="detail-clock-out-photo"
                   class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
-                  alt="Foto Clock Out" />
-                <span id="detail-clock-out-time"
-                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+                  alt="Foto Absen Pulang" />
+                <div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md text-white font-mono text-xs font-semibold tracking-wider flex items-center gap-1.5 shadow-md border border-white/10">
+                  <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span id="detail-clock-out-time">--:--</span>
+                </div>
               </div>
-              <div class="text-center pt-0.5">
+              <div class="pt-0.5">
                 <a id="detail-clock-out-photo-map" href="#" target="_blank"
-                  class="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">
-                  📍 Buka GPS Pulang
+                  class="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/50 dark:hover:text-brand-400 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/60 transition-all cursor-pointer">
+                  <svg class="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span>Peta Lokasi Pulang</span>
                 </a>
               </div>
             </div>
@@ -976,27 +1057,27 @@
 
         <!-- Times & Durations Grid -->
         <div>
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Waktu & Durasi</h4>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2.5">Waktu & Durasi Kerja</h4>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-              <p class="text-[11px] font-medium text-slate-400">Jam Masuk</p>
-              <p id="detail-time-in" class="font-mono font-bold text-slate-800 text-sm mt-0.5"></p>
+            <div class="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3 border border-slate-200/70 dark:border-slate-800">
+              <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Jam Masuk</p>
+              <p id="detail-time-in" class="font-mono font-bold text-slate-900 dark:text-white text-sm sm:text-base mt-0.5 tabular-nums"></p>
             </div>
-            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-              <p class="text-[11px] font-medium text-slate-400">Jam Keluar</p>
-              <p id="detail-time-out" class="font-mono font-bold text-slate-800 text-sm mt-0.5"></p>
+            <div class="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3 border border-slate-200/70 dark:border-slate-800">
+              <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Jam Keluar</p>
+              <p id="detail-time-out" class="font-mono font-bold text-slate-900 dark:text-white text-sm sm:text-base mt-0.5 tabular-nums"></p>
             </div>
-            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-              <p class="text-[11px] font-medium text-slate-400">Durasi Kerja</p>
-              <p id="detail-work-duration" class="font-mono font-bold text-slate-800 text-sm mt-0.5"></p>
+            <div class="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3 border border-slate-200/70 dark:border-slate-800">
+              <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Durasi Kerja</p>
+              <p id="detail-work-duration" class="font-mono font-bold text-brand-600 dark:text-brand-400 text-sm sm:text-base mt-0.5 tabular-nums"></p>
             </div>
-            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-              <p class="text-[11px] font-medium text-slate-400">Terlambat</p>
-              <p id="detail-late-duration" class="font-mono font-bold text-amber-600 text-sm mt-0.5"></p>
+            <div class="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3 border border-slate-200/70 dark:border-slate-800">
+              <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Keterlambatan</p>
+              <p id="detail-late-duration" class="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm sm:text-base mt-0.5 tabular-nums"></p>
             </div>
-            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-              <p class="text-[11px] font-medium text-slate-400">Lembur</p>
-              <p id="detail-overtime" class="font-mono font-bold text-emerald-600 text-sm mt-0.5"></p>
+            <div class="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3 border border-slate-200/70 dark:border-slate-800 sm:col-span-2">
+              <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Durasi Lembur</p>
+              <p id="detail-overtime" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm sm:text-base mt-0.5 tabular-nums"></p>
             </div>
           </div>
         </div>
@@ -1004,25 +1085,31 @@
         <!-- Notes -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Clock In</p>
+            <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+              Catatan Masuk
+            </p>
             <div id="detail-clock-in-note"
-              class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+              class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 p-3 rounded-2xl min-h-[42px] flex items-center">
             </div>
           </div>
           <div>
-            <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Clock Out</p>
+            <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+              Catatan Pulang
+            </p>
             <div id="detail-clock-out-note"
-              class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+              class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 p-3 rounded-2xl min-h-[42px] flex items-center">
             </div>
           </div>
         </div>
 
-        <!-- Location Links -->
+        <!-- Location Links Quickbar -->
         <div>
-          <p class="text-xs font-semibold text-slate-500 mb-1.5">Lokasi GPS</p>
+          <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">Tautan Titik GPS Lengkap</p>
           <div class="flex flex-wrap gap-2">
             <a id="detail-clock-in-map" href="#" target="_blank"
-              class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 border border-brand-200/60 dark:border-brand-800/60 px-3 py-2 rounded-xl transition-all cursor-pointer">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -1032,7 +1119,7 @@
               Peta Clock In
             </a>
             <a id="detail-clock-out-map" href="#" target="_blank"
-              class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 border border-brand-200/60 dark:border-brand-800/60 px-3 py-2 rounded-xl transition-all cursor-pointer">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -1045,84 +1132,88 @@
         </div>
 
         <!-- Detail Absensi Lembur Section -->
-        <div id="detail-overtime-section" class="border-t border-slate-100 pt-4 space-y-3 hidden">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
+        <div id="detail-overtime-section" class="border-t border-slate-200/80 dark:border-slate-800 pt-4 space-y-3.5 hidden">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            Detail Absensi Lembur
+            Detail Presensi Lembur
           </h4>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-              <span class="text-xs font-semibold text-purple-600 flex items-center gap-1">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
+            <div class="space-y-2">
+              <span class="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-purple-500"></span> Masuk Lembur
               </span>
-              <div class="relative group rounded-xl overflow-hidden border border-purple-200 bg-slate-100 aspect-[4/3]">
+              <div class="relative group rounded-2xl overflow-hidden border border-purple-200/80 dark:border-purple-900/60 bg-slate-100 dark:bg-slate-950 aspect-[4/3] shadow-xs">
                 <img id="detail-overtime-clock-in-photo"
                   class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
                   alt="Foto Masuk Lembur" />
-                <span id="detail-overtime-clock-in-time"
-                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+                <div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md text-white font-mono text-xs font-semibold tracking-wider flex items-center gap-1.5 border border-white/10">
+                  <span id="detail-overtime-clock-in-time">--:--</span>
+                </div>
               </div>
-              <div class="text-center pt-0.5">
+              <div class="pt-0.5">
                 <a id="detail-overtime-clock-in-photo-map" href="#" target="_blank"
-                  class="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:underline">
-                  📍 Buka GPS Masuk Lembur
+                  class="w-full inline-flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/60 hover:bg-purple-100 transition-all cursor-pointer">
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span>Peta Masuk Lembur</span>
                 </a>
               </div>
             </div>
-            <div class="space-y-1.5">
-              <span class="text-xs font-semibold text-purple-600 flex items-center gap-1">
+            <div class="space-y-2">
+              <span class="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-rose-500"></span> Keluar Lembur
               </span>
-              <div class="relative group rounded-xl overflow-hidden border border-purple-200 bg-slate-100 aspect-[4/3]">
+              <div class="relative group rounded-2xl overflow-hidden border border-purple-200/80 dark:border-purple-900/60 bg-slate-100 dark:bg-slate-950 aspect-[4/3] shadow-xs">
                 <img id="detail-overtime-clock-out-photo"
                   class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
                   alt="Foto Keluar Lembur" />
-                <span id="detail-overtime-clock-out-time"
-                  class="absolute bottom-2 left-2 right-2 text-center bg-slate-900/75 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-mono font-medium shadow-sm"></span>
+                <div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md text-white font-mono text-xs font-semibold tracking-wider flex items-center gap-1.5 border border-white/10">
+                  <span id="detail-overtime-clock-out-time">--:--</span>
+                </div>
               </div>
-              <div class="text-center pt-0.5">
+              <div class="pt-0.5">
                 <a id="detail-overtime-clock-out-photo-map" href="#" target="_blank"
-                  class="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:underline">
-                  📍 Buka GPS Keluar Lembur
+                  class="w-full inline-flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/60 hover:bg-purple-100 transition-all cursor-pointer">
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span>Peta Keluar Lembur</span>
                 </a>
               </div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div class="bg-purple-50/50 rounded-xl p-2.5 border border-purple-100">
-              <p class="text-[11px] font-medium text-purple-600">Durasi Lembur</p>
-              <p id="detail-overtime-duration" class="font-mono font-bold text-purple-700 text-sm mt-0.5"></p>
+            <div class="bg-purple-50/50 dark:bg-purple-950/20 rounded-2xl p-3 border border-purple-100 dark:border-purple-900/40">
+              <p class="text-[11px] font-semibold text-purple-600 dark:text-purple-400">Durasi Lembur</p>
+              <p id="detail-overtime-duration" class="font-mono font-bold text-purple-700 dark:text-purple-300 text-sm mt-0.5 tabular-nums"></p>
             </div>
-            <div class="bg-purple-50/50 rounded-xl p-2.5 border border-purple-100">
-              <p class="text-[11px] font-medium text-purple-600">Tugas Lembur</p>
-              <p id="detail-overtime-task" class="text-xs text-slate-700 font-medium mt-0.5"></p>
+            <div class="bg-purple-50/50 dark:bg-purple-950/20 rounded-2xl p-3 border border-purple-100 dark:border-purple-900/40">
+              <p class="text-[11px] font-semibold text-purple-600 dark:text-purple-400">Tugas Lembur</p>
+              <p id="detail-overtime-task" class="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5"></p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Masuk Lembur</p>
+              <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Catatan Masuk Lembur</p>
               <div id="detail-overtime-clock-in-note"
-                class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+                class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 p-2.5 rounded-xl min-h-[38px] flex items-center">
               </div>
             </div>
             <div>
-              <p class="text-xs font-semibold text-slate-500 mb-1">Catatan Keluar Lembur</p>
+              <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Catatan Keluar Lembur</p>
               <div id="detail-overtime-clock-out-note"
-                class="text-xs text-slate-700 bg-slate-50 border border-slate-100 p-2.5 rounded-xl min-h-[38px] flex items-center">
+                class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 p-2.5 rounded-xl min-h-[38px] flex items-center">
               </div>
             </div>
           </div>
 
           <div>
-            <p class="text-xs font-semibold text-slate-500 mb-1.5">Lokasi GPS Lembur</p>
+            <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">Tautan Titik GPS Lembur</p>
             <div class="flex flex-wrap gap-2">
               <a id="detail-overtime-clock-in-map" href="#" target="_blank"
-                class="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 border border-purple-200/60 dark:border-purple-800/60 px-3 py-2 rounded-xl transition-all cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -1132,7 +1223,7 @@
                 Peta Masuk Lembur
               </a>
               <a id="detail-overtime-clock-out-map" href="#" target="_blank"
-                class="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 border border-purple-200/60 dark:border-purple-800/60 px-3 py-2 rounded-xl transition-all cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -1148,51 +1239,60 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+      <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 flex justify-end gap-2">
         <button id="btn-close-detail-bottom"
-          class="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl transition-colors shadow-sm">
-          Kembali
+          class="px-5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 rounded-xl transition-all shadow-xs cursor-pointer">
+          Tutup
         </button>
       </div>
-
     </div>
   </div>
 
   <!-- Lightbox Modal for Photos -->
-  <div id="lightbox-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-200">
-    <div class="relative w-full max-w-md bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 space-y-3.5">
-      <div class="flex items-center justify-between pb-1 border-b border-slate-100">
-        <h3 id="lightbox-title" class="font-bold text-sm text-slate-800">Detail Foto Presensi</h3>
+  <div id="lightbox-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-60 animate-in fade-in duration-200">
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-200/50 dark:border-brand-800/40">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>
+          </div>
+          <h3 id="lightbox-title" class="font-bold text-sm text-slate-900 dark:text-white">Detail Foto Presensi</h3>
+        </div>
         <button id="btn-close-lightbox"
-          class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors font-bold text-lg">
-          &times;
+          class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 aspect-[4/3]">
+      <div class="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-950 aspect-[4/3] shadow-inner">
         <img id="lightbox-image" class="w-full h-full object-cover" src="" alt="Detail Foto" />
       </div>
-      <div id="lightbox-location" class="text-center pt-0.5">
+      <div id="lightbox-location" class="text-center pt-1">
         <!-- Dynamic Location Button Injected Here -->
       </div>
     </div>
   </div>
 
   <!-- Modal Detail Presensi Lembur Super Admin (Foto & GPS) -->
-  <div id="modal-overtime-detail" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-      <div class="flex items-center justify-between border-b pb-3 dark:border-slate-700">
-        <h3 class="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-          <span>📸</span> <span>Detail Foto & GPS Presensi Lembur</span>
-        </h3>
-        <button id="btn-close-ot-detail" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">✕</button>
+  <div id="modal-overtime-detail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between border-b pb-4 border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="font-bold text-slate-900 dark:text-white text-base">Verifikasi Presensi Lembur</h3>
+        </div>
+        <button id="btn-close-ot-detail" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <div id="ot-detail-content" class="space-y-4">
         <!-- Injected via JS -->
       </div>
 
-      <div class="flex justify-end pt-2">
-        <button type="button" id="btn-done-ot-detail" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 transition-colors">
+      <div class="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button type="button" id="btn-done-ot-detail" class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer">
           Tutup
         </button>
       </div>

@@ -359,15 +359,19 @@ function renderPendingTable() {
         <div class="font-medium text-slate-800 dark:text-slate-200 leading-snug">${escapeHtml(item.reason || '-')}</div>
         ${item.type === 'cuti' && (item.handover_plan || item.handover_to_name) ? `
           <div class="mt-1.5 p-2 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300">
-            <div class="font-bold text-blue-900 dark:text-blue-300">📋 Serah Terima:</div>
+            <div class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Serah Terima:</span>
+            </div>
             ${item.handover_plan ? `<div class="italic text-slate-600 dark:text-slate-400">${escapeHtml(item.handover_plan)}</div>` : ''}
             ${item.handover_to_name ? `<div>Diserahkan ke: <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(item.handover_to_name)}</span> ${item.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(item.handover_to_position)})</span>` : ''}</div>` : ''}
           </div>
         ` : ''}
         ${item.attachment ? `
           <div class="mt-1.5">
-            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
-              📎 <span>Lihat Bukti File / Surat Dokter</span>
+            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
+              <svg class="w-3 h-3 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.559 18.32a1.5 1.5 0 11-2.122-2.122l7.693-7.693"/></svg>
+              <span>Lihat Bukti File / Surat Dokter</span>
             </a>
           </div>
         ` : ''}
@@ -446,15 +450,19 @@ function renderHistoryTable() {
         </div>
         ${item.type === 'cuti' && (item.handover_plan || item.handover_to_name) ? `
           <div class="p-2 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300 mt-1">
-            <div class="font-bold text-blue-900 dark:text-blue-300">📋 Serah Terima:</div>
+            <div class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Serah Terima:</span>
+            </div>
             ${item.handover_plan ? `<div class="italic text-slate-600 dark:text-slate-400">${escapeHtml(item.handover_plan)}</div>` : ''}
             ${item.handover_to_name ? `<div>Diserahkan ke: <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(item.handover_to_name)}</span> ${item.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(item.handover_to_position)})</span>` : ''}</div>` : ''}
           </div>
         ` : ''}
         ${item.attachment ? `
           <div class="mt-1">
-            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
-              📎 <span>Lihat Bukti File / Surat Dokter</span>
+            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
+              <svg class="w-3 h-3 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.559 18.32a1.5 1.5 0 11-2.122-2.122l7.693-7.693"/></svg>
+              <span>Lihat Bukti File / Surat Dokter</span>
             </a>
           </div>
         ` : ''}
@@ -524,8 +532,9 @@ function renderOvertimePendingTable() {
           ${item.overtime_clock_out_note ? `<div class="text-[11px] text-slate-500 italic">Catatan: ${escapeHtml(item.overtime_clock_out_note)}</div>` : ''}
         </td>
         <td class="px-4 py-3.5 whitespace-nowrap">
-          <button onclick="openOvertimeDetailModal(${item.id})" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors flex items-center gap-1">
-            <span>📸</span> <span>Lihat Foto & GPS</span>
+          <button onclick="openOvertimeDetailModal(${item.id})" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors inline-flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 stroke-[2] text-slate-500 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg>
+            <span>Lihat Foto & GPS</span>
           </button>
         </td>
         <td class="px-4 py-3.5 text-center">
@@ -591,7 +600,10 @@ function renderOvertimeHistoryTable() {
         </td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
           ${formatDate(item.attendance_date)}
-          <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400">⏱️ ${inTime} - ${outTime} (${durStr})</div>
+          <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5">
+            <svg class="w-3 h-3 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>${inTime} - ${outTime} (${durStr})</span>
+          </div>
         </td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}">
           ${escapeHtml(item.overtime_task_reason || '-')}
@@ -606,7 +618,8 @@ function renderOvertimeHistoryTable() {
             </span>
           </div>
           <button onclick="openOvertimeDetailModal(${item.id})" class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] hover:bg-slate-200 transition-colors inline-flex items-center gap-1">
-            📸 Lihat Foto & GPS
+            <svg class="w-3 h-3 stroke-[2] text-slate-500 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg>
+            <span>Lihat Foto & GPS</span>
           </button>
         </td>
         <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
@@ -681,26 +694,34 @@ function openOvertimeDetailModal(id) {
         <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Absen Masuk Lembur</span>
         ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Masuk Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
         ${inGpsStr ? `
-          <div class="space-y-1">
-            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${inGpsStr}</div>
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+              <span>${inGpsStr}</span>
+            </div>
             <a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
-              🗺️ Buka Maps GPS Masuk
+              <svg class="w-3.5 h-3.5 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503-12.428l-5.503 2.752-6.5-3.25V18l6.5 3.25 5.503-2.752 5.497 2.752V4.75l-5.497-2.678z"/></svg>
+              <span>Buka Google Maps</span>
             </a>
           </div>
-        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Masuk tak melacak</span>'}
+        ` : '<span class="text-xs text-slate-400 block pt-1">Koordinat GPS tidak tersedia</span>'}
       </div>
 
       <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
         <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Absen Pulang Lembur</span>
         ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Pulang Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
         ${outGpsStr ? `
-          <div class="space-y-1">
-            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${outGpsStr}</div>
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+              <span>${outGpsStr}</span>
+            </div>
             <a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
-              🗺️ Buka Maps GPS Pulang
+              <svg class="w-3.5 h-3.5 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503-12.428l-5.503 2.752-6.5-3.25V18l6.5 3.25 5.503-2.752 5.497 2.752V4.75l-5.497-2.678z"/></svg>
+              <span>Buka Google Maps</span>
             </a>
           </div>
-        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Pulang tak melacak</span>'}
+        ` : '<span class="text-xs text-slate-400 block pt-1">Koordinat GPS tidak tersedia</span>'}
       </div>
     </div>
   `;
@@ -1037,9 +1058,15 @@ function showToast(message, type = 'info') {
                   type === 'error' ? 'bg-rose-600 text-white' :
                   'bg-slate-800 text-white';
 
-  toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 ${bgClass}`;
+  const iconSvg = type === 'success'
+    ? `<svg class="w-4 h-4 shrink-0 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>`
+    : type === 'error'
+    ? `<svg class="w-4 h-4 shrink-0 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>`
+    : `<svg class="w-4 h-4 shrink-0 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>`;
+
+  toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2.5 transform transition-all duration-300 translate-y-2 opacity-0 ${bgClass}`;
   toast.innerHTML = `
-    <span>${type === 'success' ? '✅' : type === 'error' ? '⚠️' : 'ℹ️'}</span>
+    <span class="shrink-0">${iconSvg}</span>
     <span>${escapeHtml(message)}</span>
   `;
 

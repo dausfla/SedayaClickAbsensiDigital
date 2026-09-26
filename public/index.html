@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>SedayaClick — Absensi</title>
+  <title>SedayaClick — Presensi Digital</title>
   <meta name="theme-color" content="#4338CA" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/png" href="/favicon.png" />
@@ -12,24 +12,41 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
           colors: {
-            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#4f46e5', 600: '#4338CA', 700: '#3730a3', 900: '#1e1b4b' }
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#4f46e5',
+              600: '#4338CA',
+              700: '#3730a3',
+              900: '#1e1b4b'
+            }
           }
         }
       }
-    }
+    };
   </script>
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      letter-spacing: -0.011em;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
     }
 
     .tab-active {
@@ -39,234 +56,219 @@
   </style>
 </head>
 
-<body class="min-h-screen bg-slate-100 text-slate-800 antialiased flex items-center justify-center p-0 sm:p-4">
+<body class="min-h-screen bg-slate-900 text-slate-100 antialiased flex items-center justify-center p-3 sm:p-6 selection:bg-brand-500 selection:text-white relative">
+  <!-- Subtle architectural background pattern -->
+  <div class="fixed inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none"></div>
 
-  <!-- Mobile-App Container Card -->
-  <div
-    class="w-full max-w-[440px] bg-slate-50 min-h-screen sm:min-h-0 sm:rounded-3xl border-x sm:border border-slate-200/80 shadow-2xl overflow-hidden relative flex flex-col justify-between">
+  <!-- Main Workstation Authentication Card -->
+  <div class="w-full max-w-md bg-slate-950/90 rounded-3xl border border-slate-800 shadow-2xl p-6 sm:p-8 backdrop-blur-xl relative z-10 space-y-6">
 
-    <!-- Top Hero Header with Brand Gradient -->
-    <div
-      class="bg-gradient-to-b from-brand-700 via-brand-600 to-indigo-900 text-white pt-10 pb-12 px-6 text-center relative overflow-hidden flex flex-col items-center">
-      <!-- Decorative Glow Shapes -->
-      <div class="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
-      <div class="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-brand-500/20 blur-2xl pointer-events-none">
+    <!-- Brand Header -->
+    <div class="flex items-center gap-3.5 pb-2 border-b border-slate-800/80">
+      <div class="w-11 h-11 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/25 border border-brand-400/30 shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </div>
-
-      <!-- App Name & Tagline -->
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-1 relative z-10">SedayaClick</h1>
-      <p class="text-brand-100/90 text-xs sm:text-sm font-medium max-w-[260px] leading-snug relative z-10">Absensi
-        Digital</p>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-white leading-tight">SedayaClick</h1>
+        <p class="text-xs text-slate-400 font-medium">Sistem Presensi & Manajemen Kerja Digital</p>
+      </div>
     </div>
 
-    <!-- Main Card Body -->
-    <div class="px-6 pb-8 -mt-6 relative z-20 flex-1 flex flex-col justify-between">
-      <div class="bg-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-100/80">
+    <!-- Alert Notification Box -->
+    <div id="alert-box" class="hidden text-xs font-semibold rounded-xl px-4 py-3 border transition-all"></div>
 
-        <!-- Alert Notification Box -->
-        <div id="alert-box" class="hidden mb-4 text-xs font-semibold rounded-2xl px-4 py-3 shadow-xs border"></div>
-
-        <!-- FORM LOGIN (SIGN IN) -->
-        <form id="form-login" class="space-y-4">
-          <div class="mb-2">
-            <h2 class="text-lg font-bold text-slate-800">Masuk Akun</h2>
-            <p class="text-xs text-slate-400">Silakan masuk dengan email & password terdaftar</p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Email</label>
-            <input required type="email" id="login-email"
-              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-              placeholder="nama@perusahaan.com" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Password</label>
-            <div class="relative">
-              <input required type="password" id="login-password"
-                class="w-full rounded-full bg-slate-50 border border-slate-200/80 pl-5 pr-12 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-                placeholder="••••••••" />
-              <button type="button" id="toggle-login-password"
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                title="Tampilkan/Sembunyikan Password">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Remember Me & Forgot Password -->
-          <div class="flex items-center justify-between px-1 pt-1">
-            <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-medium text-slate-600 hover:text-slate-800">
-              <input type="checkbox" id="login-remember-me" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 transition cursor-pointer" />
-              <span>Ingatkan Saya</span>
-            </label>
-            <button type="button" id="btn-forgot-password" class="text-xs font-semibold text-brand-600 hover:underline">
-              Lupa Password?
-            </button>
-          </div>
-
-          <button type="submit"
-            class="w-full rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm py-3.5 shadow-lg shadow-brand-600/25 active:scale-[0.98] transition-all mt-2">
-            Masuk
-          </button>
-
-          <div class="border-t border-slate-100 pt-4 mt-4 text-center">
-            <p class="text-xs text-slate-500">
-              Belum punya akun?
-              <button type="button" id="tab-register" class="font-bold text-brand-600 hover:underline">Daftar</button>
-            </p>
-          </div>
-        </form>
-
-        <!-- FORM REGISTER (DAFTAR AKUN) -->
-        <form id="form-register" class="space-y-3.5 hidden">
-          <!-- Back button & Title -->
-          <div class="flex items-center justify-between mb-2">
-            <button type="button" id="tab-login"
-              class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-brand-600 transition-colors p-1 -ml-1">
-              <span class="text-base font-bold">←</span> <span>Kembali</span>
-            </button>
-            <span class="text-[10px] font-bold tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">Buat
-              Akun</span>
-          </div>
-
-          <div>
-            <h2 class="text-lg font-bold text-slate-800">Buat Akun</h2>
-            <p class="text-xs text-slate-400">Lengkapi data pendaftaran berikut</p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Nama Lengkap</label>
-            <input required type="text" id="reg-full-name"
-              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-              placeholder="Firdaus" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Email</label>
-            <input required type="email" id="reg-email"
-              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-              placeholder="hi@firdaus.co" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Password</label>
-            <div class="relative">
-              <input required minlength="6" type="password" id="reg-password"
-                class="w-full rounded-full bg-slate-50 border border-slate-200/80 pl-4 pr-11 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-                placeholder="Minimal 6 karakter" />
-              <button type="button" id="toggle-reg-password"
-                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                title="Tampilkan/Sembunyikan Password">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2.5">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Divisi</label>
-              <select required id="reg-division"
-                class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Jabatan</label>
-              <select required id="reg-position"
-                class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Nomor WhatsApp</label>
-            <input required type="tel" id="reg-whatsapp"
-              class="w-full rounded-full bg-slate-50 border border-slate-200/80 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-              placeholder="08xxxxxxxxxx" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1 ml-1">Alamat</label>
-            <textarea required id="reg-address" rows="2"
-              class="w-full rounded-2xl bg-slate-50 border border-slate-200/80 px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-              placeholder="Alamat domisili lengkap..."></textarea>
-          </div>
-
-          <button type="submit"
-            class="w-full rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm py-3.5 shadow-lg shadow-brand-600/25 active:scale-[0.98] transition-all mt-1">
-            Daftar
-          </button>
-
-          <p class="text-[11px] text-slate-400 text-center leading-relaxed">Akun baru memerlukan persetujuan dari Super
-            Admin sebelum dapat digunakan untuk masuk.</p>
-        </form>
-
+    <!-- FORM LOGIN (SIGN IN) -->
+    <form id="form-login" class="space-y-4">
+      <div>
+        <h2 class="text-base font-bold text-white">Masuk ke Sistem</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Gunakan kredensial akun terdaftar perusahaan</p>
       </div>
 
-      <!-- PWA Install Button -->
-      <button type="button" id="btn-install-pwa"
-        class="mt-4 w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-600 bg-white border border-brand-200 hover:bg-brand-50 rounded-full py-3 px-4 shadow-sm active:scale-[0.98] transition-all">
-        <svg class="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        <span>Tambahkan ke Layar Utama (Install App)</span>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Email</label>
+        <input required type="email" id="login-email"
+          class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+          placeholder="nama@perusahaan.com" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+        <div class="relative">
+          <input required type="password" id="login-password"
+            class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 pl-4 pr-11 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+            placeholder="••••••••" />
+          <button type="button" id="toggle-login-password"
+            class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1 transition-colors cursor-pointer"
+            title="Tampilkan/Sembunyikan Password">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Remember Me & Forgot Password -->
+      <div class="flex items-center justify-between pt-0.5">
+        <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-medium text-slate-400 hover:text-slate-300">
+          <input type="checkbox" id="login-remember-me" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-600 focus:ring-brand-500 transition cursor-pointer" />
+          <span>Ingatkan Saya</span>
+        </label>
+        <button type="button" id="btn-forgot-password" class="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer">
+          Lupa Password?
+        </button>
+      </div>
+
+      <button type="submit"
+        class="w-full rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm py-3 transition-all active:scale-[0.99] shadow-md shadow-brand-600/20 cursor-pointer mt-2">
+        Masuk
       </button>
 
-      <!-- Footer Copyright -->
-      <div class="mt-6 text-center text-[11px] text-slate-400 font-medium">
-        © 2026 SedayaClick. Hak Cipta Dilindungi.
+      <div class="border-t border-slate-800/80 pt-4 text-center">
+        <p class="text-xs text-slate-400">
+          Belum memiliki akun?
+          <button type="button" id="tab-register" class="font-bold text-brand-400 hover:text-brand-300 transition-colors ml-1 cursor-pointer">Daftar Akun Baru</button>
+        </p>
       </div>
+    </form>
+
+    <!-- FORM REGISTER (DAFTAR AKUN) -->
+    <form id="form-register" class="space-y-3.5 hidden">
+      <!-- Back button & Title -->
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <button type="button" id="tab-login"
+          class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>Kembali ke Login</span>
+        </button>
+        <span class="text-[11px] font-semibold text-brand-400 bg-brand-950/60 border border-brand-800/50 px-2.5 py-0.5 rounded-full">Pendaftaran Akun</span>
+      </div>
+
+      <div>
+        <h2 class="text-base font-bold text-white">Buat Akun Baru</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Lengkapi data profil karyawan di bawah ini</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Lengkap</label>
+        <input required type="text" id="reg-full-name"
+          class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+          placeholder="Nama sesuai KTP" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+        <input required type="email" id="reg-email"
+          class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+          placeholder="nama@perusahaan.com" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+        <div class="relative">
+          <input required minlength="6" type="password" id="reg-password"
+            class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 pl-3.5 pr-11 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+            placeholder="Minimal 6 karakter" />
+          <button type="button" id="toggle-reg-password"
+            class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1 transition-colors cursor-pointer"
+            title="Tampilkan/Sembunyikan Password">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Divisi</label>
+          <select required id="reg-division"
+            class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-3 py-2 text-xs font-medium text-slate-100 focus:outline-none transition-all"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Jabatan</label>
+          <select required id="reg-position"
+            class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-3 py-2 text-xs font-medium text-slate-100 focus:outline-none transition-all"></select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Nomor WhatsApp</label>
+        <input required type="tel" id="reg-whatsapp"
+          class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+          placeholder="08xxxxxxxxxx" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Alamat Tempat Tinggal</label>
+        <textarea required id="reg-address" rows="2"
+          class="w-full rounded-xl bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none font-medium"
+          placeholder="Alamat domisili lengkap..."></textarea>
+      </div>
+
+      <button type="submit"
+        class="w-full rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm py-3 transition-all active:scale-[0.99] shadow-md shadow-brand-600/20 cursor-pointer mt-1">
+        Daftar Akun
+      </button>
+
+      <p class="text-[11px] text-slate-400 text-center leading-relaxed">Pendaftaran akun baru akan melalui verifikasi Super Admin sebelum dapat digunakan.</p>
+    </form>
+
+    <!-- PWA Install Button -->
+    <button type="button" id="btn-install-pwa"
+      class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl py-2.5 px-4 shadow-xs active:scale-[0.99] transition-all cursor-pointer">
+      <svg class="w-4 h-4 text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      <span>Install Aplikasi (Tambah ke Beranda)</span>
+    </button>
+
+    <!-- Footer Copyright -->
+    <div class="text-center text-[11px] text-slate-500 font-medium pt-1">
+      &copy; 2026 SedayaClick. Seluruh hak cipta dilindungi.
     </div>
   </div>
 
   <!-- PWA Install Guide Modal -->
   <div id="pwa-install-modal"
-    class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div
-      class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-in fade-in duration-200">
-      <div class="flex items-center justify-between mb-4">
+      class="bg-slate-900 text-slate-100 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-lg shadow-inner">⏱</div>
+          <div class="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center border border-brand-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          </div>
           <div>
-            <h3 class="font-bold text-sm text-slate-800">Install SedayaClick</h3>
+            <h3 class="font-bold text-sm text-white">Install SedayaClick</h3>
             <p class="text-[11px] text-slate-400 font-medium">Panduan Tambah ke Layar Utama</p>
           </div>
         </div>
         <button id="btn-close-pwa-modal"
-          class="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
       <!-- iOS Safari Instructions -->
-      <div id="pwa-instructions-ios" class="space-y-3 text-xs text-slate-600">
-        <p class="font-medium text-slate-700">Petunjuk Pemasangan di iPhone / iPad (Safari):</p>
-        <ol
-          class="space-y-2 list-decimal list-inside bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed font-normal">
-          <li>Tekan tombol <strong>Bagikan (Share)</strong> <span
-              class="inline-block px-1.5 py-0.5 bg-slate-200 rounded text-slate-800 text-[10px] font-bold">⎋</span> di
-            bagian bawah Safari.</li>
+      <div id="pwa-instructions-ios" class="space-y-3 text-xs text-slate-300">
+        <p class="font-medium text-slate-200">Petunjuk Pemasangan di iPhone / iPad (Safari):</p>
+        <ol class="space-y-2 list-decimal list-inside bg-slate-950 p-3.5 rounded-xl border border-slate-800 leading-relaxed font-normal">
+          <li>Tekan tombol <strong>Bagikan (Share)</strong> di bagian bawah Safari.</li>
           <li>Gulir menu ke bawah lalu pilih <strong>"Tambahkan ke Layar Utama"</strong> (Add to Home Screen).</li>
           <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas.</li>
         </ol>
       </div>
 
       <!-- Android / Chrome Instructions -->
-      <div id="pwa-instructions-android" class="space-y-3 text-xs text-slate-600 hidden">
-        <p class="font-medium text-slate-700">Petunjuk Pemasangan di Android (Chrome):</p>
-        <ol
-          class="space-y-2 list-decimal list-inside bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed font-normal">
+      <div id="pwa-instructions-android" class="space-y-3 text-xs text-slate-300 hidden">
+        <p class="font-medium text-slate-200">Petunjuk Pemasangan di Android (Chrome):</p>
+        <ol class="space-y-2 list-decimal list-inside bg-slate-950 p-3.5 rounded-xl border border-slate-800 leading-relaxed font-normal">
           <li>Tekan menu <strong>titik tiga (⋮)</strong> di pojok kanan atas Chrome.</li>
           <li>Pilih opsi <strong>"Tambahkan ke Layar Utama"</strong> atau <strong>"Install Aplikasi"</strong>.</li>
           <li>Konfirmasi pemasangan.</li>
@@ -274,8 +276,8 @@
       </div>
 
       <button id="btn-pwa-modal-ok"
-        class="mt-5 w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-3 rounded-full shadow-md shadow-brand-500/20 active:scale-[0.98] transition-all">
-        Saya Mengerti
+        class="mt-5 w-full bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all cursor-pointer">
+        Mengerti
       </button>
     </div>
   </div>
@@ -293,8 +295,8 @@
         const isPassword = input.type === 'password';
         input.type = isPassword ? 'text' : 'password';
         button.innerHTML = isPassword
-          ? `<svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.047 10.047 0 013.98-1.063c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-1.782 1.782l-10-10"/></svg>`
-          : `<svg class="w-5 h-5 text-slate-400 hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+          ? `<svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.047 10.047 0 013.98-1.063c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-1.782 1.782l-10-10"/></svg>`
+          : `<svg class="w-4 h-4 text-slate-500 hover:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
       });
     }
 

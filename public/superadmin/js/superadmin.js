@@ -541,6 +541,16 @@ async function openDetailModal(attendanceId) {
     document.getElementById('detail-employee-info').textContent = `${data.full_name} · ${data.division_name || '-'} · ${data.position_name || '-'}`;
     document.getElementById('detail-date').textContent = `Tanggal: ${data.attendance_date}`;
 
+    // Avatar initials
+    const initials = (data.full_name || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(n => n[0].toUpperCase())
+      .join('');
+    const avatarEl = document.getElementById('detail-employee-avatar');
+    if (avatarEl) avatarEl.textContent = initials;
+
     // Times
     document.getElementById('detail-time-in').textContent = data.clock_in_time || '-';
     document.getElementById('detail-time-out').textContent = data.clock_out_time || '-';
@@ -618,14 +628,21 @@ async function openDetailModal(attendanceId) {
       if (outPhotoMapBtn) { outPhotoMapBtn.classList.add('hidden'); }
     }
 
-    // Status
+    // Status Pill
     const statusEl = document.getElementById('detail-status');
-    statusEl.textContent = data.status_display;
-    // Set status color
-    statusEl.className = 'font-semibold text-lg';
-    if (data.status_display === 'Tepat Waktu') statusEl.classList.add('text-green-600');
-    else if (data.status_display === 'Terlambat') statusEl.classList.add('text-amber-600');
-    else statusEl.classList.add('text-slate-500');
+    if (statusEl) {
+      statusEl.textContent = data.status_display;
+      statusEl.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide border';
+      if (data.status_display === 'Tepat Waktu' || data.status_display === 'Hadir') {
+        statusEl.className += ' bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
+      } else if (data.status_display === 'Terlambat') {
+        statusEl.className += ' bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20';
+      } else if (data.status_display === 'Izin' || data.status_display === 'Sakit') {
+        statusEl.className += ' bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20';
+      } else {
+        statusEl.className += ' bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20';
+      }
+    }
 
     // Overtime section
     const overtimeSection = document.getElementById('detail-overtime-section');
@@ -719,12 +736,18 @@ function openLightbox(imageUrl, title = 'Detail Foto Presensi', gpsUrl = null) {
   if (lightboxLoc) {
     if (gpsUrl && gpsUrl !== '#') {
       lightboxLoc.innerHTML = `
-        <a href="${gpsUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-600 font-bold text-xs border border-brand-200 shadow-xs transition-colors">
-          📍 Buka GPS Lokasi (${title})
+        <a href="${gpsUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400 dark:hover:bg-brand-900/50 font-bold text-xs border border-brand-200/80 dark:border-brand-800/50 shadow-xs transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Lihat Titik Lokasi Google Maps
         </a>
       `;
     } else {
-      lightboxLoc.innerHTML = `<span class="text-xs text-slate-400 font-medium">📍 Lokasi GPS tidak tercatat</span>`;
+      lightboxLoc.innerHTML = `
+        <span class="inline-flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Koordinat GPS tidak tercatat
+        </span>
+      `;
     }
   }
 
@@ -837,27 +860,32 @@ async function loadSubmissionsPending(silent = false) {
           </span>
         </div>
 
-        <div class="text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-1.5">
-          <span>📅</span> <span>Tanggal Mulai: <strong>${escapeHtml(s.start_date)}</strong> s/d <strong>${escapeHtml(s.end_date)}</strong></span>
+        <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Tanggal Mulai: <strong class="text-slate-800 dark:text-slate-200 font-mono">${escapeHtml(s.start_date)}</strong> s/d <strong class="text-slate-800 dark:text-slate-200 font-mono">${escapeHtml(s.end_date)}</strong></span>
         </div>
 
-        <div class="text-xs text-slate-700 bg-slate-50/80 p-3 rounded-xl border border-slate-100 space-y-1">
-          <p class="font-bold text-slate-800">Alasan / Keterangan Detail:</p>
-          <p class="leading-relaxed text-slate-600">${escapeHtml(s.reason || '-')}</p>
+        <div class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
+          <p class="font-bold text-slate-800 dark:text-slate-200">Alasan / Keterangan Detail:</p>
+          <p class="leading-relaxed text-slate-600 dark:text-slate-400">${escapeHtml(s.reason || '-')}</p>
         </div>
 
         ${s.type === 'cuti' && (s.handover_plan || s.handover_to_name) ? `
-          <div class="bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 text-xs space-y-1.5 text-slate-700">
-            <p class="font-bold text-blue-900 flex items-center gap-1">📋 Rencana Serah Terima Pekerjaan (Cuti):</p>
-            ${s.handover_plan ? `<p class="italic text-slate-600 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
-            ${s.handover_to_name ? `<p class="font-medium text-slate-800 pt-0.5">Dialihkan Kepada: <strong>${escapeHtml(s.handover_to_name)}</strong> ${s.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
+          <div class="bg-blue-50/80 dark:bg-blue-950/30 p-3 rounded-xl border border-blue-200/80 dark:border-blue-900/50 text-xs space-y-1.5 text-slate-700 dark:text-slate-300">
+            <p class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Rencana Serah Terima Pekerjaan (Cuti):
+            </p>
+            ${s.handover_plan ? `<p class="italic text-slate-600 dark:text-slate-400 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
+            ${s.handover_to_name ? `<p class="font-medium text-slate-800 dark:text-slate-200 pt-0.5">Dialihkan Kepada: <strong>${escapeHtml(s.handover_to_name)}</strong> ${s.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
           </div>
         ` : ''}
 
         ${s.attachment ? `
           <div>
-            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 border border-brand-200/60 px-3 py-1.5 rounded-xl transition-colors">
-              <span>📎</span> <span>Lihat Bukti File / Surat Dokter</span>
+            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 dark:bg-brand-950/50 border border-brand-200/60 dark:border-brand-800/40 px-3 py-1.5 rounded-xl transition-colors">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+              <span>Lihat Bukti File / Surat Dokter</span>
             </a>
           </div>
         ` : ''}
@@ -913,27 +941,32 @@ async function loadSubmissionsHistory(silent = false) {
           </div>
         </div>
 
-        <div class="text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-1.5">
-          <span>📅</span> <span>Tanggal Mulai: <strong>${escapeHtml(s.start_date)}</strong> s/d <strong>${escapeHtml(s.end_date)}</strong></span>
+        <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Tanggal Mulai: <strong class="text-slate-800 dark:text-slate-200 font-mono">${escapeHtml(s.start_date)}</strong> s/d <strong class="text-slate-800 dark:text-slate-200 font-mono">${escapeHtml(s.end_date)}</strong></span>
         </div>
 
-        <div class="text-xs text-slate-700 bg-slate-50/80 p-3 rounded-xl border border-slate-100 space-y-1">
-          <p class="font-bold text-slate-800">Alasan / Keterangan Detail:</p>
-          <p class="leading-relaxed text-slate-600">${escapeHtml(s.reason || '-')}</p>
+        <div class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
+          <p class="font-bold text-slate-800 dark:text-slate-200">Alasan / Keterangan Detail:</p>
+          <p class="leading-relaxed text-slate-600 dark:text-slate-400">${escapeHtml(s.reason || '-')}</p>
         </div>
 
         ${s.type === 'cuti' && (s.handover_plan || s.handover_to_name) ? `
-          <div class="bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 text-xs space-y-1.5 text-slate-700">
-            <p class="font-bold text-blue-900 flex items-center gap-1">📋 Rencana Serah Terima Pekerjaan (Cuti):</p>
-            ${s.handover_plan ? `<p class="italic text-slate-600 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
-            ${s.handover_to_name ? `<p class="font-medium text-slate-800 pt-0.5">Dialihkan Kepada: <strong>${escapeHtml(s.handover_to_name)}</strong> ${s.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
+          <div class="bg-blue-50/80 dark:bg-blue-950/30 p-3 rounded-xl border border-blue-200/80 dark:border-blue-900/50 text-xs space-y-1.5 text-slate-700 dark:text-slate-300">
+            <p class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012 2"/></svg>
+              Rencana Serah Terima Pekerjaan (Cuti):
+            </p>
+            ${s.handover_plan ? `<p class="italic text-slate-600 dark:text-slate-400 leading-relaxed">${escapeHtml(s.handover_plan)}</p>` : ''}
+            ${s.handover_to_name ? `<p class="font-medium text-slate-800 dark:text-slate-200 pt-0.5">Dialihkan Kepada: <strong>${escapeHtml(s.handover_to_name)}</strong> ${s.handover_to_position ? `<span class="text-slate-500">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
           </div>
         ` : ''}
 
         ${s.attachment ? `
           <div>
-            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 border border-brand-200/60 px-3 py-1.5 rounded-xl transition-colors">
-              <span>📎</span> <span>Lihat Bukti File / Surat Dokter</span>
+            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 dark:bg-brand-950/50 border border-brand-200/60 dark:border-brand-800/40 px-3 py-1.5 rounded-xl transition-colors">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+              <span>Lihat Bukti File / Surat Dokter</span>
             </a>
           </div>
         ` : ''}
@@ -1077,7 +1110,7 @@ function renderSAOvertimePendingTable() {
         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}</td>
         <td class="px-4 py-3 text-slate-700 dark:text-slate-200 whitespace-nowrap"><div class="font-bold text-amber-700 dark:text-amber-400">In: ${inTime} | Out: ${outTime}</div><div class="text-[11px] text-slate-500 font-medium">Durasi: <span class="font-bold">${durStr}</span></div></td>
         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}"><div class="font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(item.overtime_task_reason || '-')}</div>${item.overtime_clock_out_note ? `<div class="text-[11px] text-slate-500 italic">Catatan: ${escapeHtml(item.overtime_clock_out_note)}</div>` : ''}</td>
-        <td class="px-4 py-3 whitespace-nowrap"><button onclick="openSAOvertimeDetailModal('${item.id}')" data-id="${item.id}" class="btn-sa-ot-detail px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] hover:bg-slate-200 transition-colors flex items-center gap-1 cursor-pointer"><span>📸</span> <span>Lihat Foto & GPS</span></button></td>
+        <td class="px-4 py-3 whitespace-nowrap"><button onclick="openSAOvertimeDetailModal('${item.id}')" data-id="${item.id}" class="btn-sa-ot-detail px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-[11px] transition-colors flex items-center gap-1.5 cursor-pointer"><svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg> <span>Verifikasi Foto & GPS</span></button></td>
         <td class="px-4 py-3 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">Pending</span></td>
         <td class="px-4 py-3 text-right whitespace-nowrap"><div class="flex items-center justify-end gap-1.5"><button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="approved" class="btn-sa-ot-decide px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px]">Setujui</button><button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="rejected" class="btn-sa-ot-decide px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px]">Tolak</button><button data-id="${item.id}" class="btn-sa-ot-delete px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] border border-rose-200">Hapus</button></div></td>
       </tr>
@@ -1114,7 +1147,7 @@ function renderSAOvertimeHistoryTable() {
       <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
         <td class="px-4 py-3.5 font-bold text-slate-900 dark:text-white">${escapeHtml(item.full_name)}</td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300"><span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-[11px] font-semibold">${escapeHtml(item.division_name || '-')}</span></td>
-        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}<div class="text-[11px] font-bold text-amber-600 dark:text-amber-400">⏱️ ${inTime} - ${outTime} (${durStr})</div></td>
+        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.attendance_date)}<div class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 font-mono flex items-center gap-1 mt-0.5"><svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ${inTime} - ${outTime} (${durStr})</div></td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(item.overtime_task_reason)}">${escapeHtml(item.overtime_task_reason || '-')}</td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
           <div class="flex items-center gap-2 mb-1">
@@ -1125,8 +1158,9 @@ function renderSAOvertimeHistoryTable() {
               ${escapeHtml(item.overtime_review_note || '-')}
             </span>
           </div>
-          <button onclick="openSAOvertimeDetailModal('${item.id}')" data-id="${item.id}" class="btn-sa-ot-detail px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] hover:bg-slate-200 transition-colors inline-flex items-center gap-1 cursor-pointer">
-            📸 Lihat Foto & GPS
+          <button onclick="openSAOvertimeDetailModal('${item.id}')" data-id="${item.id}" class="btn-sa-ot-detail px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-[10px] transition-colors inline-flex items-center gap-1 cursor-pointer">
+            <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>
+            <span>Verifikasi Foto & GPS</span>
           </button>
         </td>
         <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
@@ -1182,37 +1216,45 @@ function openSAOvertimeDetailModal(id) {
   const outGpsLink = outGpsStr ? `https://maps.google.com/?q=${item.overtime_clock_out_lat},${item.overtime_clock_out_lng}` : null;
 
   content.innerHTML = `
-    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl space-y-1 text-xs border border-slate-200 dark:border-slate-800">
-      <div class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)} (${escapeHtml(item.division_name || '-')})</div>
-      <div class="text-slate-500">Tanggal: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.attendance_date)}</span></div>
-      <div class="text-slate-500">Tugas Lembur: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.overtime_task_reason || '-')}</span></div>
+    <div class="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-2xl space-y-1.5 text-xs border border-slate-200/80 dark:border-slate-800">
+      <div class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">${escapeHtml(item.full_name)} <span class="text-xs font-semibold text-slate-500 font-normal">(${escapeHtml(item.division_name || '-')})</span></div>
+      <div class="text-slate-500 dark:text-slate-400">Tanggal: <span class="font-semibold text-slate-800 dark:text-slate-200 font-mono">${escapeHtml(item.attendance_date)}</span></div>
+      <div class="text-slate-500 dark:text-slate-400">Tugas Lembur: <span class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.overtime_task_reason || '-')}</span></div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
-        <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Absen Masuk Lembur</span>
-        ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Masuk Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
+      <div class="bg-white dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center space-y-2.5">
+        <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Absen Masuk Lembur</span>
+        ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm" alt="Foto Masuk Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800/80 rounded-xl flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
         ${inGpsStr ? `
-          <div class="space-y-1">
-            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${inGpsStr}</div>
-            <a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
-              🗺️ Buka Maps GPS Masuk
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+              <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              ${inGpsStr}
+            </div>
+            <a href="${inGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 dark:hover:bg-brand-900/50 px-3 py-1.5 rounded-xl border border-brand-200/60 dark:border-brand-800/40 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Buka Maps GPS Masuk
             </a>
           </div>
-        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Masuk tak melacak</span>'}
+        ` : '<span class="inline-flex items-center gap-1 text-xs text-slate-400 pt-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> GPS Masuk tidak tercatat</span>'}
       </div>
 
-      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
-        <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Absen Pulang Lembur</span>
-        ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200 shadow-sm" alt="Foto Pulang Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
+      <div class="bg-white dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center space-y-2.5">
+        <span class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Absen Pulang Lembur</span>
+        ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm" alt="Foto Pulang Lembur" />` : '<div class="w-full aspect-[4/3] bg-slate-100 dark:bg-slate-800/80 rounded-xl flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
         ${outGpsStr ? `
-          <div class="space-y-1">
-            <div class="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">📍 ${outGpsStr}</div>
-            <a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200/60 transition-colors">
-              🗺️ Buka Maps GPS Pulang
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+              <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              ${outGpsStr}
+            </div>
+            <a href="${outGpsLink}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 dark:hover:bg-brand-900/50 px-3 py-1.5 rounded-xl border border-brand-200/60 dark:border-brand-800/40 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Buka Maps GPS Pulang
             </a>
           </div>
-        ` : '<span class="text-xs text-slate-400 block pt-1">📍 GPS Pulang tak melacak</span>'}
+        ` : '<span class="inline-flex items-center gap-1 text-xs text-slate-400 pt-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> GPS Pulang tidak tercatat</span>'}
       </div>
     </div>
   `;
