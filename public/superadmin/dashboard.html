@@ -72,6 +72,64 @@
       border-color: #818cf8;
     }
 
+    /* Mobile Bottom Navigation Bar Styles */
+    .mobile-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background-color: rgba(255, 255, 255, 0.9) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(226, 232, 240, 0.9) !important;
+      padding-top: 0.375rem;
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+      box-shadow: 0 -4px 20px -2px rgba(15, 23, 42, 0.06);
+    }
+
+    .dark .mobile-bottom-nav {
+      background-color: rgba(15, 23, 42, 0.92) !important;
+      border-top: 1px solid rgba(30, 41, 59, 0.9) !important;
+      box-shadow: 0 -4px 25px -2px rgba(0, 0, 0, 0.4);
+    }
+
+    .mobile-bottom-nav .nav-btn {
+      background: transparent !important;
+      border: 1px solid transparent !important;
+      color: #64748b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35rem 0.15rem;
+      border-radius: 0.75rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dark .mobile-bottom-nav .nav-btn {
+      color: #94a3b8;
+    }
+
+    .mobile-bottom-nav .nav-btn svg {
+      transition: transform 0.2s ease, stroke 0.2s ease;
+    }
+
+    .mobile-bottom-nav .nav-btn.active {
+      color: #4338ca !important;
+      background: rgba(67, 56, 202, 0.08) !important;
+    }
+
+    .dark .mobile-bottom-nav .nav-btn.active {
+      color: #818cf8 !important;
+      background: rgba(129, 140, 248, 0.14) !important;
+    }
+
+    .mobile-bottom-nav .nav-btn.active svg {
+      transform: translateY(-1px) scale(1.08);
+      stroke: currentColor;
+    }
+
     /* Precision Dark Mode Styles */
     .dark body {
       background-color: #0b0f19;
@@ -315,16 +373,19 @@
 
     <!-- Mobile top bar -->
     <header
-      class="lg:hidden bg-white border-b border-slate-200 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
-      <div class="font-bold text-brand-700 dark:text-brand-500">SedayaClick</div>
+      class="lg:hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="/icons/icon-192.png" alt="SedayaClick Logo" class="w-7 h-7 rounded-lg object-cover shadow-xs border border-slate-200 dark:border-slate-700" />
+        <span class="font-extrabold text-slate-900 dark:text-white text-base tracking-tight">SedayaClick</span>
+      </div>
       <div class="flex items-center gap-2">
         <button id="btn-toggle-theme-mobile"
-          class="relative inline-flex items-center justify-between w-[125px] h-8 px-1 rounded-full bg-[#EBEBEB] border border-[#D1D1D1] cursor-pointer select-none transition-all duration-300 shadow-xs shrink-0"
+          class="relative inline-flex items-center justify-between w-[125px] h-8 px-1 rounded-full bg-[#EBEBEB] dark:bg-slate-800 border border-[#D1D1D1] dark:border-slate-700 cursor-pointer select-none transition-all duration-300 shadow-xs shrink-0"
           title="Ubah Tema">
-          <span class="text-[9px] font-black tracking-wider text-slate-900 pl-2 uppercase select-none">DAY MODE</span>
+          <span class="text-[9px] font-black tracking-wider text-slate-900 dark:text-slate-100 pl-2 uppercase select-none">DAY MODE</span>
           <div
-            class="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center shrink-0 border border-slate-200">
-            <svg class="w-3.5 h-3.5 text-slate-900" fill="none" stroke="currentColor" stroke-width="2"
+            class="w-6 h-6 rounded-full bg-white dark:bg-slate-700 shadow-md flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-600">
+            <svg class="w-3.5 h-3.5 text-slate-900 dark:text-slate-100" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="4.5"></circle>
               <line x1="12" y1="2" x2="12" y2="4"></line>
@@ -339,20 +400,13 @@
           </div>
         </button>
         <button id="btn-logout-mobile"
-          class="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">Keluar</button>
+          class="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200/60 dark:border-rose-900/40 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+          Keluar
+        </button>
       </div>
     </header>
-    <nav class="lg:hidden bg-white border-b border-slate-200 flex overflow-x-auto px-2">
-      <button data-nav="dashboard"
-        class="nav-btn active px-4 py-3 text-sm font-medium whitespace-nowrap">Dashboard</button>
-      <button data-nav="users" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">User</button>
-      <button data-nav="submissions" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Pengajuan</button>
-      <button data-nav="overtime" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Presensi Lembur</button>
-      <button data-nav="master" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Master Data</button>
-      <button data-nav="reports" class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap">Laporan</button>
-    </nav>
 
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-28 lg:pb-8">
       <div id="alert-box"
         class="hidden mb-4 text-sm rounded-xl px-4 py-3 flex items-center justify-between gap-3 shadow-sm transition-all border">
         <span id="alert-msg"></span>
@@ -723,6 +777,47 @@
       </section>
     </main>
   </div>
+
+  <!-- Fixed Modern Mobile Bottom Navigation Bar (Glassmorphic) -->
+  <nav class="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.35)]">
+    <div class="max-w-md mx-auto grid grid-cols-6 gap-1 items-center">
+      <!-- 1. Dashboard -->
+      <button data-nav="dashboard" class="nav-btn active flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Dashboard">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Beranda</span>
+      </button>
+
+      <!-- 2. User -->
+      <button data-nav="users" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Manajemen User">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">User</span>
+      </button>
+
+      <!-- 3. Pengajuan -->
+      <button data-nav="submissions" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Pengajuan">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Pengajuan</span>
+      </button>
+
+      <!-- 4. Lembur -->
+      <button data-nav="overtime" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Presensi Lembur">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Lembur</span>
+      </button>
+
+      <!-- 5. Master Data -->
+      <button data-nav="master" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Master Data">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Master</span>
+      </button>
+
+      <!-- 6. Pelaporan -->
+      <button data-nav="reports" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Pelaporan">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Laporan</span>
+      </button>
+    </div>
+  </nav>
 
   <!-- Modal: Decision Pengajuan -->
   <div id="decision-modal"

@@ -96,6 +96,7 @@ navButtons.forEach((btn) => {
       document.getElementById(id).classList.toggle('hidden', key !== btn.dataset.nav);
     });
 
+    window.scrollTo({ top: 0, behavior: 'instant' });
     stopSubmissionsPolling();
 
     if (btn.dataset.nav === 'dashboard') loadDashboard();
