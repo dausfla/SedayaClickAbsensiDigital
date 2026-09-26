@@ -130,6 +130,69 @@
       stroke: currentColor;
     }
 
+    .mobile-bottom-nav #btn-bottom-more {
+      background: transparent !important;
+      border: 1px solid transparent !important;
+      color: #64748b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35rem 0.15rem;
+      border-radius: 0.75rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dark .mobile-bottom-nav #btn-bottom-more {
+      color: #94a3b8;
+    }
+
+    .mobile-bottom-nav #btn-bottom-more.active {
+      color: #4338ca !important;
+      background: rgba(67, 56, 202, 0.08) !important;
+    }
+
+    .dark .mobile-bottom-nav #btn-bottom-more.active {
+      color: #818cf8 !important;
+      background: rgba(129, 140, 248, 0.14) !important;
+    }
+
+    .mobile-bottom-nav #btn-bottom-more.active svg {
+      transform: translateY(-1px) scale(1.08);
+      stroke: currentColor;
+    }
+
+    /* Sheet items */
+    .sheet-item.nav-btn {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: inherit !important;
+      border-radius: 1rem !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      padding: 0.75rem !important;
+    }
+
+    .dark .sheet-item.nav-btn {
+      background: #1e293b !important;
+      border: 1px solid #334155 !important;
+      color: inherit !important;
+    }
+
+    .sheet-item.nav-btn.active {
+      border-color: #6366f1 !important;
+      background: rgba(99, 102, 241, 0.06) !important;
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25) !important;
+    }
+
+    .dark .sheet-item.nav-btn.active {
+      border-color: #818cf8 !important;
+      background: rgba(129, 140, 248, 0.12) !important;
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.3) !important;
+    }
+
     /* Precision Dark Mode Styles */
     .dark body {
       background-color: #0b0f19;
@@ -778,46 +841,94 @@
     </main>
   </div>
 
-  <!-- Fixed Modern Mobile Bottom Navigation Bar (Glassmorphic) -->
-  <nav class="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.35)]">
-    <div class="max-w-md mx-auto grid grid-cols-6 gap-1 items-center">
+  <!-- Fixed Modern Mobile Bottom Navigation Bar (4 Menu: Beranda, User, Pengajuan, Lainnya) -->
+  <nav class="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-4 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.35)]">
+    <div class="max-w-md mx-auto grid grid-cols-4 gap-2 items-center">
       <!-- 1. Dashboard -->
-      <button data-nav="dashboard" class="nav-btn active flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Dashboard">
+      <button data-nav="dashboard" class="nav-btn active flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all touch-manipulation group" title="Dashboard">
         <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Beranda</span>
+        <span class="text-[11px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Beranda</span>
       </button>
 
       <!-- 2. User -->
-      <button data-nav="users" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Manajemen User">
+      <button data-nav="users" class="nav-btn flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all touch-manipulation group" title="Manajemen User">
         <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">User</span>
+        <span class="text-[11px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">User</span>
       </button>
 
       <!-- 3. Pengajuan -->
-      <button data-nav="submissions" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Pengajuan">
+      <button data-nav="submissions" class="nav-btn flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all touch-manipulation group" title="Pengajuan">
         <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Pengajuan</span>
+        <span class="text-[11px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Pengajuan</span>
       </button>
 
-      <!-- 4. Lembur -->
-      <button data-nav="overtime" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Presensi Lembur">
-        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Lembur</span>
-      </button>
-
-      <!-- 5. Master Data -->
-      <button data-nav="master" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Master Data">
-        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
-        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Master</span>
-      </button>
-
-      <!-- 6. Pelaporan -->
-      <button data-nav="reports" class="nav-btn flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all touch-manipulation group" title="Pelaporan">
-        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        <span class="text-[10px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Laporan</span>
+      <!-- 4. Lainnya (Trigger Bottom Sheet) -->
+      <button id="btn-bottom-more" type="button" class="flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all touch-manipulation group cursor-pointer" title="Menu Lainnya">
+        <svg class="w-5 h-5 shrink-0 transition-transform group-active:scale-95" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span class="text-[11px] font-semibold tracking-tight mt-1 truncate w-full text-center leading-none">Lainnya</span>
       </button>
     </div>
   </nav>
+
+  <!-- ========================================== -->
+  <!-- MOBILE BOTTOM SHEET: MENU & MODUL LAINNYA  -->
+  <!-- ========================================== -->
+  <div id="mobile-sheet-backdrop" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"></div>
+
+  <div id="mobile-bottom-sheet" class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl border-t border-slate-200 dark:border-slate-800 p-5 pt-3 transform translate-y-full transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto custom-scrollbar lg:hidden pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <!-- Drag Handle Indicator -->
+    <div id="sheet-handle" class="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-3 cursor-pointer"></div>
+
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Menu Lengkap</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Pilih modul atau fitur sistem</p>
+      </div>
+      <button id="btn-close-sheet" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Menu Grid / List -->
+    <div class="py-3 space-y-2">
+      <!-- 1. Presensi Lembur -->
+      <button data-nav="overtime" class="sheet-item nav-btn w-full flex items-center gap-3.5 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 transition-all text-left group cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200/60 dark:border-amber-800/60 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-slate-900 dark:text-white text-sm">Presensi Lembur</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Verifikasi absensi masuk, keluar & foto GPS</div>
+        </div>
+        <svg class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- 2. Master Data -->
+      <button data-nav="master" class="sheet-item nav-btn w-full flex items-center gap-3.5 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 transition-all text-left group cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-200/60 dark:border-indigo-800/60 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-slate-900 dark:text-white text-sm">Master Data</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Divisi, jabatan struktur & shift kerja</div>
+        </div>
+        <svg class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- 3. Pelaporan & Rekap -->
+      <button data-nav="reports" class="sheet-item nav-btn w-full flex items-center gap-3.5 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 transition-all text-left group cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/60 dark:border-emerald-800/60 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-slate-900 dark:text-white text-sm">Pelaporan & Rekap</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Rekapitulasi kehadiran, payroll & cetak report</div>
+        </div>
+        <svg class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
 
   <!-- Modal: Decision Pengajuan -->
   <div id="decision-modal"

@@ -87,11 +87,85 @@ export function stopSubmissionsPolling() {
   }
 }
 
+/* ---------------------------------------------------------
+   Mobile Bottom Sheet: Menu Lainnya Controller
+--------------------------------------------------------- */
+const btnBottomMore = document.getElementById('btn-bottom-more');
+const mobileSheetBackdrop = document.getElementById('mobile-sheet-backdrop');
+const mobileBottomSheet = document.getElementById('mobile-bottom-sheet');
+const btnCloseSheet = document.getElementById('btn-close-sheet');
+const sheetHandle = document.getElementById('sheet-handle');
+
+export function openMobileSheet() {
+  if (!mobileBottomSheet || !mobileSheetBackdrop) return;
+  mobileSheetBackdrop.classList.remove('pointer-events-none', 'opacity-0');
+  mobileSheetBackdrop.classList.add('pointer-events-auto', 'opacity-100');
+  mobileBottomSheet.classList.remove('translate-y-full');
+  mobileBottomSheet.classList.add('translate-y-0');
+  document.body.style.overflow = 'hidden';
+}
+
+export function closeMobileSheet() {
+  if (!mobileBottomSheet || !mobileSheetBackdrop) return;
+  mobileSheetBackdrop.classList.remove('pointer-events-auto', 'opacity-100');
+  mobileSheetBackdrop.classList.add('pointer-events-none', 'opacity-0');
+  mobileBottomSheet.classList.remove('translate-y-0');
+  mobileBottomSheet.classList.add('translate-y-full');
+  document.body.style.overflow = '';
+}
+
+if (btnBottomMore) btnBottomMore.addEventListener('click', openMobileSheet);
+if (mobileSheetBackdrop) mobileSheetBackdrop.addEventListener('click', closeMobileSheet);
+if (btnCloseSheet) btnCloseSheet.addEventListener('click', closeMobileSheet);
+if (sheetHandle) sheetHandle.addEventListener('click', closeMobileSheet);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeMobileSheet();
+});
+
+// Gesture: swipe down to dismiss bottom sheet
+let sheetTouchStartY = 0;
+let sheetTouchCurrentY = 0;
+
+if (mobileBottomSheet) {
+  mobileBottomSheet.addEventListener('touchstart', (e) => {
+    sheetTouchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  mobileBottomSheet.addEventListener('touchmove', (e) => {
+    sheetTouchCurrentY = e.touches[0].clientY;
+    const diff = sheetTouchCurrentY - sheetTouchStartY;
+    if (diff > 0 && mobileBottomSheet.scrollTop <= 0) {
+      mobileBottomSheet.style.transform = `translateY(${diff}px)`;
+    }
+  }, { passive: true });
+
+  mobileBottomSheet.addEventListener('touchend', () => {
+    const diff = sheetTouchCurrentY - sheetTouchStartY;
+    if (diff > 80 && mobileBottomSheet.scrollTop <= 0) {
+      mobileBottomSheet.style.transform = '';
+      closeMobileSheet();
+    } else {
+      mobileBottomSheet.style.transform = '';
+    }
+    sheetTouchStartY = 0;
+    sheetTouchCurrentY = 0;
+  });
+}
+
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
+    closeMobileSheet();
     currentNav = btn.dataset.nav;
     document.querySelectorAll(`[data-nav="${btn.dataset.nav}"]`).forEach((b) => b.classList.add('active'));
     document.querySelectorAll(`.nav-btn:not([data-nav="${btn.dataset.nav}"])`).forEach((b) => b.classList.remove('active'));
+
+    // Highlight bottom bar "Lainnya" button if active panel is inside the sheet
+    const isOtherMenu = ['overtime', 'master', 'reports'].includes(btn.dataset.nav);
+    if (btnBottomMore) {
+      btnBottomMore.classList.toggle('active', isOtherMenu);
+    }
+
     Object.entries(navPanels).forEach(([key, id]) => {
       document.getElementById(id).classList.toggle('hidden', key !== btn.dataset.nav);
     });
