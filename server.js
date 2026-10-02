@@ -34,8 +34,8 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { poli
   if (!fs.existsSync(full)) fs.mkdirSync(full, { recursive: true });
 });
 
-// Konfigurasi CORS: membaca ALLOWED_ORIGIN dari environment variable (default: http://localhost:3000)
-const rawOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:3000,http://127.0.0.1:3000';
+// Konfigurasi CORS: membaca ALLOWED_ORIGIN dari environment variable
+const rawOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:3000,http://127.0.0.1:3000,https://sedayaclick.cloud,http://sedayaclick.cloud';
 const allowedOrigins = rawOrigins
   .split(',')
   .map((o) => o.trim().replace(/\/$/, ''))
@@ -49,10 +49,10 @@ app.use(
         return callback(null, true);
       }
       const cleanOrigin = origin.trim().replace(/\/$/, '');
-      if (allowedOrigins.includes(cleanOrigin)) {
+      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes('*') || cleanOrigin.endsWith('sedayaclick.cloud')) {
         return callback(null, true);
       }
-      // Tolak origin yang tidak terdaftar dengan callback(null, false) (mencegah error log di console server)
+      console.warn(`[CORS Blocked] Request dari origin '${cleanOrigin}' tidak ada di ALLOWED_ORIGIN.`);
       return callback(null, false);
     },
     credentials: true

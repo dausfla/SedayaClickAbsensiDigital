@@ -41,7 +41,14 @@ self.addEventListener('fetch', (event) => {
 
   // Data dinamis (API) dan file upload: selalu network, tidak pernah dari cache.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || url.pathname.startsWith('/secure-uploads/')) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+      fetch(event.request).catch((err) => {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Gagal terhubung ke server backend.' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+      })
+    );
     return;
   }
 
