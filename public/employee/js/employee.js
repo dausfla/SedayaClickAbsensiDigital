@@ -194,7 +194,8 @@ startBtn.addEventListener('click', async () => {
       (pos) => {
         currentPosition = pos;
         gpsDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0';
-        gpsText.textContent = `GPS Terkunci (±${Math.round(pos.accuracy)}m) — ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`;
+        const label = pos.isIpFallback ? `Lokasi Terkunci (${pos.provider || 'Estimasi Jaringan'})` : `GPS Terkunci (±${Math.round(pos.accuracy)}m)`;
+        gpsText.textContent = `${label} — ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`;
       },
       (msg) => {
         if (!currentPosition) {
@@ -448,7 +449,8 @@ if (otStartBtn) {
         (pos) => {
           overtimePosition = pos;
           if (otGpsDot) otGpsDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0';
-          if (otGpsText) otGpsText.textContent = `GPS Terkunci (±${Math.round(pos.accuracy)}m) — ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`;
+          const label = pos.isIpFallback ? `Lokasi Terkunci (${pos.provider || 'Estimasi Jaringan'})` : `GPS Terkunci (±${Math.round(pos.accuracy)}m)`;
+          if (otGpsText) otGpsText.textContent = `${label} — ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`;
         },
         (msg) => {
           if (!overtimePosition) {
