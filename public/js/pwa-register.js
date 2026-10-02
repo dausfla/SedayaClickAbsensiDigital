@@ -3,7 +3,20 @@
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // Paksakan pengecekan update Service Worker setiap kali halaman dibuka
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA] Versi baru ditemukan, memperbarui cache...');
+            }
+          });
+        }
+      });
+      reg.update().catch(() => {});
+    }).catch((err) => {
       console.warn('Registrasi Service Worker gagal:', err);
     });
   });
@@ -63,8 +76,6 @@ export function bindInstallButton(buttonId = 'btn-install-pwa') {
         btn.classList.add('hidden');
       }
     } else {
-      // Jika browser tidak mendukung trigger otomatis (seperti Safari di iOS),
-      // tampilkan petunjuk langkah-langkah PWA yang ramah pengguna.
       showModal();
     }
   });

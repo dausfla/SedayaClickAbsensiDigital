@@ -1,9 +1,8 @@
 // public/sw.js
-// Service Worker sederhana untuk mendukung instalasi PWA standalone penuh.
-// Strategi: cache "app shell" (halaman statis + JS/CSS), sedangkan panggilan
-// ke /api/* SELALU diambil langsung dari network (data absensi tidak boleh basi/cache).
+// Service Worker untuk PWA SedayaClick
+// Strategi: cache "app shell" statis, sedangkan panggilan ke /api/* SELALU network langsung.
 
-const CACHE_NAME = 'sedayaclick-shell-v3';
+const CACHE_NAME = 'sedayaclick-shell-v6';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -19,10 +18,7 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => {
-      // Jika salah satu asset gagal di-cache saat install (mis. dijalankan
-      // sebelum server ready), jangan gagalkan seluruh instalasi SW.
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
   );
   self.skipWaiting();
 });
@@ -39,12 +35,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Data dinamis (API) dan file upload: selalu network, tidak pernah dari cache.
+  // Data dinamis (API) dan file upload: selalu network langsung, tidak pernah disajikan dari cache.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || url.pathname.startsWith('/secure-uploads/')) {
     event.respondWith(
-      fetch(event.request).catch((err) => {
+      fetch(event.request).catch(() => {
         return new Response(
-          JSON.stringify({ success: false, message: 'Gagal terhubung ke server backend.' }),
+          JSON.stringify({ success: false, message: 'Gagal terhubung ke server (Koneksi terputus).' }),
           { status: 503, headers: { 'Content-Type': 'application/json' } }
         );
       })
@@ -52,22 +48,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell: cache-first agar aplikasi tetap bisa dibuka (walau fitur live
-  // seperti kamera/GPS/API tetap butuh koneksi) saat sinyal lemah.
+  // App shell: network-first untuk HTML/JS utama dengan fallback cache
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request)
-          .then((response) => {
-            if (response && response.status === 200 && event.request.method === 'GET') {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-            }
-            return response;
-          })
-          .catch(() => caches.match('/index.html'))
-      );
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && event.request.method === 'GET') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cached) => cached || caches.match('/index.html'));
+      })
   );
 });

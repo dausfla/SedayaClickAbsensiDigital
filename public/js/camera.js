@@ -1,7 +1,6 @@
 // public/js/camera.js
 // Modul kamera depan LIVE menggunakan MediaDevices API.
-// Dipakai untuk Clock In / Clock Out (foto wajib diambil langsung, bukan upload file lama)
-// dan untuk foto lampiran bila diperlukan.
+// Dipakai untuk Clock In / Clock Out (foto wajib diambil langsung, bukan upload file lama).
 
 export class LiveCamera {
   /**
@@ -14,7 +13,6 @@ export class LiveCamera {
 
   /**
    * Meminta izin & menyalakan kamera DEPAN (facingMode: 'user').
-   * Melempar error yang sudah diberi pesan ramah pengguna jika gagal.
    */
   async start() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -36,15 +34,33 @@ export class LiveCamera {
   }
 
   /**
-   * Mengambil satu frame dari video live saat ini dan mengembalikannya sebagai Blob JPEG.
+   * Mengambil satu frame dari video live saat ini dan mengompresnya ke ukuran optimal (maks 720px, ~70KB)
+   * agar proses pengiriman (upload) berlangsung instan di jaringan HP 3G/4G/5G.
    */
-  async capture() {
+  async capture(maxDimension = 720, quality = 0.72) {
     if (!this.stream) throw new Error('Kamera belum aktif.');
+    const videoWidth = this.videoEl.videoWidth || 640;
+    const videoHeight = this.videoEl.videoHeight || 480;
+
+    // Hitung dimensi berskala agar file berukuran super kecil (~60KB-90KB)
+    let targetWidth = videoWidth;
+    let targetHeight = videoHeight;
+    if (targetWidth > maxDimension || targetHeight > maxDimension) {
+      if (targetWidth > targetHeight) {
+        targetHeight = Math.round((targetHeight * maxDimension) / targetWidth);
+        targetWidth = maxDimension;
+      } else {
+        targetWidth = Math.round((targetWidth * maxDimension) / targetHeight);
+        targetHeight = maxDimension;
+      }
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = this.videoEl.videoWidth;
-    canvas.height = this.videoEl.videoHeight;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
-    // Cermin horizontal agar hasil foto sesuai orientasi yang dilihat user di preview.
+
+    // Cermin horizontal agar hasil foto sesuai orientasi preview.
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(this.videoEl, 0, 0, canvas.width, canvas.height);
@@ -53,12 +69,12 @@ export class LiveCamera {
       canvas.toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error('Gagal mengambil foto.'))),
         'image/jpeg',
-        0.9
+        quality
       );
     });
   }
 
-  /** Mematikan semua track kamera agar lampu indikator kamera perangkat ikut mati. */
+  /** Mematikan semua track kamera agar indikator kamera perangkat mati. */
   stop() {
     if (this.stream) {
       this.stream.getTracks().forEach((track) => track.stop());

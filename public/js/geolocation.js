@@ -1,16 +1,10 @@
 // public/js/geolocation.js
-// Modul penguncian lokasi GPS LIVE & Network Triangulation multi-stage fallback.
+// Modul penguncian lokasi GPS LIVE presisi tinggi dengan multi-stage fallback.
 // Kompatibel dengan seluruh browser (Chrome, Safari, Edge, Firefox, Brave)
-// dan seluruh perangkat (Smartphone, Laptop, PC Desktop, ngrok SSL).
-
-const MESSAGES = {
-  1: 'Izin lokasi ditolak. Memakai estimasi lokasi jaringan...',
-  2: 'Lokasi tidak dapat ditentukan. Memakai estimasi lokasi jaringan...',
-  3: 'Waktu pengambilan lokasi habis. Memakai estimasi lokasi jaringan...'
-};
+// dan seluruh perangkat (Smartphone iOS/Android, Laptop, PC Desktop).
 
 /**
- * Meminta lokasi via IP Geolocation jika GPS browser mengalami timeout/gangguan.
+ * Meminta lokasi via IP Geolocation jika GPS hardware tidak tersedia/timeout.
  */
 export async function getIpLocationFallback() {
   try {
@@ -21,7 +15,7 @@ export async function getIpLocationFallback() {
         return {
           latitude: parseFloat(data.latitude),
           longitude: parseFloat(data.longitude),
-          accuracy: 500,
+          accuracy: 1500,
           isIpFallback: true,
           provider: data.city || 'Network IP'
         };
@@ -37,7 +31,7 @@ export async function getIpLocationFallback() {
         return {
           latitude: parseFloat(data2.lat),
           longitude: parseFloat(data2.lon),
-          accuracy: 500,
+          accuracy: 1500,
           isIpFallback: true,
           provider: data2.city || 'Network IP'
         };
@@ -45,19 +39,17 @@ export async function getIpLocationFallback() {
     }
   } catch (e) {}
 
-  // Defisit lokasi kantor/default jika seluruh jaringan publik terblokir
   return {
     latitude: -6.597147,
     longitude: 106.806038,
-    accuracy: 1000,
+    accuracy: 3000,
     isIpFallback: true,
-    provider: 'Kantor Pusat'
+    provider: 'Lokasi Perusahaan'
   };
 }
 
 /**
- * Meminta satu pembacaan lokasi dengan multi-stage fallback (Cached -> High Accuracy -> Standard -> IP Fallback).
- * @returns {Promise<{latitude:number, longitude:number, accuracy:number}>}
+ * Meminta satu pembacaan lokasi dengan prioritas GPS Presisi (Device Satelit/Wi-Fi).
  */
 export function getCurrentPosition() {
   return new Promise((resolve) => {
@@ -66,18 +58,11 @@ export function getCurrentPosition() {
       return;
     }
 
-    // Stage 1: Coba ambil posisi dari cache / standar dulu (sangat cepat untuk PC/Laptop)
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-      async (err1) => {
-        if (err1.code === 1) {
-          const ipLoc = await getIpLocationFallback();
-          resolve(ipLoc);
-          return;
-        }
-
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, isIpFallback: false }),
+      async () => {
         navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+          (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, isIpFallback: false }),
           async () => {
             const ipLoc = await getIpLocationFallback();
             resolve(ipLoc);
@@ -85,81 +70,74 @@ export function getCurrentPosition() {
           { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
         );
       },
-      { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
     );
   });
 }
 
 /**
- * Memantau lokasi secara live dengan fallback otomatis hingga lokasi TERKUNCI.
+ * Memantau lokasi secara live dengan upgrade otomatis dari IP Fallback ke GPS Presisi.
  * @param {(pos:{latitude:number, longitude:number, accuracy:number, isIpFallback?:boolean, provider?:string})=>void} onUpdate
  * @param {(message:string)=>void} onError
- * @returns {object} watchController — simpan untuk pembatalan kelak.
+ * @returns {object} watchController
  */
 export function watchPosition(onUpdate, onError) {
   let activeWatchId = null;
-  let hasLockedLocation = false;
+  let bestAccuracy = 999999;
+  let hasLockedAnyLocation = false;
   let fallbackTimer = null;
 
-  const handleSuccess = (pos) => {
-    hasLockedLocation = true;
-    if (fallbackTimer) clearTimeout(fallbackTimer);
-    onUpdate({
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      accuracy: pos.coords.accuracy
-    });
+  const emitPosition = (pos) => {
+    // Jika menemukan posisi yang lebih akurat, atau ini adalah locking pertama
+    if (pos.accuracy < bestAccuracy || (pos.isIpFallback && !hasLockedAnyLocation)) {
+      bestAccuracy = pos.accuracy;
+      hasLockedAnyLocation = true;
+      onUpdate({
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        accuracy: pos.accuracy,
+        isIpFallback: !!pos.isIpFallback,
+        provider: pos.provider
+      });
+    }
   };
 
-  const triggerIpFallback = async () => {
-    if (hasLockedLocation) return;
+  // Primary: GPS Sensor Hardware (High Accuracy)
+  if (navigator.geolocation) {
     try {
-      const ipLoc = await getIpLocationFallback();
-      if (!hasLockedLocation) {
-        hasLockedLocation = true;
-        onUpdate(ipLoc);
-      }
+      activeWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          emitPosition({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            isIpFallback: false
+          });
+        },
+        async (err) => {
+          if (!hasLockedAnyLocation) {
+            const ipLoc = await getIpLocationFallback();
+            emitPosition(ipLoc);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+      );
     } catch (e) {
-      if (!hasLockedLocation && onError) {
-        onError('Gagal mengunci lokasi.');
-      }
+      getIpLocationFallback().then(emitPosition);
     }
-  };
-
-  // Timer pengaman 3.5 detik: Jika GPS satelit lambat terkunci (misal di PC/Laptop macOS),
-  // aktifkan IP Geolocation fallback agar pengguna langsung bisa absen tanpa menunggu lama!
-  fallbackTimer = setTimeout(() => {
-    if (!hasLockedLocation) {
-      triggerIpFallback();
-    }
-  }, 3500);
-
-  if (!navigator.geolocation) {
-    triggerIpFallback();
-    return { clear: () => {} };
+  } else {
+    getIpLocationFallback().then(emitPosition);
   }
 
-  // Stage 1: Fast cached position
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      if (!hasLockedLocation) handleSuccess(pos);
-    },
-    () => {},
-    { enableHighAccuracy: false, timeout: 3000, maximumAge: 300000 }
-  );
-
-  // Stage 2: Watch position
-  try {
-    activeWatchId = navigator.geolocation.watchPosition(
-      (pos) => handleSuccess(pos),
-      (err) => {
-        triggerIpFallback();
-      },
-      { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
-    );
-  } catch (e) {
-    triggerIpFallback();
-  }
+  // Timer Cadangan (7 detik): Jika HP di dalam ruangan dan GPS satelit belum selesai memindai,
+  // aktifkan dulu lokasi IP sementara agar tombol tidak menggantung. Nanti begitu GPS satelit mengunci, lokasi otomatis di-upgrade!
+  fallbackTimer = setTimeout(async () => {
+    if (!hasLockedAnyLocation) {
+      const ipLoc = await getIpLocationFallback();
+      emitPosition(ipLoc);
+    }
+  }, 7000);
 
   return {
     clear: () => {
