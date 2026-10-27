@@ -76,8 +76,16 @@ formLogin.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideAlert();
   const submitBtn = formLogin.querySelector('button[type="submit"]');
+  const originalHtml = submitBtn.innerHTML;
+  
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Memproses...';
+  submitBtn.innerHTML = `
+    <div class="flex items-center justify-center gap-2.5">
+      <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      <span>Memverifikasi Kredensial...</span>
+    </div>
+  `;
+  submitBtn.classList.add('opacity-90', 'cursor-wait');
 
   const emailVal = document.getElementById('login-email').value.trim();
   const passwordVal = document.getElementById('login-password').value;
@@ -98,11 +106,40 @@ formLogin.addEventListener('submit', async (e) => {
       localStorage.removeItem('saved_email');
     }
 
-    redirectByRole(user.role);
+    // Tampilkan status sukses di tombol
+    submitBtn.classList.remove('bg-brand-600', 'hover:bg-brand-500');
+    submitBtn.classList.add('bg-emerald-600', 'text-white');
+    submitBtn.innerHTML = `
+      <div class="flex items-center justify-center gap-2">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        <span>Login Berhasil! Mengalihkan...</span>
+      </div>
+    `;
+
+    // Tampilkan transisi loading layar penuh yang elegan
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center text-white transition-opacity duration-300';
+    overlay.innerHTML = `
+      <div class="relative w-16 h-16 mb-4 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-2xl bg-indigo-500/30 blur-xl animate-pulse"></div>
+        <img src="/icons/icon-192.png" alt="Logo" class="relative w-14 h-14 rounded-2xl ring-2 ring-white/20 shadow-2xl" />
+      </div>
+      <p class="text-sm font-bold text-white tracking-tight">Selamat Datang, ${escapeHtml(user.full_name || 'User')}</p>
+      <div class="w-36 h-1 bg-slate-800 rounded-full mt-3 overflow-hidden">
+        <div class="w-full h-full bg-indigo-500 animate-[pulse_1s_infinite]"></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-2 font-mono">Membuka ruang kerja Anda...</p>
+    `;
+    document.body.appendChild(overlay);
+
+    setTimeout(() => {
+      redirectByRole(user.role);
+    }, 450);
   } catch (err) {
     showAlert(err.message);
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Masuk';
+    submitBtn.innerHTML = originalHtml;
+    submitBtn.classList.remove('opacity-90', 'cursor-wait');
   }
 });
 

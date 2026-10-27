@@ -21,6 +21,7 @@ const superadminRoutes = require('./routes/superadmin');
 const reportRoutes = require('./routes/reports');
 const secureUploadsRoutes = require('./routes/secureUploads');
 const notificationRoutes = require('./routes/notifications');
+const { startAttendanceReminder } = require('./utils/attendanceReminder');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -186,5 +187,6 @@ async function runMigrations() {
 runMigrations().then(() => {
   app.listen(PORT, () => {
     console.log(`SedayaClick berjalan di http://localhost:${PORT}`);
+    startAttendanceReminder();
   });
 });

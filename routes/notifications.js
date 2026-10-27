@@ -125,7 +125,7 @@ router.post('/test', requireAuth, async (req, res) => {
 });
 
 // 5. Kirim Broadcast Notifikasi (Hanya Super Admin)
-router.post('/broadcast', requireAuth, requireRole(['super_admin']), async (req, res) => {
+router.post('/broadcast', requireAuth, requireRole('super_admin'), async (req, res) => {
   try {
     const { target_role, target_division_id, title, message, type, target_url } = req.body;
 
@@ -246,7 +246,7 @@ router.post('/broadcast', requireAuth, requireRole(['super_admin']), async (req,
 });
 
 // 6. Ambil Riwayat Broadcast Notifikasi Terakhir (Hanya Super Admin)
-router.get('/history', requireAuth, requireRole(['super_admin']), async (req, res) => {
+router.get('/history', requireAuth, requireRole('super_admin'), async (req, res) => {
   try {
     const [history] = await pool.query(`
       SELECT bn.*, u.full_name AS sender_name, d.name AS division_name

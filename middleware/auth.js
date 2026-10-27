@@ -16,11 +16,12 @@ function requireAuth(req, res, next) {
  * Penggunaan: requireRole('super_admin') atau requireRole('super_admin', 'admin_manager')
  */
 function requireRole(...allowedRoles) {
+  const flatRoles = allowedRoles.flat(Infinity);
   return (req, res, next) => {
     if (!req.session || !req.session.user) {
       return res.status(401).json({ success: false, message: 'Anda belum login.' });
     }
-    if (!allowedRoles.includes(req.session.user.role)) {
+    if (!flatRoles.includes(req.session.user.role)) {
       return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke fitur ini.' });
     }
     next();
