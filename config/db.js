@@ -53,6 +53,41 @@ const pool = mysql.createPool(poolConfig);
       }
     }
 
+    // Auto-migrate tabel push_subscriptions untuk Web Push PWA
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255) NOT NULL,
+        auth VARCHAR(255) NOT NULL,
+        user_agent VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        KEY idx_push_user_id (user_id),
+        UNIQUE KEY idx_push_endpoint (endpoint(191))
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Auto-migrate tabel broadcast_notifications untuk riwayat pengiriman notifikasi
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS broadcast_notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sender_id INT NOT NULL,
+        target_role VARCHAR(50) NOT NULL DEFAULT 'all',
+        target_division_id INT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type ENUM('info', 'warning', 'urgent') NOT NULL DEFAULT 'info',
+        target_url VARCHAR(255) DEFAULT '/employee/dashboard.html',
+        total_sent INT NOT NULL DEFAULT 0,
+        total_success INT NOT NULL DEFAULT 0,
+        total_failed INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_broadcast_sender (sender_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     conn.release();
   } catch (err) {
     console.error('[DB] Error inisialisasi database:', err.message);

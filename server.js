@@ -20,6 +20,7 @@ const adminRoutes = require('./routes/admin');
 const superadminRoutes = require('./routes/superadmin');
 const reportRoutes = require('./routes/reports');
 const secureUploadsRoutes = require('./routes/secureUploads');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -95,6 +96,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'SedayaClick API aktif.' }));
 

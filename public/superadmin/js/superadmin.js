@@ -1,5 +1,6 @@
 // public/superadmin/js/superadmin.js
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiDownload, escapeHtml } from '../../js/api.js';
+import { subscribeToPushNotifications, showModernToast } from '../../js/push-client.js';
 
 const alertBox = document.getElementById('alert-box');
 const alertMsg = document.getElementById('alert-msg');
@@ -61,7 +62,8 @@ const navPanels = {
   submissions: 'panel-submissions',
   overtime: 'panel-overtime',
   master: 'panel-master',
-  reports: 'panel-reports'
+  reports: 'panel-reports',
+  broadcast: 'panel-broadcast'
 };
 
 let currentNav = 'dashboard';
@@ -161,7 +163,7 @@ navButtons.forEach((btn) => {
     document.querySelectorAll(`.nav-btn:not([data-nav="${btn.dataset.nav}"])`).forEach((b) => b.classList.remove('active'));
 
     // Highlight bottom bar "Lainnya" button if active panel is inside the sheet
-    const isOtherMenu = ['overtime', 'master', 'reports'].includes(btn.dataset.nav);
+    const isOtherMenu = ['overtime', 'master', 'reports', 'broadcast'].includes(btn.dataset.nav);
     if (btnBottomMore) {
       btnBottomMore.classList.toggle('active', isOtherMenu);
     }
@@ -185,6 +187,7 @@ navButtons.forEach((btn) => {
     }
     if (btn.dataset.nav === 'master') { loadDivisions(); loadPositions(); loadShifts(); }
     if (btn.dataset.nav === 'reports') loadReport();
+    if (btn.dataset.nav === 'broadcast') loadBroadcastPanel();
   });
 });
 
@@ -1690,3 +1693,264 @@ document.getElementById('btn-close-ot-detail')?.addEventListener('click', closeO
 document.getElementById('btn-done-ot-detail')?.addEventListener('click', closeOtDetail);
 
 initSidebar();
+
+/* ---------------------------------------------------------
+   BROADCAST & PUSH NOTIFIKASI CONTROLLER
+--------------------------------------------------------- */
+const formBroadcast = document.getElementById('form-broadcast-notif');
+const broadcastTitleInput = document.getElementById('broadcast-title-input');
+const broadcastMsgInput = document.getElementById('broadcast-message-input');
+const broadcastUrlInput = document.getElementById('broadcast-url-input');
+const broadcastCharCount = document.getElementById('broadcast-char-count');
+const wrapperBroadcastDivision = document.getElementById('wrapper-broadcast-division');
+const broadcastDivisionSelect = document.getElementById('broadcast-division-select');
+const btnSubscribeDevice = document.getElementById('btn-subscribe-device');
+const btnTestNotification = document.getElementById('btn-test-notification');
+const btnRefreshHistory = document.getElementById('btn-refresh-history');
+const tbodyBroadcastHistory = document.getElementById('tbody-broadcast-history');
+
+// Mockup Elements
+const previewClock = document.getElementById('preview-clock');
+const previewTitle = document.getElementById('preview-title');
+const previewBody = document.getElementById('preview-body');
+const previewCardBanner = document.getElementById('preview-card-banner');
+const previewTargetBadge = document.getElementById('preview-target-badge');
+
+let cachedDivisions = [];
+
+async function loadBroadcastPanel() {
+  if (previewClock) {
+    const now = new Date();
+    previewClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+
+  try {
+    const res = await apiGet('/superadmin/divisions');
+    if (res.success && res.divisions) {
+      cachedDivisions = res.divisions;
+      if (broadcastDivisionSelect) {
+        broadcastDivisionSelect.innerHTML = '<option value="">-- Pilih Divisi Sasaran --</option>' +
+          res.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+      }
+    }
+  } catch (err) {
+    console.warn('[Broadcast] Gagal memuat divisi:', err);
+  }
+
+  loadBroadcastHistory();
+}
+
+async function loadBroadcastHistory() {
+  if (!tbodyBroadcastHistory) return;
+  tbodyBroadcastHistory.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">Memuat riwayat broadcast...</td></tr>`;
+
+  try {
+    const res = await apiGet('/notifications/history');
+    if (!res.success || !res.history || res.history.length === 0) {
+      tbodyBroadcastHistory.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">Belum ada riwayat broadcast notifikasi yang dikirim.</td></tr>`;
+      return;
+    }
+
+    tbodyBroadcastHistory.innerHTML = res.history.map(item => {
+      let typeBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 font-bold">📢 Info</span>';
+      if (item.type === 'warning') {
+        typeBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold">⚠️ Peringatan</span>';
+      } else if (item.type === 'urgent') {
+        typeBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 font-bold">🚨 Darurat</span>';
+      }
+
+      let targetLabel = 'Semua User';
+      if (item.target_role === 'employee') targetLabel = 'Karyawan Saja';
+      if (item.target_role === 'admin_manager') targetLabel = 'Manager Saja';
+      if (item.target_role === 'division') targetLabel = `Divisi: ${escapeHtml(item.division_name || 'Spesifik')}`;
+
+      const dateStr = new Date(item.created_at).toLocaleString('id-ID', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+
+      return `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+          <td class="px-4 py-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">${dateStr} WIB</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px]">${targetLabel}</span></td>
+          <td class="px-4 py-3 whitespace-nowrap">${typeBadge}</td>
+          <td class="px-4 py-3 max-w-[280px]">
+            <div class="font-bold text-slate-800 dark:text-white truncate">${escapeHtml(item.title)}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(item.message)}</div>
+          </td>
+          <td class="px-4 py-3 text-center whitespace-nowrap">
+            <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">${item.total_success}</span>
+            <span class="text-slate-400 font-mono text-[10px]"> / ${item.total_sent}</span>
+            ${item.total_failed > 0 ? `<div class="text-[9px] text-rose-500 font-semibold">${item.total_failed} gagal</div>` : ''}
+          </td>
+          <td class="px-4 py-3 text-right font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(item.sender_name || 'Super Admin')}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('[Broadcast History Error]:', err);
+    tbodyBroadcastHistory.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-rose-500">Gagal memuat riwayat broadcast: ${err.message}</td></tr>`;
+  }
+}
+
+// Live Preview Bindings
+if (broadcastTitleInput) {
+  broadcastTitleInput.addEventListener('input', (e) => {
+    if (previewTitle) {
+      previewTitle.textContent = e.target.value.trim() || 'Pengingat Absensi Masuk ⏰';
+    }
+  });
+}
+
+if (broadcastMsgInput) {
+  broadcastMsgInput.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (broadcastCharCount) broadcastCharCount.textContent = val.length;
+    if (previewBody) {
+      previewBody.textContent = val.trim() || 'Waktunya Clock In! Shift kerja Anda dimulai pukul 08:00 WIB. Pastikan selfie dan GPS aktif.';
+    }
+  });
+}
+
+// Target Selector Change Handler
+document.querySelectorAll('input[name="broadcast_target"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    const targetVal = e.target.value;
+    if (wrapperBroadcastDivision) {
+      wrapperBroadcastDivision.classList.toggle('hidden', targetVal !== 'division');
+    }
+    if (previewTargetBadge) {
+      if (targetVal === 'all') previewTargetBadge.textContent = 'Semua User';
+      else if (targetVal === 'employee') previewTargetBadge.textContent = 'Karyawan Saja';
+      else if (targetVal === 'admin_manager') previewTargetBadge.textContent = 'Manager Saja';
+      else if (targetVal === 'division') {
+        const selectedDivName = broadcastDivisionSelect?.options[broadcastDivisionSelect.selectedIndex]?.text || 'Per Divisi';
+        previewTargetBadge.textContent = selectedDivName.replace('-- Pilih Divisi --', 'Per Divisi');
+      }
+    }
+  });
+});
+
+if (broadcastDivisionSelect) {
+  broadcastDivisionSelect.addEventListener('change', (e) => {
+    const selectedText = e.target.options[e.target.selectedIndex]?.text;
+    if (previewTargetBadge && selectedText) {
+      previewTargetBadge.textContent = `Divisi: ${selectedText}`;
+    }
+  });
+}
+
+// Type Selector Change Handler
+document.querySelectorAll('input[name="broadcast_type"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    const typeVal = e.target.value;
+    if (previewCardBanner) {
+      previewCardBanner.classList.remove('border-indigo-500/40', 'border-amber-500/40', 'border-rose-500/40');
+      if (typeVal === 'info') previewCardBanner.classList.add('border-indigo-500/40');
+      else if (typeVal === 'warning') previewCardBanner.classList.add('border-amber-500/40');
+      else if (typeVal === 'urgent') previewCardBanner.classList.add('border-rose-500/40');
+    }
+  });
+});
+
+// Tombol Aktifkan Notifikasi di Perangkat Ini
+if (btnSubscribeDevice) {
+  btnSubscribeDevice.addEventListener('click', async () => {
+    btnSubscribeDevice.disabled = true;
+    btnSubscribeDevice.classList.add('opacity-70');
+    try {
+      await subscribeToPushNotifications();
+    } finally {
+      btnSubscribeDevice.disabled = false;
+      btnSubscribeDevice.classList.remove('opacity-70');
+    }
+  });
+}
+
+// Tombol Tes Notifikasi HP
+if (btnTestNotification) {
+  btnTestNotification.addEventListener('click', async () => {
+    btnTestNotification.disabled = true;
+    const originalText = btnTestNotification.innerHTML;
+    btnTestNotification.innerHTML = `
+      <svg class="w-4 h-4 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      <span>Mengirim...</span>
+    `;
+
+    try {
+      const res = await apiPost('/notifications/test');
+      if (res.success) {
+        showModernToast('Tes Terkirim 🚀', res.message || 'Notifikasi tes berhasil dikirim ke perangkat Anda.', 'success');
+      } else {
+        showModernToast('Perhatian', res.message || 'Gagal mengirim notifikasi tes.', 'warning');
+      }
+    } catch (err) {
+      showModernToast('Gagal', err.message || 'Terjadi kesalahan saat mengirim notifikasi tes.', 'error');
+    } finally {
+      btnTestNotification.disabled = false;
+      btnTestNotification.innerHTML = originalText;
+    }
+  });
+}
+
+// Tombol Refresh Riwayat
+if (btnRefreshHistory) {
+  btnRefreshHistory.addEventListener('click', loadBroadcastHistory);
+}
+
+// Submit Form Broadcast
+if (formBroadcast) {
+  formBroadcast.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const targetRole = document.querySelector('input[name="broadcast_target"]:checked')?.value || 'all';
+    const type = document.querySelector('input[name="broadcast_type"]:checked')?.value || 'info';
+    const divisionId = broadcastDivisionSelect?.value ? parseInt(broadcastDivisionSelect.value) : null;
+    const title = broadcastTitleInput?.value.trim();
+    const message = broadcastMsgInput?.value.trim();
+    const targetUrl = broadcastUrlInput?.value.trim() || '/employee/dashboard.html';
+
+    if (targetRole === 'division' && !divisionId) {
+      showModernToast('Validasi Gagal', 'Harap pilih divisi sasaran terlebih dahulu.', 'warning');
+      return;
+    }
+
+    if (!title || !message) {
+      showModernToast('Validasi Gagal', 'Judul dan isi pesan notifikasi wajib diisi.', 'warning');
+      return;
+    }
+
+    const btnSubmit = document.getElementById('btn-send-broadcast');
+    const origSubmitHtml = btnSubmit.innerHTML;
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = `
+      <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      <span>Mengirimkan Broadcast ke Jaringan PWA...</span>
+    `;
+
+    try {
+      const res = await apiPost('/notifications/broadcast', {
+        target_role: targetRole,
+        target_division_id: divisionId,
+        title,
+        message,
+        type,
+        target_url: targetUrl
+      });
+
+      if (res.success) {
+        showModernToast('Broadcast Berhasil! 🎉', res.message || 'Pesan berhasil dipancarkan ke perangkat karyawan.', 'success');
+        broadcastTitleInput.value = '';
+        broadcastMsgInput.value = '';
+        if (broadcastCharCount) broadcastCharCount.textContent = '0';
+        loadBroadcastHistory();
+      } else {
+        showModernToast('Gagal Mengirim', res.message || 'Terjadi kesalahan pada server saat broadcast.', 'error');
+      }
+    } catch (err) {
+      showModernToast('Error Sistem', err.message || 'Terjadi kendala jaringan saat broadcast.', 'error');
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = origSubmitHtml;
+    }
+  });
+}

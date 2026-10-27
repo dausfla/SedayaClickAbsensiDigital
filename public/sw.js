@@ -2,7 +2,7 @@
 // Service Worker untuk PWA SedayaClick
 // Strategi: cache "app shell" statis, sedangkan panggilan ke /api/* SELALU network langsung.
 
-const CACHE_NAME = 'sedayaclick-shell-v6';
+const CACHE_NAME = 'sedayaclick-shell-v7';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -61,5 +61,67 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         return caches.match(event.request).then((cached) => cached || caches.match('/index.html'));
       })
+  );
+});
+
+// ------------------- WEB PUSH NOTIFICATION LISTENERS -------------------
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'SedayaClick Presensi',
+    body: 'Anda memiliki notifikasi baru.',
+    icon: '/icons/icon-192.png',
+    badge: '/favicon.png',
+    url: '/employee/dashboard.html',
+    tag: 'sedayaclick-push'
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || '/icons/icon-192.png',
+    badge: data.badge || '/favicon.png',
+    tag: data.tag || `sedayaclick-push-${Date.now()}`,
+    vibrate: [200, 100, 200, 100, 200],
+    data: {
+      url: data.url || '/employee/dashboard.html'
+    },
+    actions: [
+      { action: 'open', title: 'Buka' }
+    ]
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = (event.notification.data && event.notification.data.url) 
+    ? event.notification.data.url 
+    : '/employee/dashboard.html';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Jika tab sudah terbuka, fokuskan tab tersebut
+      for (const client of clientList) {
+        if (client.url && client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Jika belum ada, buka jendela baru
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });

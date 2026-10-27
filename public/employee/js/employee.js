@@ -1,6 +1,7 @@
 import { apiGet, apiPost, apiPostForm, escapeHtml } from '../../js/api.js';
 import { LiveCamera } from '../../js/camera.js';
 import { getCurrentPosition, watchPosition, clearWatch } from '../../js/geolocation.js';
+import { subscribeToPushNotifications, isPushSupported, getNotificationPermission } from '../../js/push-client.js';
 
 const alertBox = document.getElementById('alert-box');
 const alertMsg = document.getElementById('alert-msg');
@@ -62,11 +63,45 @@ let currentUser = null;
     loadTodayStatus();
     loadSubmissions();
     loadTodayOvertimeStatus();
+    checkAndShowPushPrompt();
   } catch (e) {
     console.error('Session Error:', e);
     window.location.href = '/index.html';
   }
 })();
+
+function checkAndShowPushPrompt() {
+  const banner = document.getElementById('banner-push-prompt');
+  const btnAllow = document.getElementById('btn-allow-push');
+  const btnDismiss = document.getElementById('btn-dismiss-push');
+  if (!banner) return;
+
+  const dismissed = sessionStorage.getItem('sedaya_push_dismissed');
+  if (dismissed) return;
+
+  if (isPushSupported() && getNotificationPermission() === 'default') {
+    banner.classList.remove('hidden');
+  }
+
+  btnAllow?.addEventListener('click', async () => {
+    btnAllow.disabled = true;
+    btnAllow.textContent = 'Memproses...';
+    try {
+      const ok = await subscribeToPushNotifications();
+      if (ok) {
+        banner.classList.add('hidden');
+      }
+    } finally {
+      btnAllow.disabled = false;
+      btnAllow.textContent = 'Aktifkan Sekarang';
+    }
+  });
+
+  btnDismiss?.addEventListener('click', () => {
+    banner.classList.add('hidden');
+    sessionStorage.setItem('sedaya_push_dismissed', '1');
+  });
+}
 
 document.getElementById('btn-logout').addEventListener('click', async () => {
   await apiPost('/auth/logout');
