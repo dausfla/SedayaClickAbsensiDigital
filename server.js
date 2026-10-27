@@ -36,7 +36,7 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { poli
 });
 
 // Konfigurasi CORS: membaca ALLOWED_ORIGIN dari environment variable
-const rawOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:3000,http://127.0.0.1:3000,https://sedayaclick.cloud,http://sedayaclick.cloud';
+const rawOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000,http://127.0.0.1:3000,https://sedayaclick.cloud,http://sedayaclick.cloud';
 const allowedOrigins = rawOrigins
   .split(',')
   .map((o) => o.trim().replace(/\/$/, ''))
