@@ -1136,7 +1136,11 @@ export async function loadSAOvertimeData(silent = false) {
     await populateSAOvertimeDivisions();
 
     const divId = document.getElementById('sa-ot-filter-division')?.value || '';
-    const query = divId ? `?division_id=${divId}` : '';
+    const period = document.getElementById('sa-ot-filter-period')?.value || 'monthly';
+    const params = new URLSearchParams();
+    if (divId) params.append('division_id', divId);
+    if (period) params.append('period', period);
+    const query = params.toString() ? `?${params.toString()}` : '';
 
     const [resPending, resHistory] = await Promise.all([
       apiGet(`/admin/overtime/pending${query}`),
@@ -1367,9 +1371,37 @@ document.getElementById('sa-ot-tab-history')?.addEventListener('click', () => {
   document.getElementById('sa-ot-panel-pending').classList.add('hidden');
 });
 
-document.getElementById('sa-ot-filter-division')?.addEventListener('change', loadSAOvertimeData);
+document.getElementById('sa-ot-filter-period')?.addEventListener('change', () => loadSAOvertimeData());
+document.getElementById('sa-ot-filter-division')?.addEventListener('change', () => loadSAOvertimeData());
 document.getElementById('sa-ot-search-input')?.addEventListener('input', renderSAOvertimeTables);
-document.getElementById('sa-ot-btn-refresh')?.addEventListener('click', loadSAOvertimeData);
+document.getElementById('sa-ot-btn-refresh')?.addEventListener('click', () => loadSAOvertimeData());
+
+document.getElementById('sa-ot-btn-export-xlsx')?.addEventListener('click', async () => {
+  const btn = document.getElementById('sa-ot-btn-export-xlsx');
+  const originalHtml = btn ? btn.innerHTML : '';
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('opacity-75');
+      btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Mengekspor...</span>`;
+    }
+    const divId = document.getElementById('sa-ot-filter-division')?.value || '';
+    const period = document.getElementById('sa-ot-filter-period')?.value || 'monthly';
+    const params = { format: 'xlsx' };
+    if (divId) params.division_id = divId;
+    if (period) params.period = period;
+
+    await apiDownload('/reports/overtime/export', params, `rekap-presensi-lembur-${period}-${Date.now()}.xlsx`);
+  } catch (err) {
+    showAlert(err.message || 'Gagal mengekspor data lembur.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-75');
+      btn.innerHTML = originalHtml;
+    }
+  }
+});
 
 /* Super Admin Submission CRUD */
 const superSubModal = document.getElementById('superadmin-sub-modal');

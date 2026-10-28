@@ -6,7 +6,7 @@
 const express = require('express');
 const pool = require('../config/db');
 const { requireAuth, requireRole, requireActiveAccount } = require('../middleware/auth');
-const { generateCSV, generateXLSX, prepareRows, generateSubmissionsCSV, generateSubmissionsXLSX } = require('../utils/exportGenerator');
+const { generateCSV, generateXLSX, prepareRows, generateSubmissionsCSV, generateSubmissionsXLSX, generateOvertimeCSV, generateOvertimeXLSX } = require('../utils/exportGenerator');
 const { secondsToHMS } = require('../utils/timeCalc');
 
 const router = express.Router();
@@ -24,7 +24,9 @@ function buildFilter(req) {
   const conditions = [];
   const params = [];
 
-  if (period === 'weekly') {
+  if (period === 'today') {
+    conditions.push('a.attendance_date = CURDATE()');
+  } else if (period === 'weekly') {
     conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
   } else if (period === 'monthly') {
     conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
@@ -76,7 +78,9 @@ async function fetchSubmissionsForReport(req) {
   const conditions = [];
   const params = [];
 
-  if (period === 'weekly') {
+  if (period === 'today') {
+    conditions.push('(CURDATE() BETWEEN s.start_date AND s.end_date OR s.start_date = CURDATE())');
+  } else if (period === 'weekly') {
     conditions.push('s.start_date >= CURDATE() - INTERVAL 7 DAY');
   } else if (period === 'monthly') {
     conditions.push('s.start_date >= CURDATE() - INTERVAL 30 DAY');
@@ -164,7 +168,8 @@ router.get('/submissions', ...scoped, async (req, res) => {
     const conditions = [];
     const params = [];
 
-    if (period === 'weekly') conditions.push('s.start_date >= CURDATE() - INTERVAL 7 DAY');
+    if (period === 'today') conditions.push('(CURDATE() BETWEEN s.start_date AND s.end_date OR s.start_date = CURDATE())');
+    else if (period === 'weekly') conditions.push('s.start_date >= CURDATE() - INTERVAL 7 DAY');
     else if (period === 'monthly') conditions.push('s.start_date >= CURDATE() - INTERVAL 30 DAY');
     else if (period === 'custom') {
       if (!start_date || !end_date) {
@@ -260,6 +265,79 @@ router.get('/submissions/export', ...scoped, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(400).json({ success: false, message: err.message || 'Gagal mengekspor data pengajuan.' });
+  }
+});
+
+/**
+ * GET /api/reports/overtime/export?format=xlsx|csv&period=today|weekly|monthly|all&division_id=...&status=...
+ * Ekspor data Presensi Lembur ke format Excel (.xlsx) atau CSV.
+ */
+router.get('/overtime/export', ...scoped, async (req, res) => {
+  try {
+    const format = (req.query.format || 'xlsx').toLowerCase();
+    const { period, division_id, status } = req.query;
+
+    const conditions = ["a.overtime_clock_in_time IS NOT NULL"];
+    const params = [];
+
+    if (period === 'today') {
+      conditions.push('a.attendance_date = CURDATE()');
+    } else if (period === 'weekly') {
+      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
+    } else if (period === 'monthly') {
+      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
+    }
+
+    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
+      conditions.push('u.division_id = ?');
+      params.push(req.session.user.division_id);
+    } else if (division_id) {
+      conditions.push('u.division_id = ?');
+      params.push(division_id);
+    }
+
+    if (status && status !== 'all') {
+      if (status === 'pending') {
+        conditions.push("(a.overtime_status IS NULL OR a.overtime_status = 'pending')");
+      } else {
+        conditions.push("a.overtime_status = ?");
+        params.push(status);
+      }
+    }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
+
+    const [rows] = await pool.query(
+      `SELECT a.id, a.user_id, a.attendance_date, a.overtime_clock_in_time, a.overtime_clock_out_time,
+              a.overtime_duration_seconds, COALESCE(a.overtime_status, 'pending') AS overtime_status, a.overtime_task_reason,
+              a.overtime_clock_in_note, a.overtime_clock_out_note,
+              a.overtime_review_note, a.overtime_reviewed_at,
+              u.full_name, d.name AS division_name, p.name AS position_name,
+              reviewer.full_name AS reviewed_by_name
+       FROM attendances a
+       JOIN users u ON u.id = a.user_id
+       LEFT JOIN divisions d ON d.id = u.division_id
+       LEFT JOIN positions p ON p.id = u.position_id
+       LEFT JOIN users reviewer ON reviewer.id = a.overtime_reviewed_by
+       ${where}
+       ORDER BY a.attendance_date DESC, a.overtime_clock_in_time DESC`,
+      params
+    );
+
+    if (format === 'csv') {
+      const csv = generateOvertimeCSV(rows);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="rekap-presensi-lembur-${Date.now()}.csv"`);
+      return res.send(csv);
+    }
+
+    const buffer = await generateOvertimeXLSX(rows, 'Presensi Lembur');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="rekap-presensi-lembur-${Date.now()}.xlsx"`);
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error('Error export overtime:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengekspor data presensi lembur.' });
   }
 });
 

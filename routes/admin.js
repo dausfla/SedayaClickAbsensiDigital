@@ -305,12 +305,24 @@ router.delete('/submissions/:id', ...scoped, async (req, res) => {
  */
 router.get('/overtime/pending', ...scoped, async (req, res) => {
   try {
-    const { division_id } = req.query;
+    const { division_id, period } = req.query;
     const conditions = ["a.overtime_clock_in_time IS NOT NULL", "(a.overtime_status IS NULL OR a.overtime_status = 'pending')"];
     const params = [];
 
-    // Filter divisi opsional jika dikirim via query
-    if (division_id) {
+    // Filter periode tanggal
+    if (period === 'today') {
+      conditions.push('a.attendance_date = CURDATE()');
+    } else if (period === 'weekly') {
+      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
+    } else if (period === 'monthly') {
+      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
+    }
+
+    // Filter divisi: jika admin_manager, batasi ke divisinya sendiri
+    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
+      conditions.push('u.division_id = ?');
+      params.push(req.session.user.division_id);
+    } else if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -344,11 +356,24 @@ router.get('/overtime/pending', ...scoped, async (req, res) => {
  */
 router.get('/overtime/history', ...scoped, async (req, res) => {
   try {
-    const { division_id } = req.query;
+    const { division_id, period } = req.query;
     const conditions = ["a.overtime_status IN ('approved','rejected')"];
     const params = [];
 
-    if (division_id) {
+    // Filter periode tanggal
+    if (period === 'today') {
+      conditions.push('a.attendance_date = CURDATE()');
+    } else if (period === 'weekly') {
+      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
+    } else if (period === 'monthly') {
+      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
+    }
+
+    // Filter divisi: jika admin_manager, batasi ke divisinya sendiri
+    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
+      conditions.push('u.division_id = ?');
+      params.push(req.session.user.division_id);
+    } else if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -369,7 +394,7 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
        LEFT JOIN positions p ON p.id = u.position_id
        LEFT JOIN users reviewer ON reviewer.id = a.overtime_reviewed_by
        ${where}
-       ORDER BY a.overtime_reviewed_at DESC LIMIT 100`,
+       ORDER BY a.overtime_reviewed_at DESC LIMIT 500`,
       params
     );
     res.json({ success: true, overtimes: rows });

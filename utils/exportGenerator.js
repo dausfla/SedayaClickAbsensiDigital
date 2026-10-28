@@ -510,6 +510,191 @@ async function generateSubmissionsXLSX(rawRows, sheetTitle = 'Rekap Pengajuan') 
   return workbook.xlsx.writeBuffer();
 }
 
+/* ---------------------------------------------------------
+   OVERTIME ATTENDANCE EXPORT ENGINE (EXCEL & CSV)
+--------------------------------------------------------- */
+const OVERTIME_REPORT_FIELDS = [
+  { label: 'No', value: 'no', key: 'no', align: 'center' },
+  { label: 'Nama Karyawan', value: 'full_name', key: 'full_name', align: 'left' },
+  { label: 'Divisi', value: 'division_name', key: 'division_name', align: 'left' },
+  { label: 'Jabatan', value: 'position_name', key: 'position_name', align: 'left' },
+  { label: 'Tanggal', value: 'attendance_date', key: 'attendance_date', align: 'center' },
+  { label: 'Jam Masuk Lembur', value: 'overtime_clock_in_display', key: 'overtime_clock_in_display', align: 'center' },
+  { label: 'Jam Keluar Lembur', value: 'overtime_clock_out_display', key: 'overtime_clock_out_display', align: 'center' },
+  { label: 'Durasi Lembur (HH:mm:ss)', value: 'overtime_duration_hms', key: 'overtime_duration_hms', align: 'center' },
+  { label: 'Total Jam Lembur (Desimal)', value: 'overtime_duration_hours', key: 'overtime_duration_hours', align: 'right', numFmt: '0.00' },
+  { label: 'Tugas Lembur', value: 'overtime_task_reason', key: 'overtime_task_reason', align: 'left' },
+  { label: 'Status Review', value: 'overtime_status_label', key: 'overtime_status_label', align: 'center' },
+  { label: 'Peninjau', value: 'reviewed_by_name', key: 'reviewed_by_name', align: 'left' },
+  { label: 'Catatan Peninjau', value: 'overtime_review_note', key: 'overtime_review_note', align: 'left' },
+  { label: 'Catatan Absen', value: 'overtime_notes', key: 'overtime_notes', align: 'left' }
+];
+
+function prepareOvertimeRows(rawRows) {
+  return rawRows.map((r, idx) => {
+    const otSec = Number(r.overtime_duration_seconds || 0);
+    const otHours = Number((otSec / 3600).toFixed(2));
+    const otInStr = formatTimeOnly(r.overtime_clock_in_time);
+    const otOutStr = formatTimeOnly(r.overtime_clock_out_time);
+    const otDurHms = secondsToHMS(otSec);
+
+    let otStatusLabel = 'Menunggu Review';
+    if (r.overtime_status === 'approved') otStatusLabel = 'Disetujui';
+    else if (r.overtime_status === 'rejected') otStatusLabel = 'Ditolak';
+
+    const otNoteParts = [];
+    if (r.overtime_clock_in_note) otNoteParts.push(`In: ${r.overtime_clock_in_note}`);
+    if (r.overtime_clock_out_note) otNoteParts.push(`Out: ${r.overtime_clock_out_note}`);
+    const otNotes = otNoteParts.length ? otNoteParts.join(' | ') : '-';
+
+    return {
+      no: idx + 1,
+      full_name: r.full_name || '-',
+      division_name: r.division_name || '-',
+      position_name: r.position_name || '-',
+      attendance_date: formatDateOnly(r.attendance_date),
+      overtime_clock_in_display: otInStr,
+      overtime_clock_out_display: otOutStr,
+      overtime_duration_hms: otDurHms,
+      overtime_duration_hours: otHours,
+      overtime_task_reason: r.overtime_task_reason || '-',
+      overtime_status_label: otStatusLabel,
+      reviewed_by_name: r.reviewed_by_name || (r.overtime_status === 'approved' || r.overtime_status === 'rejected' ? 'Admin' : '-'),
+      overtime_review_note: r.overtime_review_note || '-',
+      overtime_notes: otNotes,
+      _raw_sec: otSec
+    };
+  });
+}
+
+function generateOvertimeCSV(rawRows) {
+  const rows = prepareOvertimeRows(rawRows);
+  const fields = OVERTIME_REPORT_FIELDS.map((f) => ({ label: f.label, value: f.value }));
+  const parser = new Parser({ fields });
+  return parser.parse(rows);
+}
+
+async function generateOvertimeXLSX(rawRows, sheetTitle = 'Presensi Lembur') {
+  const rows = prepareOvertimeRows(rawRows);
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'SedayaClick';
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet(sheetTitle, {
+    views: [{ showGridLines: true }]
+  });
+
+  sheet.columns = OVERTIME_REPORT_FIELDS.map((f) => ({ header: f.label, key: f.key, width: 20 }));
+
+  // Header Styling (Amber 700 - Professional Warm Executive Tone)
+  const headerRow = sheet.getRow(1);
+  headerRow.height = 28;
+  headerRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'B45309' } // Amber-700
+  };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+
+  const thinBorder = {
+    top: { style: 'thin', color: { argb: 'CBD5E1' } },
+    left: { style: 'thin', color: { argb: 'CBD5E1' } },
+    bottom: { style: 'thin', color: { argb: 'CBD5E1' } },
+    right: { style: 'thin', color: { argb: 'CBD5E1' } }
+  };
+
+  let totalOtSecSum = 0;
+  let totalOtHoursSum = 0;
+
+  rows.forEach((row) => {
+    totalOtSecSum += Number(row._raw_sec || 0);
+    totalOtHoursSum += Number(row.overtime_duration_hours || 0);
+
+    const addedRow = sheet.addRow(row);
+    addedRow.height = 20;
+
+    OVERTIME_REPORT_FIELDS.forEach((f, idx) => {
+      const cell = addedRow.getCell(idx + 1);
+      cell.border = thinBorder;
+      cell.font = { name: 'Arial', size: 9 };
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: f.align || 'left'
+      };
+
+      if (f.numFmt) {
+        cell.numFmt = f.numFmt;
+      }
+
+      // Soft badge colors for status
+      if (f.key === 'overtime_status_label') {
+        if (row.overtime_status_label === 'Disetujui') {
+          cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: '047857' } }; // Emerald-700
+        } else if (row.overtime_status_label === 'Ditolak') {
+          cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'BE123C' } }; // Rose-700
+        } else {
+          cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'B45309' } }; // Amber-700
+        }
+      }
+    });
+  });
+
+  // Summary Row
+  if (rows.length > 0) {
+    const totalOtHms = secondsToHMS(totalOtSecSum);
+    const summaryRowData = {};
+    OVERTIME_REPORT_FIELDS.forEach((f) => {
+      if (f.key === 'full_name') summaryRowData[f.key] = `TOTAL LEMBUR (${rows.length} Data)`;
+      else if (f.key === 'overtime_duration_hms') summaryRowData[f.key] = totalOtHms;
+      else if (f.key === 'overtime_duration_hours') summaryRowData[f.key] = Number(totalOtHoursSum.toFixed(2));
+      else summaryRowData[f.key] = '';
+    });
+
+    const summaryRow = sheet.addRow(summaryRowData);
+    summaryRow.height = 24;
+
+    OVERTIME_REPORT_FIELDS.forEach((f, idx) => {
+      const cell = summaryRow.getCell(idx + 1);
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: '78350F' } }; // Amber-900
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FEF3C7' } // Amber-100
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'B45309' } },
+        bottom: { style: 'double', color: { argb: 'B45309' } },
+        left: { style: 'thin', color: { argb: 'CBD5E1' } },
+        right: { style: 'thin', color: { argb: 'CBD5E1' } }
+      };
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: f.align || 'left'
+      };
+      if (f.numFmt) cell.numFmt = f.numFmt;
+    });
+  }
+
+  // Auto column width adjustment
+  sheet.columns.forEach((col, idx) => {
+    const field = OVERTIME_REPORT_FIELDS[idx];
+    let maxLen = field.label.length;
+    rows.forEach((r) => {
+      const val = String(r[field.key] ?? '');
+      if (val.length > maxLen) maxLen = val.length;
+    });
+    col.width = Math.min(Math.max(maxLen + 4, 12), 40);
+  });
+
+  sheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: OVERTIME_REPORT_FIELDS.length }
+  };
+
+  return workbook.xlsx.writeBuffer();
+}
+
 module.exports = {
   generateCSV,
   generateXLSX,
@@ -518,5 +703,9 @@ module.exports = {
   generateSubmissionsCSV,
   generateSubmissionsXLSX,
   prepareSubmissionRows,
-  SUBMISSION_REPORT_FIELDS
+  SUBMISSION_REPORT_FIELDS,
+  generateOvertimeCSV,
+  generateOvertimeXLSX,
+  prepareOvertimeRows,
+  OVERTIME_REPORT_FIELDS
 };

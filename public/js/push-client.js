@@ -21,16 +21,17 @@ export function getNotificationPermission() {
   return Notification.permission;
 }
 
-export async function subscribeToPushNotifications() {
+export async function subscribeToPushNotifications(options = {}) {
+  const { silentOnDeny = false, silentOnSuccess = false } = options;
   if (!isPushSupported()) {
-    showModernToast('Pemberitahuan', 'Browser ini belum mendukung Web Push Notification.', 'warning');
+    if (!silentOnDeny) showModernToast('Pemberitahuan', 'Browser ini belum mendukung Web Push Notification.', 'warning');
     return false;
   }
 
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      showModernToast('Izin Ditolak', 'Izin notifikasi tidak diaktifkan. Anda bisa mengaktifkannya di setelan browser.', 'warning');
+      if (!silentOnDeny) showModernToast('Izin Ditolak', 'Izin notifikasi tidak diaktifkan. Anda bisa mengaktifkannya di setelan browser.', 'warning');
       return false;
     }
 
@@ -66,14 +67,18 @@ export async function subscribeToPushNotifications() {
 
     const saveResult = await saveRes.json();
     if (saveResult.success) {
-      showModernToast('Notifikasi Aktif 🔔', 'Perangkat ini berhasil terdaftar untuk menerima notifikasi.', 'success');
+      if (!silentOnSuccess) {
+        showModernToast('Notifikasi Aktif 🔔', 'Pengingat absen otomatis berhasil diaktifkan di perangkat ini.', 'success');
+      }
       return true;
     } else {
       throw new Error(saveResult.message || 'Gagal menyimpan subscription');
     }
   } catch (err) {
     console.error('[PushClient Error]:', err);
-    showModernToast('Gagal', err.message || 'Terjadi kesalahan saat mengaktifkan notifikasi.', 'error');
+    if (!silentOnDeny) {
+      showModernToast('Gagal', err.message || 'Terjadi kesalahan saat mengaktifkan notifikasi.', 'error');
+    }
     return false;
   }
 }

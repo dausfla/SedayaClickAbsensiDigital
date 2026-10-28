@@ -667,6 +667,7 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-5 mb-5">
           <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-4">
             <select id="filter-period" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
+              <option value="today">Hari Ini</option>
               <option value="weekly">Mingguan</option>
               <option value="monthly">Bulanan</option>
               <option value="custom">Rentang Custom</option>
@@ -773,12 +774,22 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
+            <select id="sa-ot-filter-period" class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
+              <option value="today">Hari Ini</option>
+              <option value="weekly">Mingguan</option>
+              <option value="monthly" selected>Bulanan</option>
+              <option value="all">Semua Data</option>
+            </select>
             <select id="sa-ot-filter-division" class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
               <option value="">Semua Divisi</option>
             </select>
             <input type="text" id="sa-ot-search-input" placeholder="Cari nama karyawan..." class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200" />
             <button id="sa-ot-btn-refresh" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
               Refresh
+            </button>
+            <button id="sa-ot-btn-export-xlsx" class="text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Ekspor Excel (.xlsx)</span>
             </button>
           </div>
         </div>

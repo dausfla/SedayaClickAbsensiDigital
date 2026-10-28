@@ -214,6 +214,17 @@ const placeholder = document.getElementById('camera-placeholder');
 
 startBtn.addEventListener('click', async () => {
   hideAlert();
+
+  // Auto-request izin Web Push notifikasi saat tombol Clock In/Out ditekan (100% dilihat user)
+  if (isPushSupported() && getNotificationPermission() === 'default') {
+    subscribeToPushNotifications({ silentOnDeny: true }).then((subscribed) => {
+      if (subscribed) {
+        const banner = document.getElementById('push-notification-banner');
+        if (banner) banner.classList.add('hidden');
+      }
+    }).catch((err) => console.warn('[Auto-Prompt Push Error]:', err));
+  }
+
   startBtn.disabled = true;
   startBtn.textContent = 'Mengaktifkan...';
   try {
@@ -259,6 +270,12 @@ startBtn.addEventListener('click', async () => {
 
 captureBtn.addEventListener('click', async () => {
   hideAlert();
+
+  // Fallback trigger jika belum aktif
+  if (isPushSupported() && getNotificationPermission() === 'default') {
+    subscribeToPushNotifications({ silentOnDeny: true }).catch((err) => console.warn('[Auto-Prompt Push Error]:', err));
+  }
+
   if (!currentPosition) {
     showAlert('Lokasi belum terkunci. Mohon tunggu sebentar.');
     return;
@@ -471,6 +488,17 @@ const otPlaceholder = document.getElementById('overtime-camera-placeholder');
 if (otStartBtn) {
   otStartBtn.addEventListener('click', async () => {
     hideAlert();
+
+    // Auto-prompt juga saat absen lembur jika belum pernah diaktifkan
+    if (isPushSupported() && getNotificationPermission() === 'default') {
+      subscribeToPushNotifications({ silentOnDeny: true }).then((subscribed) => {
+        if (subscribed) {
+          const banner = document.getElementById('push-notification-banner');
+          if (banner) banner.classList.add('hidden');
+        }
+      }).catch((err) => console.warn('[Auto-Prompt Push Error]:', err));
+    }
+
     otStartBtn.disabled = true;
     otStartBtn.textContent = 'Mengaktifkan Kamera...';
     try {
