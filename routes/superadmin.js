@@ -56,6 +56,11 @@ router.get('/dashboard/summary', ...scoped, async (req, res) => {
       `SELECT COUNT(*) AS total FROM users WHERE status = 'active' AND role = 'employee'`
     );
 
+    // Hitung total pengguna yang sedang online (aktif dalam 2 menit terakhir)
+    const [[onlineUsers]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM users WHERE last_seen_at >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)`
+    );
+
     // Hitung Pengajuan per jenis (Izin, Sakit, Cuti, Lembur)
     const [[izin]] = await pool.query(
       `SELECT COUNT(*) AS total FROM submissions WHERE type = 'izin' AND ${subCondition}`
@@ -95,6 +100,7 @@ router.get('/dashboard/summary', ...scoped, async (req, res) => {
         late: late.total,
         pending_submissions: pendingTotal,
         total_active_employees: activeUsers.total,
+        online_users: onlineUsers ? onlineUsers.total : 0,
         izin: izin.total,
         sakit: sakit.total,
         cuti: cuti.total,
@@ -119,6 +125,8 @@ router.get('/users', ...scoped, async (req, res) => {
   try {
     const { status, role } = req.query;
     let sql = `SELECT u.id, u.full_name, u.email, u.visible_password, u.whatsapp, u.address, u.role, u.status,
+                      u.last_seen_at,
+                      TIMESTAMPDIFF(SECOND, u.last_seen_at, NOW()) AS seconds_since_last_seen,
                       d.name AS division_name, p.name AS position_name, s.name AS shift_name,
                       u.division_id, u.position_id, u.shift_id, u.created_at
                FROM users u
@@ -137,8 +145,10 @@ router.get('/users', ...scoped, async (req, res) => {
       if (u.visible_password) {
         plain = decryptPassword(u.visible_password);
       }
+      const isOnline = u.seconds_since_last_seen !== null && u.seconds_since_last_seen <= 120;
       return {
         ...u,
+        is_online: Boolean(isOnline),
         plain_password: plain || null
       };
     });

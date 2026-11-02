@@ -78,6 +78,8 @@ export function startSubmissionsPolling() {
       loadSubmissionsData(true);
     } else if (currentNav === 'overtime') {
       loadSAOvertimeData(true);
+    } else if (currentNav === 'users') {
+      loadUsers(currentUsersTab, true);
     }
   }, 3000);
 }
@@ -205,6 +207,7 @@ async function loadDashboard(period = currentDashboardPeriod) {
     document.getElementById('kpi-late').textContent = metrics.late || 0;
     document.getElementById('kpi-pending').textContent = metrics.pending_submissions || 0;
     document.getElementById('kpi-active').textContent = metrics.total_active_employees || 0;
+    if (document.getElementById('kpi-online')) document.getElementById('kpi-online').textContent = metrics.online_users || 0;
     if (document.getElementById('kpi-izin')) document.getElementById('kpi-izin').textContent = metrics.izin || 0;
     if (document.getElementById('kpi-sakit')) document.getElementById('kpi-sakit').textContent = metrics.sakit || 0;
     if (document.getElementById('kpi-cuti')) document.getElementById('kpi-cuti').textContent = metrics.cuti || 0;
@@ -327,20 +330,39 @@ document.querySelectorAll('[data-userstab]').forEach((btn) => {
   });
 });
 
-// Listener live search untuk pengguna
+// State dan listener live search & status online untuk pengguna
+let currentOnlineFilter = 'all';
+
 document.getElementById('search-users-input')?.addEventListener('input', () => {
   renderFilteredUsers();
 });
 
-async function loadUsers(status) {
+document.querySelectorAll('.filter-online-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-online-btn').forEach((b) => {
+      b.classList.remove('bg-white', 'dark:bg-slate-700', 'text-slate-800', 'dark:text-white', 'shadow-xs');
+      b.classList.add('text-slate-500', 'dark:text-slate-400');
+    });
+    btn.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-800', 'dark:text-white', 'shadow-xs');
+    btn.classList.remove('text-slate-500', 'dark:text-slate-400');
+    currentOnlineFilter = btn.dataset.filter || 'all';
+    renderFilteredUsers();
+  });
+});
+
+async function loadUsers(status, silent = false) {
   const container = document.getElementById('users-list');
-  container.innerHTML = '<div class="py-8 text-center text-slate-400">Memuat daftar pengguna...</div>';
+  if (!silent) {
+    container.innerHTML = '<div class="py-8 text-center text-slate-400">Memuat daftar pengguna...</div>';
+  }
   try {
     const { users } = await apiGet('/superadmin/users', { status });
     cachedUsersList = users || [];
     renderFilteredUsers();
   } catch (err) {
-    container.innerHTML = `<p class="text-rose-500 text-center py-4">${escapeHtml(err.message)}</p>`;
+    if (!silent) {
+      container.innerHTML = `<p class="text-rose-500 text-center py-4">${escapeHtml(err.message)}</p>`;
+    }
   }
 }
 
@@ -350,6 +372,10 @@ function renderFilteredUsers() {
 
   const query = (document.getElementById('search-users-input')?.value || '').toLowerCase().trim();
   const filtered = cachedUsersList.filter((u) => {
+    // Filter status online / offline
+    if (currentOnlineFilter === 'online' && !u.is_online) return false;
+    if (currentOnlineFilter === 'offline' && u.is_online) return false;
+
     if (!query) return true;
     const nameMatch = (u.full_name || '').toLowerCase().includes(query);
     const emailMatch = (u.email || '').toLowerCase().includes(query);
@@ -364,7 +390,7 @@ function renderFilteredUsers() {
       <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-2">
         <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Tidak ada pengguna ditemukan</p>
-        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau ganti tab status.</p>
+        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau ganti filter status.</p>
       </div>
     `;
     return;
@@ -380,11 +406,52 @@ function renderFilteredUsers() {
 
     const roleName = u.role === 'super_admin' ? 'Super Admin' : u.role === 'admin_manager' ? 'Admin Manager' : 'Karyawan';
 
+    // Indikator Status Online / Offline
+    const isOnline = Boolean(u.is_online);
+    let onlineBadge = '';
+    if (isOnline) {
+      onlineBadge = `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>Online</span>
+        </span>
+      `;
+    } else {
+      let relativeTime = 'Offline';
+      if (u.seconds_since_last_seen !== null && u.seconds_since_last_seen !== undefined) {
+        const sec = Number(u.seconds_since_last_seen);
+        if (sec < 60) {
+          relativeTime = 'Baru saja aktif';
+        } else if (sec < 3600) {
+          const m = Math.floor(sec / 60);
+          relativeTime = `${m} mnt lalu`;
+        } else if (sec < 86400) {
+          const h = Math.floor(sec / 3600);
+          relativeTime = `${h} jam lalu`;
+        } else {
+          const d = Math.floor(sec / 86400);
+          relativeTime = `${d} hari lalu`;
+        }
+      } else {
+        relativeTime = 'Belum aktif';
+      }
+      onlineBadge = `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700" title="${escapeHtml(u.last_seen_at || '')}">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          <span>${relativeTime}</span>
+        </span>
+      `;
+    }
+
     return `
       <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-wrap items-center justify-between gap-4">
         <div class="space-y-1.5 flex-1 min-w-[240px]">
           <div class="flex flex-wrap items-center gap-2">
             <p class="font-bold text-slate-800 dark:text-white text-sm sm:text-base">${escapeHtml(u.full_name)}</p>
+            ${onlineBadge}
             <span class="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full border ${roleBadgeColor}">
               ${roleName}
             </span>

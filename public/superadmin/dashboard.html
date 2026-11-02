@@ -583,6 +583,23 @@
             </div>
             <p class="text-2xl font-bold font-mono text-slate-900 dark:text-white" id="kpi-active">0</p>
           </div>
+
+          <div
+            class="bg-white dark:bg-slate-800/40 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/50 p-4 shadow-xs hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">Sedang Online</span>
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+              </div>
+            </div>
+            <p class="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="kpi-online">0</p>
+          </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
@@ -618,10 +635,25 @@
               class="subtab py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 whitespace-nowrap">Nonaktif</button>
           </div>
 
-          <div class="relative w-full sm:w-72">
-            <input type="text" id="search-users-input" placeholder="Cari nama, email, divisi, role..."
-              class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 pl-9 pr-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            <!-- Filter Cepat Status Online/Offline -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/80 p-0.5 rounded-xl text-xs font-semibold">
+              <button type="button" class="filter-online-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs transition-all cursor-pointer" data-filter="all">Semua</button>
+              <button type="button" class="filter-online-btn px-3 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer flex items-center gap-1.5" data-filter="online">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Online</span>
+              </button>
+              <button type="button" class="filter-online-btn px-3 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer flex items-center gap-1.5" data-filter="offline">
+                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                <span>Offline</span>
+              </button>
+            </div>
+
+            <div class="relative flex-1 sm:w-64">
+              <input type="text" id="search-users-input" placeholder="Cari nama, email, divisi, role..."
+                class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 pl-9 pr-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
           </div>
         </div>
 
@@ -1802,6 +1834,7 @@
     </div>
   </div>
 
+  <script type="module" src="/js/heartbeat.js"></script>
   <script type="module" src="/js/pwa-register.js"></script>
   <script type="module" src="/js/pull-to-refresh.js"></script>
   <script type="module" src="/superadmin/js/superadmin.js"></script>
