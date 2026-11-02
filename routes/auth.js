@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
+const { encryptPassword, decryptPassword } = require('../utils/crypto');
 
 const router = express.Router();
 
@@ -82,11 +83,12 @@ router.post('/register', registerLimiter, async (req, res) => {
     }
 
     const hashed = await bcrypt.hash(password, 10);
+    const encrypted = encryptPassword(password);
 
     await pool.query(
-      `INSERT INTO users (full_name, email, password, whatsapp, address, division_id, position_id, role, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'employee', 'pending')`,
-      [full_name, email, hashed, whatsapp, address, division_id, position_id]
+      `INSERT INTO users (full_name, email, password, visible_password, whatsapp, address, division_id, position_id, role, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'employee', 'pending')`,
+      [full_name, email, hashed, encrypted, whatsapp, address, division_id, position_id]
     );
 
     res.status(201).json({
@@ -269,4 +271,64 @@ router.post('/update-profile', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/auth/my-password
+ * Mengambil kata sandi akun saat ini untuk karyawan yang sedang login (didekripsi dari visible_password).
+ */
+router.get('/my-password', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const [rows] = await pool.query('SELECT visible_password FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' });
+    }
+
+    const plain = rows[0].visible_password ? decryptPassword(rows[0].visible_password) : null;
+    res.json({
+      success: true,
+      has_password: Boolean(plain),
+      plain_password: plain || '',
+      password: plain || '(Kata sandi lama belum tersimpan dalam format terbaca. Silakan perbarui kata sandi di bawah)'
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal memuat kata sandi.' });
+  }
+});
+
+/**
+ * PUT /api/auth/change-password
+ * Mengubah kata sandi mandiri oleh pengguna yang sedang login.
+ */
+router.put('/change-password', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { new_password, confirm_password } = req.body;
+
+    if (!new_password || !confirm_password) {
+      return res.status(400).json({ success: false, message: 'Password baru dan konfirmasi wajib diisi.' });
+    }
+    if (new_password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password minimal 6 karakter.' });
+    }
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ success: false, message: 'Konfirmasi password tidak cocok.' });
+    }
+
+    const hashed = await bcrypt.hash(new_password, 10);
+    const encrypted = encryptPassword(new_password);
+
+    await pool.query(
+      'UPDATE users SET password = ?, visible_password = ? WHERE id = ?',
+      [hashed, encrypted, userId]
+    );
+
+    res.json({ success: true, message: 'Kata sandi berhasil diperbarui.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Gagal mengubah kata sandi.' });
+  }
+});
+
 module.exports = router;
+

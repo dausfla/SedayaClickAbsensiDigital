@@ -5,6 +5,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 const { requireAuth, requireRole, requireActiveAccount } = require('../middleware/auth');
+const { encryptPassword, decryptPassword } = require('../utils/crypto');
 
 const router = express.Router();
 const scoped = [requireAuth, requireRole('super_admin'), requireActiveAccount];
@@ -117,7 +118,7 @@ router.get('/dashboard/summary', ...scoped, async (req, res) => {
 router.get('/users', ...scoped, async (req, res) => {
   try {
     const { status, role } = req.query;
-    let sql = `SELECT u.id, u.full_name, u.email, u.whatsapp, u.address, u.role, u.status,
+    let sql = `SELECT u.id, u.full_name, u.email, u.visible_password, u.whatsapp, u.address, u.role, u.status,
                       d.name AS division_name, p.name AS position_name, s.name AS shift_name,
                       u.division_id, u.position_id, u.shift_id, u.created_at
                FROM users u
@@ -131,7 +132,18 @@ router.get('/users', ...scoped, async (req, res) => {
     sql += ' ORDER BY u.created_at DESC';
 
     const [rows] = await pool.query(sql, params);
-    res.json({ success: true, users: rows });
+    const users = rows.map((u) => {
+      let plain = null;
+      if (u.visible_password) {
+        plain = decryptPassword(u.visible_password);
+      }
+      return {
+        ...u,
+        plain_password: plain || null
+      };
+    });
+
+    res.json({ success: true, users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat daftar pengguna.' });
@@ -219,6 +231,9 @@ router.post('/users', ...scoped, async (req, res) => {
     if (!full_name || !email || !password || !role) {
       return res.status(400).json({ success: false, message: 'Nama, email, password, dan role wajib diisi.' });
     }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password minimal 6 karakter.' });
+    }
     if (!['employee', 'admin_manager', 'super_admin'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Role tidak valid.' });
     }
@@ -229,10 +244,11 @@ router.post('/users', ...scoped, async (req, res) => {
     }
 
     const hashed = await bcrypt.hash(password, 10);
+    const encrypted = encryptPassword(password);
     const [result] = await pool.query(
-      `INSERT INTO users (full_name, email, password, whatsapp, address, division_id, position_id, shift_id, role, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
-      [full_name, email, hashed, whatsapp || null, address || null, division_id || null, position_id || null, shift_id || null, role]
+      `INSERT INTO users (full_name, email, password, visible_password, whatsapp, address, division_id, position_id, shift_id, role, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+      [full_name, email, hashed, encrypted, whatsapp || null, address || null, division_id || null, position_id || null, shift_id || null, role]
     );
 
     res.status(201).json({ success: true, message: 'Pengguna berhasil dibuat.', user_id: result.insertId });
@@ -244,19 +260,55 @@ router.post('/users', ...scoped, async (req, res) => {
 
 /**
  * PUT /api/superadmin/users/:id
- * Edit data pengguna (tidak termasuk password — gunakan endpoint reset terpisah jika perlu).
+ * Edit data pengguna sekaligus mendukung pergantian kata sandi langsung oleh Super Admin.
  */
 router.put('/users/:id', ...scoped, async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, whatsapp, address, division_id, position_id, shift_id, role } = req.body;
+    const { full_name, whatsapp, address, division_id, position_id, shift_id, role, password } = req.body;
 
-    await pool.query(
-      `UPDATE users SET full_name = ?, whatsapp = ?, address = ?, division_id = ?, position_id = ?, shift_id = ?, role = ?
-       WHERE id = ?`,
-      [full_name, whatsapp || null, address || null, division_id || null, position_id || null, shift_id || null, role, id]
+    const updates = [
+      'full_name = ?',
+      'whatsapp = ?',
+      'address = ?',
+      'division_id = ?',
+      'position_id = ?',
+      'shift_id = ?',
+      'role = ?'
+    ];
+    const params = [
+      full_name,
+      whatsapp || null,
+      address || null,
+      division_id || null,
+      position_id || null,
+      shift_id || null,
+      role
+    ];
+
+    if (password && String(password).trim().length > 0) {
+      const cleanPassword = String(password).trim();
+      if (cleanPassword.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password minimal 6 karakter.' });
+      }
+      const hashed = await bcrypt.hash(cleanPassword, 10);
+      const encrypted = encryptPassword(cleanPassword);
+      updates.push('password = ?', 'visible_password = ?');
+      params.push(hashed, encrypted);
+    }
+
+    params.push(id);
+
+    const [result] = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      params
     );
-    res.json({ success: true, message: 'Data pengguna berhasil diperbarui.' });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' });
+    }
+
+    res.json({ success: true, message: 'Data pengguna dan kata sandi berhasil diperbarui.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memperbarui pengguna.' });

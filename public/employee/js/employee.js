@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPostForm, escapeHtml } from '../../js/api.js';
+import { apiGet, apiPost, apiPut, apiPostForm, escapeHtml } from '../../js/api.js';
 import { LiveCamera } from '../../js/camera.js';
 import { getCurrentPosition, watchPosition, clearWatch } from '../../js/geolocation.js';
 import { subscribeToPushNotifications, isPushSupported, getNotificationPermission } from '../../js/push-client.js';
@@ -43,6 +43,7 @@ let currentUser = null;
       return;
     }
     currentUser = user;
+    loadMyPassword();
     
     // Inject Data dari Database ke Header & Form Profil
     const name = user.full_name || 'Karyawan';
@@ -127,6 +128,9 @@ navButtons.forEach((btn) => {
     const lemburPanel = document.getElementById('panel-lembur');
     if (lemburPanel) lemburPanel.classList.toggle('hidden', target !== 'lembur');
     document.getElementById('panel-profil').classList.toggle('hidden', target !== 'profil');
+    if (target === 'profil') {
+      loadMyPassword();
+    }
   });
 });
 
@@ -642,7 +646,14 @@ async function loadSubmissions(silent = false) {
             ${s.handover_to_name ? `<p class="font-medium text-slate-700 mt-1">Dialihkan Kepada: <span class="font-bold text-slate-900">${escapeHtml(s.handover_to_name)}</span> ${s.handover_to_position ? `<span class="text-slate-500 font-normal">(${escapeHtml(s.handover_to_position)})</span>` : ''}</p>` : ''}
           </div>
         ` : ''}
-        ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline inline-block">Lihat Lampiran</a>` : ''}
+        ${s.attachment ? `
+          <div>
+            <button type="button" class="btn-view-emp-attachment inline-flex items-center gap-1.5 text-xs text-brand-600 font-bold hover:underline cursor-pointer mt-1" data-url="${s.attachment.replace('/uploads/', '/secure-uploads/')}" data-title="Lampiran Pengajuan ${escapeHtml(s.type).toUpperCase()}">
+              <svg class="w-3.5 h-3.5 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+              <span>Lihat Lampiran Bukti</span>
+            </button>
+          </div>
+        ` : ''}
         ${s.review_note ? `<p class="text-[11px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-100"><span class="font-semibold not-italic text-slate-700">Catatan Admin:</span> ${escapeHtml(s.review_note)}</p>` : ''}
       </div>
     `).join('');
@@ -697,7 +708,14 @@ async function loadOvertimeHistory(silent = false) {
           </div>
           <p class="text-[11px] text-slate-500 font-medium">Tanggal: ${escapeHtml(s.start_date)} ${timeSpan ? `• <span class="text-amber-700 font-bold">${escapeHtml(timeSpan)}</span>` : ''}</p>
           <p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">${escapeHtml(s.reason)}</p>
-          ${s.attachment ? `<a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="text-xs text-brand-600 underline inline-block font-medium mt-1">Lihat Lampiran</a>` : ''}
+          ${s.attachment ? `
+            <div>
+              <button type="button" class="btn-view-emp-attachment inline-flex items-center gap-1.5 text-xs text-brand-600 font-bold hover:underline cursor-pointer mt-1" data-url="${s.attachment.replace('/uploads/', '/secure-uploads/')}" data-title="Lampiran Bukti Lembur">
+                <svg class="w-3.5 h-3.5 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                <span>Lihat Lampiran Bukti</span>
+              </button>
+            </div>
+          ` : ''}
           ${s.review_note ? `<p class="text-[11px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-100"><span class="font-semibold not-italic text-slate-700">Catatan Admin:</span> ${escapeHtml(s.review_note)}</p>` : ''}
         </div>
       `;
@@ -750,3 +768,224 @@ document.getElementById('form-profile').addEventListener('submit', async (e) => 
     submitBtn.textContent = 'Simpan Perubahan';
   }
 });
+
+/* ---------------------------------------------------------
+   Manajemen Password Karyawan (Lihat & Ubah Kata Sandi)
+--------------------------------------------------------- */
+let myPlainPassword = '';
+
+async function loadMyPassword() {
+  try {
+    const res = await apiGet('/auth/my-password');
+    if (res && res.success) {
+      myPlainPassword = res.plain_password || '';
+      const display = document.getElementById('current-password-display');
+      if (display) {
+        if (display.type === 'text') {
+          display.value = myPlainPassword;
+        } else {
+          display.value = myPlainPassword ? '••••••••' : '(Belum diset)';
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal memuat info kata sandi akun:', err);
+  }
+}
+
+// Toggle Lihat / Sembunyikan Kata Sandi Saat Ini
+const btnToggleCurrentPass = document.getElementById('btn-toggle-current-pass');
+if (btnToggleCurrentPass) {
+  btnToggleCurrentPass.addEventListener('click', () => {
+    const input = document.getElementById('current-password-display');
+    const eyeIcon = btnToggleCurrentPass.querySelector('.icon-eye');
+    const eyeOffIcon = btnToggleCurrentPass.querySelector('.icon-eye-off');
+    if (!input) return;
+
+    if (input.type === 'password') {
+      input.type = 'text';
+      input.value = myPlainPassword || '(Tidak tersedia)';
+      if (eyeIcon) eyeIcon.classList.add('hidden');
+      if (eyeOffIcon) eyeOffIcon.classList.remove('hidden');
+    } else {
+      input.type = 'password';
+      input.value = myPlainPassword ? '••••••••' : '';
+      if (eyeIcon) eyeIcon.classList.remove('hidden');
+      if (eyeOffIcon) eyeOffIcon.classList.add('hidden');
+    }
+  });
+}
+
+// Salin Kata Sandi Saat Ini ke Clipboard
+const btnCopyCurrentPass = document.getElementById('btn-copy-current-pass');
+if (btnCopyCurrentPass) {
+  btnCopyCurrentPass.addEventListener('click', async () => {
+    if (!myPlainPassword) {
+      showAlert('Kata sandi belum tersedia atau belum dimuat.', 'error');
+      return;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(myPlainPassword);
+      } else {
+        const temp = document.createElement('input');
+        temp.value = myPlainPassword;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+      }
+      showAlert('Kata sandi berhasil disalin ke clipboard!', 'success');
+      btnCopyCurrentPass.classList.add('text-emerald-600', 'border-emerald-300');
+      setTimeout(() => {
+        btnCopyCurrentPass.classList.remove('text-emerald-600', 'border-emerald-300');
+      }, 2000);
+    } catch (err) {
+      showAlert('Gagal menyalin kata sandi: ' + err.message, 'error');
+    }
+  });
+}
+
+// Submit Form Ubah Kata Sandi Baru
+const formChangePass = document.getElementById('form-change-password');
+if (formChangePass) {
+  formChangePass.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert();
+
+    const newPass = document.getElementById('input-new-password').value;
+    const confirmPass = document.getElementById('input-confirm-password').value;
+    const btnSave = document.getElementById('btn-save-password');
+
+    if (!newPass || newPass.length < 6) {
+      showAlert('Kata sandi baru minimal harus 6 karakter.', 'error');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      showAlert('Konfirmasi kata sandi tidak cocok. Harap periksa kembali.', 'error');
+      return;
+    }
+
+    try {
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.textContent = 'Menyimpan Kata Sandi...';
+      }
+      const res = await apiPut('/auth/change-password', {
+        new_password: newPass,
+        confirm_password: confirmPass
+      });
+
+      if (res && res.success) {
+        showAlert(res.message || 'Kata sandi berhasil diperbarui!', 'success');
+        myPlainPassword = newPass;
+        const passDisplay = document.getElementById('current-password-display');
+        if (passDisplay) {
+          passDisplay.value = passDisplay.type === 'text' ? newPass : '••••••••';
+        }
+        formChangePass.reset();
+      } else {
+        showAlert(res?.message || 'Gagal mengubah kata sandi.', 'error');
+      }
+    } catch (err) {
+      showAlert(err.message || 'Gagal mengubah kata sandi.', 'error');
+    } finally {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerHTML = `
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span>Perbarui Kata Sandi Saya</span>
+        `;
+      }
+    }
+  });
+}
+
+/* ---------------------------------------------------------
+   Pop-up Modal Viewer untuk Lampiran Bukti (Foto/Dokumen)
+--------------------------------------------------------- */
+function openAttachmentModal(url, title = 'Lampiran Dokumen') {
+  const modal = document.getElementById('modal-attachment-viewer');
+  const titleEl = document.getElementById('attachment-modal-title');
+  const bodyEl = document.getElementById('attachment-modal-body');
+  const downloadLink = document.getElementById('attachment-modal-download');
+  if (!modal || !bodyEl) return;
+
+  if (titleEl) titleEl.textContent = title;
+  if (downloadLink) downloadLink.href = url;
+
+  const isImage = /\.(jpg|jpeg|png|webp|gif|svg)($|\?)/i.test(url);
+  const isPdf = /\.pdf($|\?)/i.test(url);
+
+  if (isImage) {
+    bodyEl.innerHTML = `
+      <div class="w-full flex items-center justify-center p-2 bg-slate-900/5 rounded-2xl">
+        <img src="${url}" alt="Lampiran" class="max-h-[60vh] max-w-full rounded-xl object-contain shadow-sm" />
+      </div>
+    `;
+  } else if (isPdf) {
+    bodyEl.innerHTML = `
+      <iframe src="${url}" class="w-full h-[60vh] rounded-xl border border-slate-200"></iframe>
+    `;
+  } else {
+    bodyEl.innerHTML = `
+      <div class="text-center py-8 space-y-3">
+        <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700">Berkas Dokumen Lampiran Pengajuan</p>
+        <a href="${url}" target="_blank" download class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+          Unduh & Buka Dokumen
+        </a>
+      </div>
+    `;
+  }
+
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+// Event delegation klik tombol lampiran
+document.body.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-view-emp-attachment');
+  if (btn) {
+    const url = btn.getAttribute('data-url');
+    const title = btn.getAttribute('data-title') || 'Lampiran Dokumen';
+    openAttachmentModal(url, title);
+  }
+});
+
+// Tutup pop-up lampiran
+const btnCloseAttachment = document.getElementById('btn-close-attachment-modal');
+if (btnCloseAttachment) {
+  btnCloseAttachment.addEventListener('click', () => {
+    const modal = document.getElementById('modal-attachment-viewer');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  });
+}
+const modalAttachmentViewer = document.getElementById('modal-attachment-viewer');
+if (modalAttachmentViewer) {
+  modalAttachmentViewer.addEventListener('click', (e) => {
+    if (e.target === modalAttachmentViewer) {
+      modalAttachmentViewer.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  });
+}
+
+/* ---------------------------------------------------------
+   Pencegahan Pinch Zoom & Gestur Zooming di Handphone
+--------------------------------------------------------- */
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('gesturechange', (e) => e.preventDefault());
+document.addEventListener('gestureend', (e) => e.preventDefault());
+
+let lastTouchTime = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchTime <= 300) {
+    e.preventDefault();
+  }
+  lastTouchTime = now;
+}, { passive: false });

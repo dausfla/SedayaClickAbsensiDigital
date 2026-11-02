@@ -369,10 +369,10 @@ function renderPendingTable() {
         ` : ''}
         ${item.attachment ? `
           <div class="mt-1.5">
-            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
+            <button type="button" class="btn-view-admin-attachment inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md cursor-pointer" data-url="${item.attachment.replace('/uploads/', '/secure-uploads/')}" data-title="Lampiran Pengajuan ${escapeHtml(item.full_name || '')}">
               <svg class="w-3 h-3 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.559 18.32a1.5 1.5 0 11-2.122-2.122l7.693-7.693"/></svg>
               <span>Lihat Bukti File / Surat Dokter</span>
-            </a>
+            </button>
           </div>
         ` : ''}
       </td>
@@ -460,10 +460,10 @@ function renderHistoryTable() {
         ` : ''}
         ${item.attachment ? `
           <div class="mt-1">
-            <a href="${item.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md">
+            <button type="button" class="btn-view-admin-attachment inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2 py-0.5 rounded-md cursor-pointer" data-url="${item.attachment.replace('/uploads/', '/secure-uploads/')}" data-title="Lampiran Riwayat ${escapeHtml(item.full_name || '')}">
               <svg class="w-3 h-3 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.559 18.32a1.5 1.5 0 11-2.122-2.122l7.693-7.693"/></svg>
               <span>Lihat Bukti File / Surat Dokter</span>
-            </a>
+            </button>
           </div>
         ` : ''}
       </td>
@@ -1080,4 +1080,80 @@ function showToast(message, type = 'info') {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+/* ---------------------------------------------------------
+   Admin Manager Attachment Pop-up Modal Viewer
+--------------------------------------------------------- */
+function openAdminAttachmentModal(url, title = 'Lampiran Dokumen') {
+  const modal = document.getElementById('modal-attachment-viewer');
+  const titleEl = document.getElementById('attachment-modal-title');
+  const bodyEl = document.getElementById('attachment-modal-body');
+  const downloadLink = document.getElementById('attachment-modal-download');
+  if (!modal || !bodyEl) return;
+
+  if (titleEl) titleEl.textContent = title;
+  if (downloadLink) downloadLink.href = url;
+
+  const isImage = /\.(jpg|jpeg|png|webp|gif|svg)($|\?)/i.test(url);
+  const isPdf = /\.pdf($|\?)/i.test(url);
+
+  if (isImage) {
+    bodyEl.innerHTML = `
+      <div class="w-full flex items-center justify-center p-2 bg-slate-900/5 dark:bg-slate-900/40 rounded-2xl">
+        <img src="${url}" alt="Lampiran" class="max-h-[60vh] max-w-full rounded-xl object-contain shadow-sm" />
+      </div>
+    `;
+  } else if (isPdf) {
+    bodyEl.innerHTML = `
+      <iframe src="${url}" class="w-full h-[60vh] rounded-xl border border-slate-200 dark:border-slate-800"></iframe>
+    `;
+  } else {
+    bodyEl.innerHTML = `
+      <div class="text-center py-8 space-y-3">
+        <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">Berkas Dokumen Lampiran Pengajuan</p>
+        <a href="${url}" target="_blank" download class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+          Unduh & Buka Dokumen
+        </a>
+      </div>
+    `;
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+document.body.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-view-admin-attachment');
+  if (btn) {
+    const url = btn.getAttribute('data-url');
+    const title = btn.getAttribute('data-title') || 'Lampiran Dokumen';
+    openAdminAttachmentModal(url, title);
+  }
+});
+
+const btnCloseAdminAttachment = document.getElementById('btn-close-attachment-modal');
+if (btnCloseAdminAttachment) {
+  btnCloseAdminAttachment.addEventListener('click', () => {
+    const modal = document.getElementById('modal-attachment-viewer');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    document.body.style.overflow = '';
+  });
+}
+const adminAttachmentModal = document.getElementById('modal-attachment-viewer');
+if (adminAttachmentModal) {
+  adminAttachmentModal.addEventListener('click', (e) => {
+    if (e.target === adminAttachmentModal) {
+      adminAttachmentModal.classList.add('hidden');
+      adminAttachmentModal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+  });
 }

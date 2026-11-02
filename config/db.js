@@ -53,6 +53,16 @@ const pool = mysql.createPool(poolConfig);
       }
     }
 
+    // Auto-migrate kolom visible_password untuk tabel users
+    const [userColExists] = await conn.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'visible_password'`
+    );
+    if (userColExists.length === 0) {
+      await conn.query(`ALTER TABLE users ADD COLUMN visible_password TEXT NULL AFTER password`);
+      console.log(`[DB] Kolom 'visible_password' berhasil ditambahkan ke tabel users.`);
+    }
+
     // Auto-migrate tabel push_subscriptions untuk Web Push PWA
     await conn.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (

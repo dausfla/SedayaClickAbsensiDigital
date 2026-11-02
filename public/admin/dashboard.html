@@ -538,6 +538,37 @@
     </div>
   </div>
 
+  <!-- Modal Pratinjau Pop-up Lampiran Dokumen Admin -->
+  <div id="modal-attachment-viewer" class="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-5">
+    <div class="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          </div>
+          <h3 id="attachment-modal-title" class="text-sm font-bold text-slate-900 dark:text-white truncate">Lampiran Dokumen</h3>
+        </div>
+        <button type="button" id="btn-close-attachment-modal" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer" title="Tutup">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div id="attachment-modal-body" class="p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center min-h-[240px] bg-slate-50 dark:bg-slate-950">
+        <!-- Diisi gambar / PDF via JS -->
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-2">
+        <a id="attachment-modal-download" href="#" target="_blank" download class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1.5 py-1.5 px-3 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Unduh File Asli</span>
+        </a>
+        <button type="button" onclick="document.getElementById('btn-close-attachment-modal').click()" class="text-xs font-semibold px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 

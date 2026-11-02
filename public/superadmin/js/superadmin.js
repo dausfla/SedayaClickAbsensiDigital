@@ -235,18 +235,56 @@ async function loadDashboard(period = currentDashboardPeriod) {
     const ctx = document.getElementById('chart-attendance').getContext('2d');
     if (attendanceChart) attendanceChart.destroy();
     attendanceChart = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
         labels,
         datasets: [
-          { label: 'Tepat Waktu', data: onTimeData, backgroundColor: '#10b981', borderRadius: 8 },
-          { label: 'Terlambat', data: lateData, backgroundColor: '#f59e0b', borderRadius: 8 }
+          {
+            label: 'Tepat Waktu',
+            data: onTimeData,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Terlambat',
+            data: lateData,
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.12)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#f59e0b',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }
         ]
       },
       options: {
         responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
         plugins: {
-          legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Inter', size: 12 }, color: textColor } }
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              boxWidth: 8,
+              font: { family: 'Plus Jakarta Sans', size: 12 },
+              color: textColor
+            }
+          }
         },
         scales: {
           x: { grid: { display: false }, ticks: { color: textColor } },
@@ -270,52 +308,180 @@ document.querySelectorAll('[data-dashboardperiod]').forEach((btn) => {
    MANAJEMEN USER
 --------------------------------------------------------- */
 let currentUsersTab = 'pending';
+let cachedUsersList = [];
+
 document.querySelectorAll('[data-userstab]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-userstab]').forEach((b) => b.classList.remove('active', 'text-slate-500'));
-    btn.classList.add('active');
+    document.querySelectorAll('[data-userstab]').forEach((b) => {
+      b.classList.remove('active', 'border-brand-600', 'text-brand-600');
+      b.classList.add('border-transparent', 'text-slate-500');
+    });
+    btn.classList.add('active', 'border-brand-600', 'text-brand-600');
+    btn.classList.remove('border-transparent', 'text-slate-500');
     currentUsersTab = btn.dataset.userstab;
+
+    const searchInput = document.getElementById('search-users-input');
+    if (searchInput) searchInput.value = '';
+
     loadUsers(currentUsersTab);
   });
 });
 
+// Listener live search untuk pengguna
+document.getElementById('search-users-input')?.addEventListener('input', () => {
+  renderFilteredUsers();
+});
+
 async function loadUsers(status) {
   const container = document.getElementById('users-list');
-  container.innerHTML = 'Memuat...';
+  container.innerHTML = '<div class="py-8 text-center text-slate-400">Memuat daftar pengguna...</div>';
   try {
     const { users } = await apiGet('/superadmin/users', { status });
-    if (users.length === 0) {
-      container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Tidak ada data.</p>';
-      return;
-    }
-    container.innerHTML = users.map((u) => `
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p class="font-semibold text-slate-800">${escapeHtml(u.full_name)} <span class="text-xs font-normal text-slate-400">(${escapeHtml(u.role)})</span></p>
-          <p class="text-xs text-slate-500">${escapeHtml(u.email)} · ${escapeHtml(u.division_name || '-')} · ${escapeHtml(u.position_name || '-')}</p>
-          <p class="text-xs text-slate-400">${escapeHtml(u.whatsapp || '')}</p>
+    cachedUsersList = users || [];
+    renderFilteredUsers();
+  } catch (err) {
+    container.innerHTML = `<p class="text-rose-500 text-center py-4">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderFilteredUsers() {
+  const container = document.getElementById('users-list');
+  if (!container) return;
+
+  const query = (document.getElementById('search-users-input')?.value || '').toLowerCase().trim();
+  const filtered = cachedUsersList.filter((u) => {
+    if (!query) return true;
+    const nameMatch = (u.full_name || '').toLowerCase().includes(query);
+    const emailMatch = (u.email || '').toLowerCase().includes(query);
+    const divMatch = (u.division_name || '').toLowerCase().includes(query);
+    const posMatch = (u.position_name || '').toLowerCase().includes(query);
+    const roleMatch = (u.role || '').toLowerCase().includes(query);
+    return nameMatch || emailMatch || divMatch || posMatch || roleMatch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-2">
+        <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Tidak ada pengguna ditemukan</p>
+        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau ganti tab status.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map((u) => {
+    const rawPass = u.plain_password || '';
+    const roleBadgeColor = u.role === 'super_admin'
+      ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+      : u.role === 'admin_manager'
+      ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+
+    const roleName = u.role === 'super_admin' ? 'Super Admin' : u.role === 'admin_manager' ? 'Admin Manager' : 'Karyawan';
+
+    return `
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-wrap items-center justify-between gap-4">
+        <div class="space-y-1.5 flex-1 min-w-[240px]">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="font-bold text-slate-800 dark:text-white text-sm sm:text-base">${escapeHtml(u.full_name)}</p>
+            <span class="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full border ${roleBadgeColor}">
+              ${roleName}
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="font-medium text-slate-700 dark:text-slate-300">${escapeHtml(u.email)}</span>
+            <span>•</span>
+            <span>${escapeHtml(u.division_name || 'Tanpa Divisi')}</span>
+            <span>•</span>
+            <span>${escapeHtml(u.position_name || 'Tanpa Jabatan')}</span>
+          </p>
+
+          ${u.whatsapp ? `<p class="text-[11px] text-slate-400">WhatsApp: <span class="text-slate-600 dark:text-slate-300 font-medium">${escapeHtml(u.whatsapp)}</span></p>` : ''}
+
+          <!-- Seksi Kata Sandi dengan Tombol Lihat 👁️ dan Copy 📋 -->
+          <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] font-semibold text-slate-400">Kata Sandi:</span>
+            <div class="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1">
+              <span class="user-pass-display font-mono text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wider" data-pass="${escapeHtml(rawPass)}">••••••••</span>
+              
+              <!-- Tombol Mata 👁️ -->
+              <button type="button" class="btn-toggle-user-pass p-1 rounded-md text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer" title="Lihat/Sembunyikan Password">
+                <svg class="w-3.5 h-3.5 icon-eye" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <svg class="w-3.5 h-3.5 icon-eye-off hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+              </button>
+
+              <!-- Tombol Copy 📋 -->
+              <button type="button" class="btn-copy-user-pass p-1 rounded-md text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer" title="Salin Kata Sandi" data-pass="${escapeHtml(rawPass)}">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              </button>
+            </div>
+            ${!rawPass ? `<span class="text-[10px] text-amber-500 italic">(Password lama di-hash. Klik Edit untuk ganti)</span>` : ''}
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          ${status === 'pending' ? `<button class="btn-activate bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors" data-id="${u.id}">Aktifkan</button>` : ''}
-          ${status === 'active' ? `<button class="btn-edit bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg px-3 py-2 transition-colors" data-user='${JSON.stringify(u)}'>Edit</button>
-             <button class="btn-deactivate bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg px-3 py-2 transition-colors" data-id="${u.id}">Nonaktifkan</button>` : ''}
-          ${status === 'inactive' ? `<button class="btn-reactivate bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors" data-id="${u.id}">Aktifkan Kembali</button>` : ''}
-          <button class="btn-delete-user bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors flex items-center gap-1" data-id="${u.id}" data-name="${u.full_name}">
+
+        <div class="flex items-center gap-2 shrink-0">
+          ${currentUsersTab === 'pending' ? `<button class="btn-activate bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl px-3.5 py-2 transition-all shadow-xs cursor-pointer" data-id="${u.id}">Aktifkan</button>` : ''}
+          ${currentUsersTab === 'active' ? `
+            <button class="btn-edit bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl px-3 py-2 transition-colors cursor-pointer" data-user='${JSON.stringify(u)}'>Edit User / Sandi</button>
+            <button class="btn-deactivate bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-semibold rounded-xl px-3 py-2 transition-colors cursor-pointer" data-id="${u.id}">Nonaktifkan</button>
+          ` : ''}
+          ${currentUsersTab === 'inactive' ? `<button class="btn-reactivate bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl px-3.5 py-2 transition-colors cursor-pointer" data-id="${u.id}">Aktifkan Kembali</button>` : ''}
+          
+          <button class="btn-delete-user bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl px-3 py-2 border border-rose-200 dark:border-rose-900 transition-colors flex items-center gap-1 cursor-pointer" data-id="${u.id}" data-name="${escapeHtml(u.full_name)}">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            Hapus
+            <span>Hapus</span>
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+  }).join('');
 
-    container.querySelectorAll('.btn-activate').forEach((b) => b.addEventListener('click', () => activateUser(b.dataset.id)));
-    container.querySelectorAll('.btn-reactivate').forEach((b) => b.addEventListener('click', () => setUserStatus(b.dataset.id, 'active')));
-    container.querySelectorAll('.btn-deactivate').forEach((b) => b.addEventListener('click', () => setUserStatus(b.dataset.id, 'inactive')));
-    container.querySelectorAll('.btn-delete-user').forEach((b) => b.addEventListener('click', () => deleteUser(b.dataset.id, b.dataset.name)));
-    container.querySelectorAll('.btn-edit').forEach((b) => b.addEventListener('click', () => openUserModal(JSON.parse(b.dataset.user))));
-  } catch (err) {
-    container.innerHTML = `<p class="text-red-500 text-center py-4">${err.message}</p>`;
-  }
+  // Event listeners tombol aksi
+  container.querySelectorAll('.btn-activate').forEach((b) => b.addEventListener('click', () => activateUser(b.dataset.id)));
+  container.querySelectorAll('.btn-reactivate').forEach((b) => b.addEventListener('click', () => setUserStatus(b.dataset.id, 'active')));
+  container.querySelectorAll('.btn-deactivate').forEach((b) => b.addEventListener('click', () => setUserStatus(b.dataset.id, 'inactive')));
+  container.querySelectorAll('.btn-delete-user').forEach((b) => b.addEventListener('click', () => deleteUser(b.dataset.id, b.dataset.name)));
+  container.querySelectorAll('.btn-edit').forEach((b) => b.addEventListener('click', () => openUserModal(JSON.parse(b.dataset.user))));
+
+  // Event listeners tombol Toggle Password (👁️)
+  container.querySelectorAll('.btn-toggle-user-pass').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const parent = btn.closest('div');
+      const textEl = parent.querySelector('.user-pass-display');
+      const eyeIcon = btn.querySelector('.icon-eye');
+      const eyeOffIcon = btn.querySelector('.icon-eye-off');
+      const realPass = textEl.dataset.pass || '';
+
+      if (textEl.textContent === '••••••••') {
+        textEl.textContent = realPass || '(Belum diset)';
+        eyeIcon.classList.add('hidden');
+        eyeOffIcon.classList.remove('hidden');
+      } else {
+        textEl.textContent = '••••••••';
+        eyeIcon.classList.remove('hidden');
+        eyeOffIcon.classList.add('hidden');
+      }
+    });
+  });
+
+  // Event listeners tombol Copy Password (📋)
+  container.querySelectorAll('.btn-copy-user-pass').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const pass = btn.dataset.pass || '';
+      if (!pass) {
+        showAlert('Kata sandi pengguna ini belum tersimpan dalam format teks.', 'warning');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(pass);
+        showAlert('Kata sandi berhasil disalin ke clipboard!', 'success');
+      } catch (err) {
+        showAlert('Gagal menyalin kata sandi: ' + err.message);
+      }
+    });
+  });
 }
 
 async function activateUser(id) {
@@ -961,10 +1127,10 @@ async function loadSubmissionsPending(silent = false) {
 
         ${s.attachment ? `
           <div>
-            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 dark:bg-brand-950/50 border border-brand-200/60 dark:border-brand-800/40 px-3 py-1.5 rounded-xl transition-colors">
+            <button type="button" class="btn-view-super-attachment inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 dark:bg-brand-950/50 border border-brand-200/60 dark:border-brand-800/40 px-3 py-1.5 rounded-xl transition-colors cursor-pointer" data-url="${s.attachment.replace('/uploads/', '/secure-uploads/')}" data-title="Lampiran Pengajuan ${escapeHtml(s.full_name || '')}">
               <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
               <span>Lihat Bukti File / Surat Dokter</span>
-            </a>
+            </button>
           </div>
         ` : ''}
 
@@ -1042,10 +1208,10 @@ async function loadSubmissionsHistory(silent = false) {
 
         ${s.attachment ? `
           <div>
-            <a href="${s.attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 dark:bg-brand-950/50 border border-brand-200/60 dark:border-brand-800/40 px-3 py-1.5 rounded-xl transition-colors">
+            <button type="button" class="btn-view-super-attachment inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 dark:bg-brand-950/50 border border-brand-200/60 dark:border-brand-800/40 px-3 py-1.5 rounded-xl transition-colors cursor-pointer" data-url="${s.attachment.replace('/uploads/', '/secure-uploads/')}" data-title="Lampiran Riwayat ${escapeHtml(s.full_name || '')}">
               <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
               <span>Lihat Bukti File / Surat Dokter</span>
-            </a>
+            </button>
           </div>
         ` : ''}
 
@@ -1983,6 +2149,82 @@ if (formBroadcast) {
     } finally {
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = origSubmitHtml;
+    }
+  });
+}
+
+/* ---------------------------------------------------------
+   Super Admin Attachment Pop-up Modal Viewer
+--------------------------------------------------------- */
+function openSuperAttachmentModal(url, title = 'Lampiran Dokumen') {
+  const modal = document.getElementById('modal-attachment-viewer');
+  const titleEl = document.getElementById('attachment-modal-title');
+  const bodyEl = document.getElementById('attachment-modal-body');
+  const downloadLink = document.getElementById('attachment-modal-download');
+  if (!modal || !bodyEl) return;
+
+  if (titleEl) titleEl.textContent = title;
+  if (downloadLink) downloadLink.href = url;
+
+  const isImage = /\.(jpg|jpeg|png|webp|gif|svg)($|\?)/i.test(url);
+  const isPdf = /\.pdf($|\?)/i.test(url);
+
+  if (isImage) {
+    bodyEl.innerHTML = `
+      <div class="w-full flex items-center justify-center p-2 bg-slate-900/5 dark:bg-slate-900/40 rounded-2xl">
+        <img src="${url}" alt="Lampiran" class="max-h-[60vh] max-w-full rounded-xl object-contain shadow-sm" />
+      </div>
+    `;
+  } else if (isPdf) {
+    bodyEl.innerHTML = `
+      <iframe src="${url}" class="w-full h-[60vh] rounded-xl border border-slate-200 dark:border-slate-800"></iframe>
+    `;
+  } else {
+    bodyEl.innerHTML = `
+      <div class="text-center py-8 space-y-3">
+        <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">Berkas Dokumen Lampiran Pengajuan</p>
+        <a href="${url}" target="_blank" download class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+          Unduh & Buka Dokumen
+        </a>
+      </div>
+    `;
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+document.body.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-view-super-attachment');
+  if (btn) {
+    const url = btn.getAttribute('data-url');
+    const title = btn.getAttribute('data-title') || 'Lampiran Dokumen';
+    openSuperAttachmentModal(url, title);
+  }
+});
+
+const btnCloseSuperAttachment = document.getElementById('btn-close-attachment-modal');
+if (btnCloseSuperAttachment) {
+  btnCloseSuperAttachment.addEventListener('click', () => {
+    const modal = document.getElementById('modal-attachment-viewer');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    document.body.style.overflow = '';
+  });
+}
+const superAttachmentModal = document.getElementById('modal-attachment-viewer');
+if (superAttachmentModal) {
+  superAttachmentModal.addEventListener('click', (e) => {
+    if (e.target === superAttachmentModal) {
+      superAttachmentModal.classList.add('hidden');
+      superAttachmentModal.classList.remove('flex');
+      document.body.style.overflow = '';
     }
   });
 }
