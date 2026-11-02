@@ -63,16 +63,6 @@ const pool = mysql.createPool(poolConfig);
       console.log(`[DB] Kolom 'visible_password' berhasil ditambahkan ke tabel users.`);
     }
 
-    // Auto-migrate kolom last_seen_at untuk tabel users (deteksi status online)
-    const [lastSeenColExists] = await conn.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'last_seen_at'`
-    );
-    if (lastSeenColExists.length === 0) {
-      await conn.query(`ALTER TABLE users ADD COLUMN last_seen_at DATETIME NULL`);
-      console.log(`[DB] Kolom 'last_seen_at' berhasil ditambahkan ke tabel users.`);
-    }
-
     // Auto-migrate tabel push_subscriptions untuk Web Push PWA
     await conn.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (

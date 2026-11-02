@@ -160,9 +160,6 @@ router.post('/login', loginLimiter, async (req, res) => {
       position_name: user.position_name
     };
 
-    // Update status aktif (last_seen_at) saat login berhasil
-    pool.query('UPDATE users SET last_seen_at = NOW() WHERE id = ?', [user.id]).catch(() => {});
-
     res.json({ success: true, user: req.session.user });
   } catch (err) {
     console.error(err);
@@ -174,11 +171,6 @@ router.post('/login', loginLimiter, async (req, res) => {
  * POST /api/auth/logout
  */
 router.post('/logout', requireAuth, (req, res) => {
-  const userId = req.session?.user?.id;
-  if (userId) {
-    // Set last_seen_at ke masa lalu saat logout agar langsung berstatus offline
-    pool.query('UPDATE users SET last_seen_at = DATE_SUB(NOW(), INTERVAL 5 MINUTE) WHERE id = ?', [userId]).catch(() => {});
-  }
   req.session.destroy((err) => {
     if (err) return res.status(500).json({ success: false, message: 'Gagal logout.' });
     res.clearCookie('connect.sid');
@@ -193,7 +185,6 @@ router.post('/logout', requireAuth, (req, res) => {
  */
 const getSessionHandler = (req, res) => {
   if (req.session && req.session.user) {
-    pool.query('UPDATE users SET last_seen_at = NOW() WHERE id = ?', [req.session.user.id]).catch(() => {});
     return res.json({ success: true, loggedIn: true, user: req.session.user });
   }
   res.json({ success: true, loggedIn: false });
@@ -201,20 +192,6 @@ const getSessionHandler = (req, res) => {
 
 router.get('/session', getSessionHandler);
 router.get('/me', getSessionHandler);
-
-/**
- * POST /api/auth/heartbeat
- * Menerima ping periodik dari frontend saat aplikasi dibuka dan aktif.
- */
-router.post('/heartbeat', requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.user.id;
-    await pool.query('UPDATE users SET last_seen_at = NOW() WHERE id = ?', [userId]);
-    res.json({ success: true, timestamp: Date.now() });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Gagal memperbarui heartbeat.' });
-  }
-});
 
 
 /**
