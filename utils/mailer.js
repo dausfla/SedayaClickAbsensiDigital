@@ -34,9 +34,9 @@ const transporter = nodemailer.createTransport({
 async function resolveManagerEmails(divisionId) {
   const emails = new Set();
 
-  // Selalu sertakan email manajer yang diminta (aditiafirdauss04@gmail.com)
-  const primaryManager = 'aditiafirdauss04@gmail.com';
-  if (primaryManager) emails.add(primaryManager.toLowerCase());
+  // Selalu sertakan email manajer utama yang berwenang
+  emails.add('aditiafirdauss04@gmail.com');
+  emails.add('firdausmila664@gmail.com');
 
   try {
     if (divisionId) {
@@ -804,4 +804,5 @@ module.exports = {
   sendTestEmail,
   resolveManagerEmails,
   getPendingSubmissionsSummary,
+  renderPendingQueueHtml,
 };

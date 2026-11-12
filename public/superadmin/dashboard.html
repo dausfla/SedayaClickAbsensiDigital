@@ -993,10 +993,16 @@
               </div>
 
               <!-- Submit Button -->
-              <div class="pt-2">
+              <div class="pt-2 space-y-2">
                 <button type="submit" id="btn-send-broadcast" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                   <span>Kirim Broadcast Sekarang</span>
+                </button>
+
+                <!-- Tombol Kirim Pengingat Email Antrean Pengajuan ke Manajer -->
+                <button type="button" id="btn-send-manager-email-reminder" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]" title="Kirim email rekap antrean pengajuan tertunda ke inbox Manajer">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  <span>Kirim Pengingat Antrean Pengajuan ke Email Manajer ✉️</span>
                 </button>
               </div>
             </form>

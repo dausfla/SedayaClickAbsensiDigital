@@ -1157,3 +1157,37 @@ if (adminAttachmentModal) {
     }
   });
 }
+
+// Tombol Kirim Pengingat Email Antrean Pending ke Manajer
+const btnSendEmailReminder = document.getElementById('btn-send-email-reminder');
+if (btnSendEmailReminder) {
+  btnSendEmailReminder.addEventListener('click', async () => {
+    if (!confirm('Kirim email notifikasi rekap pengajuan tertunda ke inbox Manajer sekarang?')) return;
+
+    btnSendEmailReminder.disabled = true;
+    const origHtml = btnSendEmailReminder.innerHTML;
+    btnSendEmailReminder.innerHTML = `
+      <svg class="animate-spin w-4 h-4 text-white inline-block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      <span>Mengirim...</span>
+    `;
+
+    try {
+      const res = await fetch('/api/admin/send-pending-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ division_id: currentDivisionId || '' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Email pengingat berhasil dikirim! (${data.pendingCount} antrean)`, 'success');
+      } else {
+        showToast(data.message || 'Gagal mengirim email pengingat.', 'error');
+      }
+    } catch (err) {
+      showToast('Terjadi kesalahan jaringan: ' + err.message, 'error');
+    } finally {
+      btnSendEmailReminder.disabled = false;
+      btnSendEmailReminder.innerHTML = origHtml;
+    }
+  });
+}

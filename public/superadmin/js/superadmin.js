@@ -2095,6 +2095,35 @@ if (btnRefreshHistory) {
   btnRefreshHistory.addEventListener('click', loadBroadcastHistory);
 }
 
+// Tombol Kirim Pengingat Email Antrean Pengajuan ke Manajer (Super Admin)
+const btnSendManagerEmailReminder = document.getElementById('btn-send-manager-email-reminder');
+if (btnSendManagerEmailReminder) {
+  btnSendManagerEmailReminder.addEventListener('click', async () => {
+    if (!confirm('Kirim rekap email pengingat antrean pengajuan (Pending Approval) ke inbox Manajer sekarang?')) return;
+
+    const origHtml = btnSendManagerEmailReminder.innerHTML;
+    btnSendManagerEmailReminder.disabled = true;
+    btnSendManagerEmailReminder.innerHTML = `
+      <svg class="w-4 h-4 animate-spin text-white inline-block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      <span>Mengirimkan Email Pengingat ke Manajer...</span>
+    `;
+
+    try {
+      const res = await apiPost('/admin/send-pending-reminder', {});
+      if (res && res.success) {
+        showModernToast('Email Terkirim 📬', res.message, 'success');
+      } else {
+        showModernToast('Gagal', (res && res.message) || 'Gagal mengirim email.', 'warning');
+      }
+    } catch (err) {
+      showModernToast('Gagal', err.message || 'Terjadi kesalahan sistem.', 'error');
+    } finally {
+      btnSendManagerEmailReminder.disabled = false;
+      btnSendManagerEmailReminder.innerHTML = origHtml;
+    }
+  });
+}
+
 // Submit Form Broadcast
 if (formBroadcast) {
   formBroadcast.addEventListener('submit', async (e) => {
