@@ -14,7 +14,6 @@ const {
   calculateWorkDuration,
   determineStatus
 } = require('../utils/timeCalc');
-const { sendOvertimeAlertEmail } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -249,9 +248,7 @@ router.post(
       const now = new Date();
       const photoPath = `/uploads/attendance/${req.file.filename}`;
 
-      let currentAttendanceId = null;
       if (existing.length > 0) {
-        currentAttendanceId = existing[0].id;
         await pool.query(
           `UPDATE attendances SET 
              overtime_clock_in_time = ?, 
@@ -265,49 +262,14 @@ router.post(
           [now, photoPath, latitude, longitude, task_reason.trim(), note ? note.trim() : null, existing[0].id]
         );
       } else {
-        const [insertResult] = await pool.query(
+        await pool.query(
           `INSERT INTO attendances
            (user_id, attendance_date, overtime_clock_in_time, overtime_clock_in_photo, 
             overtime_clock_in_lat, overtime_clock_in_lng, overtime_task_reason, overtime_clock_in_note, status, overtime_status)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'on_time', 'pending')`,
           [userId, date, now, photoPath, latitude, longitude, task_reason.trim(), note ? note.trim() : null]
         );
-        currentAttendanceId = insertResult.insertId;
       }
-
-      // Kirim notifikasi email darurat ke Manajer (asynchronous / non-blocking)
-      setImmediate(async () => {
-        try {
-          const [userRows] = await pool.query(
-            `SELECT u.id, u.full_name, u.division_id, d.name AS division_name, p.name AS position_name
-             FROM users u
-             LEFT JOIN divisions d ON d.id = u.division_id
-             LEFT JOIN positions p ON p.id = u.position_id
-             WHERE u.id = ?`,
-            [userId]
-          );
-          const emp = userRows[0] || { full_name: req.session.user.full_name };
-
-          await sendOvertimeAlertEmail({
-            userId,
-            employeeName: emp.full_name,
-            divisionName: emp.division_name || 'Umum',
-            positionName: emp.position_name || 'Staff',
-            divisionId: emp.division_id,
-            type: 'attendance_clock_in',
-            taskReason: task_reason.trim(),
-            note: note ? note.trim() : '-',
-            submissionDate: date,
-            startTime: now,
-            latitude,
-            longitude,
-            photoUrl: photoPath,
-            currentAttendanceId,
-          });
-        } catch (mailErr) {
-          console.error('[Overtime Clock-In Mail Notification Error]:', mailErr.message);
-        }
-      });
 
       res.json({
         success: true,

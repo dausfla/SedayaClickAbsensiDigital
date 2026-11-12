@@ -1930,6 +1930,11 @@ async function loadBroadcastPanel() {
         broadcastDivisionSelect.innerHTML = '<option value="">-- Pilih Divisi Sasaran --</option>' +
           res.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
       }
+      const emailReminderDivisionSelect = document.getElementById('email-reminder-division-select');
+      if (emailReminderDivisionSelect) {
+        emailReminderDivisionSelect.innerHTML = '<option value="">Semua Divisi (Seluruh Antrean Pengajuan)</option>' +
+          res.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+      }
     }
   } catch (err) {
     console.warn('[Broadcast] Gagal memuat divisi:', err);
@@ -2095,31 +2100,57 @@ if (btnRefreshHistory) {
   btnRefreshHistory.addEventListener('click', loadBroadcastHistory);
 }
 
-// Tombol Kirim Pengingat Email Antrean Pengajuan ke Manajer (Super Admin)
-const btnSendManagerEmailReminder = document.getElementById('btn-send-manager-email-reminder');
-if (btnSendManagerEmailReminder) {
-  btnSendManagerEmailReminder.addEventListener('click', async () => {
-    if (!confirm('Kirim rekap email pengingat antrean pengajuan (Pending Approval) ke inbox Manajer sekarang?')) return;
+// Formulir Kirim Email Pengingat Pengajuan ke Manajer (Custom Gmail Recipients)
+const formManagerEmailReminder = document.getElementById('form-manager-email-reminder');
+if (formManagerEmailReminder) {
+  formManagerEmailReminder.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    const origHtml = btnSendManagerEmailReminder.innerHTML;
-    btnSendManagerEmailReminder.disabled = true;
-    btnSendManagerEmailReminder.innerHTML = `
-      <svg class="w-4 h-4 animate-spin text-white inline-block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-      <span>Mengirimkan Email Pengingat ke Manajer...</span>
-    `;
+    const recipientsInput = document.getElementById('email-reminder-recipients');
+    const divisionSelect = document.getElementById('email-reminder-division-select');
+    const subjectInput = document.getElementById('email-reminder-subject');
+    const noteInput = document.getElementById('email-reminder-note');
+    const btnSubmit = document.getElementById('btn-submit-manual-email');
+
+    const targetEmails = recipientsInput ? recipientsInput.value.trim() : '';
+    if (!targetEmails) {
+      showModernToast('Email Wajib Diisi', 'Silakan masukkan minimal satu alamat email Gmail penerima.', 'warning');
+      return;
+    }
+
+    if (!confirm(`Kirimkan rekap pengingat antrean pengajuan ke alamat email:\n${targetEmails}\n\nLanjutkan pengiriman?`)) {
+      return;
+    }
+
+    const origHtml = btnSubmit ? btnSubmit.innerHTML : '';
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `
+        <svg class="w-4 h-4 animate-spin text-white inline-block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+        <span>Mengirimkan Email Pengingat...</span>
+      `;
+    }
 
     try {
-      const res = await apiPost('/admin/send-pending-reminder', {});
+      const res = await apiPost('/admin/send-pending-reminder', {
+        target_emails: targetEmails,
+        division_id: divisionSelect?.value ? parseInt(divisionSelect.value) : null,
+        custom_subject: subjectInput ? subjectInput.value.trim() : '',
+        custom_note: noteInput ? noteInput.value.trim() : '',
+      });
+
       if (res && res.success) {
-        showModernToast('Email Terkirim 📬', res.message, 'success');
+        showModernToast('Email Terkirim 📬', res.message || 'Email pengingat berhasil dikirim!', 'success');
       } else {
-        showModernToast('Gagal', (res && res.message) || 'Gagal mengirim email.', 'warning');
+        showModernToast('Pengiriman Gagal', (res && res.message) || 'Gagal mengirim email pengingat.', 'warning');
       }
     } catch (err) {
-      showModernToast('Gagal', err.message || 'Terjadi kesalahan sistem.', 'error');
+      showModernToast('Error Sistem', err.message || 'Terjadi kesalahan sistem saat mengirim email.', 'error');
     } finally {
-      btnSendManagerEmailReminder.disabled = false;
-      btnSendManagerEmailReminder.innerHTML = origHtml;
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = origHtml;
+      }
     }
   });
 }

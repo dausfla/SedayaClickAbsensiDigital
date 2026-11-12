@@ -526,92 +526,32 @@ router.post('/test-email', ...scoped, async (req, res) => {
 /**
  * POST /api/admin/send-pending-reminder
  * Mengirimkan email pengingat rekap antrean pengajuan tertunda (Lembur, Izin, Cuti, Sakit)
- * secara manual melalui tombol di dashboard Admin / Super Admin
+ * secara manual melalui form Modul Notifikasi Super Admin / Admin
+ * Body: { target_emails, division_id, custom_subject, custom_note }
  */
 router.post('/send-pending-reminder', ...scoped, async (req, res) => {
   try {
-    const { division_id } = req.body;
-    const {
-      getPendingSubmissionsSummary,
-      resolveManagerEmails,
-      renderPendingQueueHtml,
-      transporter,
-    } = require('../utils/mailer');
+    const { target_emails, division_id, custom_subject, custom_note } = req.body;
+    const { sendManualReminderEmail } = require('../utils/mailer');
 
     const targetDivision =
       req.session.user.role === 'admin_manager' && req.session.user.division_id
         ? req.session.user.division_id
         : division_id || null;
 
-    const summary = await getPendingSubmissionsSummary(targetDivision);
-    const recipients = await resolveManagerEmails(targetDivision);
+    const result = await sendManualReminderEmail({
+      targetEmails: target_emails,
+      divisionId: targetDivision,
+      customSubject: custom_subject,
+      customNote: custom_note,
+    });
 
-    if (recipients.length === 0) {
-      return res.status(400).json({ success: false, message: 'Tidak ditemukan email manajer tujuan.' });
-    }
-
-    const appBaseUrl = (
-      process.env.APP_BASE_URL ||
-      (process.env.NODE_ENV === 'production' ? 'https://sedayaclick.cloud' : 'http://localhost:8080')
-    ).replace(/\/+$/, '');
-
-    const adminDashboardUrl = `${appBaseUrl}/admin/dashboard.html`;
-    const pendingHtml = renderPendingQueueHtml(summary);
-
-    const subject = `⏰ [PENGINGAT MANAJER] Rekap ${summary.totalCount} Pengajuan Karyawan Menunggu Persetujuan`;
-
-    const htmlContent = `
-<!DOCTYPE html>
-<html lang="id">
-<head><meta charset="utf-8"><title>${subject}</title></head>
-<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <div style="width: 100%; padding: 30px 15px; box-sizing: border-box;">
-    <div style="max-width: 620px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);">
-      <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 24px 30px; text-align: center;">
-        <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800;">SedayaClick</h1>
-        <p style="margin: 4px 0 0; color: #94a3b8; font-size: 13px;">Pengingat Antrean Persetujuan Pengajuan</p>
-      </div>
-      <div style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 18px 24px; margin: 20px 24px 10px; border-radius: 10px;">
-        <div style="margin: 0 0 6px; color: #0369a1; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-          <span>👋</span> Halo Bapak/Ibu Manajer,
-        </div>
-        <p style="margin: 0; color: #0c4a6e; font-size: 13px; line-height: 1.6;">
-          Ini adalah pengingat bahwa saat ini terdapat <strong>${summary.totalCount} pengajuan karyawan</strong> (Lembur, Izin, Cuti, atau Sakit) yang masih berstatus <strong>Pending</strong> dan menunggu persetujuan Anda.
-        </p>
-      </div>
-      <div style="padding: 10px 24px 25px;">
-        ${pendingHtml || '<p style="color: #64748b; font-size: 13px; text-align: center; padding: 20px 0;">Saat ini tidak ada antrean pengajuan yang berstatus pending. Semua pengajuan sudah diproses! 🎉</p>'}
-        <div style="text-align: center; margin: 28px 0 10px;">
-          <a href="${adminDashboardUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff !important; text-decoration: none; font-size: 14px; font-weight: 700; padding: 14px 28px; border-radius: 10px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
-            👉 Buka Dashboard Manajer untuk Memproses ✨
-          </a>
-        </div>
-      </div>
-      <div style="background-color: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;">
-        Email ini dikirim otomatis oleh <strong>SedayaClick</strong>. Semoga harinya menyenangkan dan produktif! 🌟
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME || 'SedayaClick System'}" <${
-        process.env.EMAIL_FROM_ADDRESS || 'firdausmila664@gmail.com'
-      }>`,
-      to: recipients.join(', '),
-      subject: subject,
-      html: htmlContent,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
     res.json({
       success: true,
-      message: `Email pengingat berhasil dikirim ke: ${recipients.join(', ')}`,
-      recipients,
-      pendingCount: summary.totalCount,
-      messageId: info.messageId,
+      message: `Email pengingat berhasil dikirim ke: ${result.recipients.join(', ')}`,
+      recipients: result.recipients,
+      pendingCount: result.pendingCount,
+      messageId: result.messageId,
     });
   } catch (err) {
     console.error('Send pending reminder error:', err);
