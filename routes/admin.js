@@ -503,5 +503,25 @@ router.delete('/attendance/:id', ...scoped, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/test-email
+ * Endpoint pengujian pengiriman email SMTP oleh Super Admin / Admin Manager
+ */
+router.post('/test-email', ...scoped, async (req, res) => {
+  try {
+    const targetEmail = req.body.email || req.session.user.email;
+    const { sendTestEmail } = require('../utils/mailer');
+    const info = await sendTestEmail(targetEmail);
+    res.json({
+      success: true,
+      message: `Email pengujian berhasil dikirim ke ${targetEmail}`,
+      messageId: info.messageId,
+    });
+  } catch (err) {
+    console.error('Test email error:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengirim email pengujian: ' + err.message });
+  }
+});
+
 module.exports = router;
 

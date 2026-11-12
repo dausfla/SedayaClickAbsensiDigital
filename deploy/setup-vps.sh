@@ -96,6 +96,17 @@ DB_NAME=sedayaclick
 OFFICE_LATITUDE=-6.597147
 OFFICE_LONGITUDE=106.806038
 OFFICE_RADIUS_METERS=150
+
+# SMTP Email Notification (Gmail)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=${SMTP_USER:-firdausmila664@gmail.com}
+SMTP_PASS=${SMTP_PASS:-""}
+EMAIL_FROM_NAME="SedayaClick Notification"
+EMAIL_FROM_ADDRESS=${SMTP_USER:-firdausmila664@gmail.com}
+APP_BASE_URL=https://${DOMAIN}
+FALLBACK_MANAGER_EMAIL="aditiafirdauss04@gmail.com,firdausmila664@gmail.com"
 EOF
 
 # Install dependensi
