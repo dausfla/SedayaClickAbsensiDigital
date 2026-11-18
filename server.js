@@ -159,6 +159,20 @@ async function runMigrations() {
       console.warn('[MIGRATION] users role enum check:', err.message);
     });
 
+    // Migration for shift_settings columns (shift_type, min_work_hours, is_flexible_arrival)
+    const shiftColumns = [
+      { name: 'shift_type', def: "ENUM('fixed','flexible_hours') NOT NULL DEFAULT 'fixed'" },
+      { name: 'min_work_hours', def: "DECIMAL(4,2) NOT NULL DEFAULT 9.00" },
+      { name: 'is_flexible_arrival', def: "TINYINT(1) NOT NULL DEFAULT 0" }
+    ];
+    for (const sc of shiftColumns) {
+      const [c] = await pool.query(`SHOW COLUMNS FROM shift_settings LIKE '${sc.name}'`);
+      if (c.length === 0) {
+        await pool.query(`ALTER TABLE shift_settings ADD COLUMN ${sc.name} ${sc.def}`);
+        console.log(`[MIGRATION] Kolom '${sc.name}' berhasil ditambahkan ke tabel shift_settings.`);
+      }
+    }
+
     // Migration for attendances table overtime columns
     const [otInCols] = await pool.query("SHOW COLUMNS FROM attendances LIKE 'overtime_clock_in_time'");
     if (otInCols.length === 0) {

@@ -71,6 +71,24 @@ pool.on('connection', (connection) => {
       console.log(`[DB] Kolom 'visible_password' berhasil ditambahkan ke tabel users.`);
     }
 
+    // Auto-migrate kolom shift_settings untuk shift fleksibel
+    const shiftCols = [
+      { name: 'shift_type', type: "ENUM('fixed','flexible_hours') NOT NULL DEFAULT 'fixed'" },
+      { name: 'min_work_hours', type: "DECIMAL(4,2) NOT NULL DEFAULT 9.00" },
+      { name: 'is_flexible_arrival', type: "TINYINT(1) NOT NULL DEFAULT 0" }
+    ];
+    for (const sc of shiftCols) {
+      const [exists] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'shift_settings' AND COLUMN_NAME = ?`,
+        [sc.name]
+      );
+      if (exists.length === 0) {
+        await conn.query(`ALTER TABLE shift_settings ADD COLUMN ${sc.name} ${sc.type}`);
+        console.log(`[DB] Kolom '${sc.name}' berhasil ditambahkan ke tabel shift_settings.`);
+      }
+    }
+
     // Auto-migrate tabel push_subscriptions untuk Web Push PWA
     await conn.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
