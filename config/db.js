@@ -9,24 +9,32 @@ const fs = require('fs');
 
 const xamppSocket = '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock';
 const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
+  host: (process.env.DB_HOST === 'localhost' || !process.env.DB_HOST) ? '127.0.0.1' : process.env.DB_HOST,
+  port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'sedayaclick',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
   dateStrings: true // agar DATE/DATETIME dikembalikan sebagai string, bukan objek Date UTC
 };
 
+// Hanya gunakan unix socket jika user mengonfigurasikannya secara eksplisit
 if (process.env.DB_SOCKET) {
   poolConfig.socketPath = process.env.DB_SOCKET;
-} else if (fs.existsSync(xamppSocket)) {
-  poolConfig.socketPath = xamppSocket;
 }
 
 const pool = mysql.createPool(poolConfig);
+
+// Tangani error koneksi tak terduga pada pool agar proses tidak crash fatal
+pool.on('connection', (connection) => {
+  connection.on('error', (err) => {
+    console.error('[DB Connection Error]:', err.message);
+  });
+});
 
 // Uji koneksi saat server pertama kali start, serta pastikan kolom serah terima pekerjaan (cuti) tersedia.
 (async () => {

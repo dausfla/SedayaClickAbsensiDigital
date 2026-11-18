@@ -43,9 +43,6 @@ function buildFilter(req) {
   if (division_id) {
     conditions.push('u.division_id = ?');
     params.push(division_id);
-  } else if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-    conditions.push('u.division_id = ?');
-    params.push(req.session.user.division_id);
   }
 
   // Pencarian nama karyawan (LIKE)
@@ -92,9 +89,6 @@ async function fetchSubmissionsForReport(req) {
   if (division_id) {
     conditions.push('u.division_id = ?');
     params.push(division_id);
-  } else if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-    conditions.push('u.division_id = ?');
-    params.push(req.session.user.division_id);
   }
 
   if (name) {
@@ -288,10 +282,7 @@ router.get('/overtime/export', ...scoped, async (req, res) => {
       conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
     }
 
-    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-      conditions.push('u.division_id = ?');
-      params.push(req.session.user.division_id);
-    } else if (division_id) {
+    if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -358,10 +349,6 @@ router.get('/attendance/:id', ...scoped, async (req, res) => {
     // Build the query with division condition for admin_manager
     let params = [attendanceId];
     let divisionCondition = '';
-    if (userRole === 'admin_manager') {
-      divisionCondition = ' AND u.division_id = ?';
-      params.push(userDivisionId);
-    }
 
     const [rows] = await pool.query(
       `SELECT a.*, u.full_name, d.name AS division_name, p.name AS position_name
@@ -473,13 +460,10 @@ router.get('/attendance/by-user/:userId', ...scoped, async (req, res) => {
     }
     // If period is not set, no date filter (all data)
 
-    // Division condition for admin_manager: they can only see users in their own division
-    if (userRole === 'admin_manager') {
+    const { division_id } = req.query;
+    if (division_id) {
       conditions.push('u.division_id = ?');
-      params.push(userDivisionId);
-    } else if (userRole === 'super_admin') {
-      // super_admin can see any division, but we still need to join to get division_name, etc.
-      // no extra condition
+      params.push(division_id);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

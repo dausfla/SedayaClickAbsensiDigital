@@ -325,25 +325,86 @@ captureBtn.addEventListener('click', async () => {
 --------------------------------------------------------- */
 const subTypeSelect = document.getElementById('sub-type');
 const wrapperHandover = document.getElementById('wrapper-handover-cuti');
+const modalH3Info = document.getElementById('modal-h3-info');
+const btnCloseH3Info = document.getElementById('btn-close-h3-info');
+const btnCloseH3InfoX = document.getElementById('btn-close-h3-info-x');
+const btnShowH3Modal = document.getElementById('btn-show-h3-modal');
+const noticeH3Banner = document.getElementById('notice-h3-banner');
+const noticeH3Text = document.getElementById('notice-h3-text');
+const subStartInput = document.getElementById('sub-start');
 
-function toggleHandoverSection() {
-  if (!subTypeSelect || !wrapperHandover) return;
-  if (subTypeSelect.value === 'cuti') {
-    wrapperHandover.classList.remove('hidden');
-  } else {
-    wrapperHandover.classList.add('hidden');
-    const planInput = document.getElementById('sub-handover-plan');
-    const nameInput = document.getElementById('sub-handover-to-name');
-    const posInput = document.getElementById('sub-handover-to-position');
-    if (planInput) planInput.value = '';
-    if (nameInput) nameInput.value = '';
-    if (posInput) posInput.value = '';
+function getH3MinDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return d.toISOString().split('T')[0];
+}
+
+function openH3Modal() {
+  if (modalH3Info) modalH3Info.classList.remove('hidden');
+}
+
+function closeH3Modal() {
+  if (modalH3Info) modalH3Info.classList.add('hidden');
+}
+
+if (btnCloseH3Info) btnCloseH3Info.addEventListener('click', closeH3Modal);
+if (btnCloseH3InfoX) btnCloseH3InfoX.addEventListener('click', closeH3Modal);
+if (btnShowH3Modal) btnShowH3Modal.addEventListener('click', openH3Modal);
+
+if (modalH3Info) {
+  modalH3Info.addEventListener('click', (e) => {
+    if (e.target === modalH3Info) closeH3Modal();
+  });
+}
+
+function handleSubTypeChange(userTriggered = false) {
+  if (!subTypeSelect) return;
+  const val = subTypeSelect.value;
+
+  // Toggle Handover Section (Khusus Cuti)
+  if (wrapperHandover) {
+    if (val === 'cuti') {
+      wrapperHandover.classList.remove('hidden');
+    } else {
+      wrapperHandover.classList.add('hidden');
+      const planInput = document.getElementById('sub-handover-plan');
+      const nameInput = document.getElementById('sub-handover-to-name');
+      const posInput = document.getElementById('sub-handover-to-position');
+      if (planInput) planInput.value = '';
+      if (nameInput) nameInput.value = '';
+      if (posInput) posInput.value = '';
+    }
+  }
+
+  // Handle H-3 Rule & Pop-up
+  if (val === 'cuti' || val === 'izin') {
+    if (subStartInput) subStartInput.min = getH3MinDate();
+    if (noticeH3Banner) {
+      noticeH3Banner.className = 'mt-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-900 text-xs flex items-start gap-2.5 shadow-xs';
+    }
+    if (noticeH3Text) {
+      noticeH3Text.innerHTML = 'Pengajuan cuti atau izin operasional wajib diajukan maksimal H-3 sebelum tanggal pelaksanaan, kecuali untuk pengajuan izin sakit yang dapat menyusul dengan lampiran surat dokter.';
+    }
+    if (userTriggered) {
+      openH3Modal();
+    }
+  } else if (val === 'sakit') {
+    if (subStartInput) subStartInput.removeAttribute('min');
+    if (noticeH3Banner) {
+      noticeH3Banner.className = 'mt-2.5 p-3 rounded-xl bg-emerald-50/90 border border-emerald-200/90 text-emerald-900 text-xs flex items-start gap-2.5 shadow-xs';
+    }
+    if (noticeH3Text) {
+      noticeH3Text.innerHTML = 'Khusus pengajuan izin sakit, Anda dapat mengajukan tanpa batas H-3. <strong>Wajib melampirkan foto Surat Keterangan Dokter asli</strong> pada kolom bukti berkas.';
+    }
   }
 }
 
+// Backward-compatibility alias
+const toggleHandoverSection = () => handleSubTypeChange(false);
+
 if (subTypeSelect) {
-  subTypeSelect.addEventListener('change', toggleHandoverSection);
-  toggleHandoverSection(); // Run on init
+  subTypeSelect.addEventListener('change', () => handleSubTypeChange(true));
+  handleSubTypeChange(false); // Run on init without opening modal
 }
 
 const formSub = document.getElementById('form-submission');
@@ -385,7 +446,7 @@ if (formSub) {
       const result = await apiPostForm('/submissions', formData);
       showAlert(result.message, 'success');
       e.target.reset();
-      toggleHandoverSection();
+      handleSubTypeChange(false);
       await loadSubmissions();
     } catch (err) {
       showAlert(err.message);

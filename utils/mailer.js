@@ -246,7 +246,7 @@ async function sendManualReminderEmail({
 
   const appBaseUrl = (
     process.env.APP_BASE_URL ||
-    (process.env.NODE_ENV === 'production' ? 'https://sedayaclick.cloud' : 'http://localhost:8080')
+    (process.env.NODE_ENV === 'production' ? 'https://sedayaclick.cloud' : `http://localhost:${process.env.PORT || 3000}`)
   ).replace(/\/+$/, '');
 
   const adminDashboardUrl = `${appBaseUrl}/admin/dashboard.html`;

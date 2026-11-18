@@ -241,10 +241,27 @@
             <div>
               <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Jenis Pengajuan</label>
               <select id="sub-type" required class="w-full min-w-0 box-border rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
-                <option value="izin">Izin Khusus</option>
-                <option value="cuti">Cuti Tahunan</option>
-                <option value="sakit">Sakit</option>
+                <option value="izin">Izin Khusus (Wajib H-3 Hari)</option>
+                <option value="cuti">Cuti Tahunan (Wajib H-3 Hari)</option>
+                <option value="sakit">Izin Sakit (Dapat Menyusul + Surat Dokter)</option>
               </select>
+
+              <!-- Dynamic Inline Notice H-3 Rule -->
+              <div id="notice-h3-banner" class="mt-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-900 text-xs flex items-start gap-2.5 shadow-xs">
+                <div class="w-5 h-5 rounded-lg bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/20 font-bold">
+                  !
+                </div>
+                <div class="flex-1 leading-relaxed">
+                  <p class="font-bold text-[11px] text-amber-950 uppercase tracking-wider mb-0.5">Ketentuan Pengajuan Cuti / Izin (H-3)</p>
+                  <p id="notice-h3-text" class="text-[11.5px] text-amber-900">
+                    Pengajuan cuti atau izin operasional wajib diajukan maksimal H-3 sebelum tanggal pelaksanaan, kecuali untuk pengajuan izin sakit yang dapat menyusul dengan lampiran surat dokter.
+                  </p>
+                  <button type="button" id="btn-show-h3-modal" class="text-[11px] font-bold text-amber-700 hover:text-amber-900 underline mt-1 inline-flex items-center gap-1 cursor-pointer">
+                    <span>Lihat Rincian Ketentuan</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -484,6 +501,54 @@
       </section>
 
     </main>
+
+    <!-- Modal Pop-up Ketentuan Pengajuan H-3 -->
+    <div id="modal-h3-info" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+        
+        <!-- Header -->
+        <div class="p-5 pb-3.5 flex items-center gap-3 border-b border-slate-100 bg-amber-50/60">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 border border-amber-500/20 font-black">
+            <svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">Pengajuan Cuti / Izin (H-3)</h3>
+            <p class="text-[11px] text-amber-700 font-medium">Ketentuan Operasional Manajemen</p>
+          </div>
+          <button type="button" id="btn-close-h3-info-x" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-5 space-y-3.5 text-xs text-slate-600 leading-relaxed">
+          <div class="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-950 space-y-1.5">
+            <p class="font-black text-xs text-amber-900 flex items-center gap-1.5">
+              <span>📅</span> Wajib Diajukan Maksimal H-3 Hari
+            </p>
+            <p class="text-[11.5px] leading-relaxed text-amber-900">
+              Pengajuan <strong>cuti atau izin operasional wajib diajukan maksimal H-3 sebelum tanggal pelaksanaan</strong>, untuk memastikan koordinasi jadwal kerja tim dan serah terima pekerjaan berjalan lancar.
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-950 space-y-1.5">
+            <p class="font-black text-xs text-emerald-900 flex items-center gap-1.5">
+              <span>🏥</span> Pengecualian Izin Sakit
+            </p>
+            <p class="text-[11.5px] leading-relaxed text-emerald-900">
+              Kecuali untuk <strong>pengajuan izin sakit</strong> yang dapat menyusul dengan kewajiban melampirkan foto <strong>Surat Keterangan Dokter</strong> asli pada kolom bukti file.
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 pt-2 bg-slate-50 border-t border-slate-100">
+          <button type="button" id="btn-close-h3-info" class="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-brand-500/20 active:scale-[0.98] transition cursor-pointer">
+            Saya Mengerti & Lanjutkan Pengajuan
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal: Pratinjau Pop-up Lampiran Dokumen / Foto Pengajuan -->
     <div id="modal-attachment-viewer" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">

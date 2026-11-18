@@ -68,18 +68,27 @@ const navPanels = {
 
 let currentNav = 'dashboard';
 let superSubmissionsTimer = null;
+let isPollingBusy = false;
 
 export function startSubmissionsPolling() {
   stopSubmissionsPolling();
-  superSubmissionsTimer = setInterval(() => {
-    if (currentNav === 'dashboard') {
-      loadDashboard();
-    } else if (currentNav === 'submissions') {
-      loadSubmissionsData(true);
-    } else if (currentNav === 'overtime') {
-      loadSAOvertimeData(true);
+  superSubmissionsTimer = setInterval(async () => {
+    if (isPollingBusy) return;
+    isPollingBusy = true;
+    try {
+      if (currentNav === 'dashboard') {
+        await loadDashboard();
+      } else if (currentNav === 'submissions') {
+        await Promise.all([loadSubmissionsPending(true), loadSubmissionsHistory(true)]);
+      } else if (currentNav === 'overtime') {
+        await loadSAOvertimeData(true);
+      }
+    } catch (err) {
+      console.warn('Super Admin polling error:', err);
+    } finally {
+      isPollingBusy = false;
     }
-  }, 3000);
+  }, 4000);
 }
 
 export function stopSubmissionsPolling() {
@@ -169,7 +178,8 @@ navButtons.forEach((btn) => {
     }
 
     Object.entries(navPanels).forEach(([key, id]) => {
-      document.getElementById(id).classList.toggle('hidden', key !== btn.dataset.nav);
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', key !== btn.dataset.nav);
     });
 
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -232,66 +242,74 @@ async function loadDashboard(period = currentDashboardPeriod) {
     const gridColor = isDark ? '#334155' : '#f1f5f9';
     const textColor = isDark ? '#94a3b8' : '#64748b';
 
-    const ctx = document.getElementById('chart-attendance').getContext('2d');
-    if (attendanceChart) attendanceChart.destroy();
-    attendanceChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Tepat Waktu',
-            data: onTimeData,
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.12)',
-            borderWidth: 2.5,
-            fill: true,
-            tension: 0.35,
-            pointBackgroundColor: '#10b981',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1.5,
-            pointRadius: 4,
-            pointHoverRadius: 6
+    const ctx = document.getElementById('chart-attendance')?.getContext('2d');
+    if (ctx) {
+      if (attendanceChart) {
+        attendanceChart.data.labels = labels;
+        if (attendanceChart.data.datasets[0]) attendanceChart.data.datasets[0].data = onTimeData;
+        if (attendanceChart.data.datasets[1]) attendanceChart.data.datasets[1].data = lateData;
+        attendanceChart.update('none');
+      } else {
+        attendanceChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Tepat Waktu',
+                data: onTimeData,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 1.5,
+                pointRadius: 4,
+                pointHoverRadius: 6
+              },
+              {
+                label: 'Terlambat',
+                data: lateData,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#f59e0b',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 1.5,
+                pointRadius: 4,
+                pointHoverRadius: 6
+              }
+            ]
           },
-          {
-            label: 'Terlambat',
-            data: lateData,
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.12)',
-            borderWidth: 2.5,
-            fill: true,
-            tension: 0.35,
-            pointBackgroundColor: '#f59e0b',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1.5,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        interaction: {
-          mode: 'index',
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              usePointStyle: true,
-              boxWidth: 8,
-              font: { family: 'Plus Jakarta Sans', size: 12 },
-              color: textColor
+          options: {
+            responsive: true,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  usePointStyle: true,
+                  boxWidth: 8,
+                  font: { family: 'Plus Jakarta Sans', size: 12 },
+                  color: textColor
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: textColor } },
+              y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } }
             }
           }
-        },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: textColor } },
-          y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } }
-        }
+        });
       }
-    });
+    }
   } catch (err) {
     showAlert(err.message);
   }
@@ -1056,21 +1074,30 @@ document.getElementById('submission-division-filter').addEventListener('change',
 
 document.querySelectorAll('[data-submissionstab]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-submissionstab]').forEach((b) => b.classList.remove('active', 'text-slate-500'));
-    btn.classList.add('active');
+    document.querySelectorAll('[data-submissionstab]').forEach((b) => {
+      b.classList.remove('active', 'border-brand-600', 'text-brand-600', 'dark:border-brand-400', 'dark:text-brand-300');
+      b.classList.add('border-transparent', 'text-slate-500');
+    });
+    btn.classList.add('active', 'border-brand-600', 'text-brand-600', 'dark:border-brand-400', 'dark:text-brand-300');
+    btn.classList.remove('border-transparent', 'text-slate-500');
     currentSubmissionsTab = btn.dataset.submissionstab;
-    document.getElementById('submission-pending-list').classList.toggle('hidden', currentSubmissionsTab !== 'pending');
-    document.getElementById('submission-history-list').classList.toggle('hidden', currentSubmissionsTab !== 'history');
+
+    document.getElementById('submission-pending-list')?.classList.toggle('hidden', currentSubmissionsTab !== 'pending');
+    document.getElementById('submission-overtime-pending-list')?.classList.toggle('hidden', currentSubmissionsTab !== 'overtime-pending');
+    document.getElementById('submission-history-list')?.classList.toggle('hidden', currentSubmissionsTab !== 'history');
+    document.getElementById('submission-overtime-history-list')?.classList.toggle('hidden', currentSubmissionsTab !== 'overtime-history');
     loadSubmissionsData();
   });
 });
 
 function loadSubmissionsData(silent = false) {
-  if (currentSubmissionsTab === 'pending') {
-    loadSubmissionsPending(silent);
-  } else {
-    loadSubmissionsHistory(silent);
+  if (!silent) {
+    lastSuperPendingHash = '';
+    lastSuperHistoryHash = '';
   }
+  loadSubmissionsPending(silent);
+  loadSubmissionsHistory(silent);
+  loadSAOvertimeData(silent);
 }
 
 async function loadSubmissionsPending(silent = false) {
@@ -1083,6 +1110,11 @@ async function loadSubmissionsPending(silent = false) {
   try {
     const { submissions } = await apiGet('/admin/submissions/pending', params);
     const filteredSubs = (submissions || []).filter(s => s.type !== 'lembur');
+
+    if (document.getElementById('sa-sub-badge-pending')) {
+      document.getElementById('sa-sub-badge-pending').textContent = filteredSubs.length;
+    }
+
     const newHash = JSON.stringify(filteredSubs);
     if (silent && lastSuperPendingHash === newHash) return;
     lastSuperPendingHash = newHash;
@@ -1091,7 +1123,9 @@ async function loadSubmissionsPending(silent = false) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Tidak ada pengajuan yang menunggu persetujuan.</p>';
       return;
     }
-    container.innerHTML = filteredSubs.map((s) => `
+    container.innerHTML = filteredSubs.map((s) => {
+      const submitTimeStr = s.created_at ? new Date(s.created_at).toLocaleString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) + ' WIB' : '-';
+      return `
       <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2.5 shadow-xs">
         <div class="flex items-center justify-between">
           <div>
@@ -1102,6 +1136,11 @@ async function loadSubmissionsPending(silent = false) {
           <span class="text-xs font-extrabold px-2.5 py-1 rounded-full uppercase ${s.type === 'cuti' ? 'bg-blue-100 text-blue-800' : s.type === 'sakit' ? 'bg-rose-100 text-rose-800' : 'bg-purple-100 text-purple-800'}">
             ${escapeHtml(TYPE_LABEL[s.type] || s.type)}
           </span>
+        </div>
+
+        <div class="flex items-center gap-1.5 text-[11px] font-mono text-indigo-600 bg-indigo-50/70 p-2 rounded-xl border border-indigo-100">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Waktu Submit: <strong>${submitTimeStr}</strong></span>
         </div>
 
         <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-2">
@@ -1141,7 +1180,8 @@ async function loadSubmissionsPending(silent = false) {
           <button class="btn-super-del-sub px-3 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold rounded-xl py-2 transition-colors" data-id="${s.id}">Hapus</button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     container.querySelectorAll('.btn-sub-approve').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'approved')));
     container.querySelectorAll('.btn-sub-reject').forEach((b) => b.addEventListener('click', () => openDecisionModal(b.dataset.id, b.dataset.name, 'rejected')));
@@ -1162,6 +1202,11 @@ async function loadSubmissionsHistory(silent = false) {
   try {
     const { submissions } = await apiGet('/admin/submissions/history', params);
     const filteredSubs = (submissions || []).filter(s => s.type !== 'lembur');
+
+    if (document.getElementById('sa-sub-badge-history')) {
+      document.getElementById('sa-sub-badge-history').textContent = filteredSubs.length;
+    }
+
     const newHash = JSON.stringify(filteredSubs);
     if (silent && lastSuperHistoryHash === newHash) return;
     lastSuperHistoryHash = newHash;
@@ -1170,7 +1215,10 @@ async function loadSubmissionsHistory(silent = false) {
       container.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-200">Belum ada riwayat pengajuan.</p>';
       return;
     }
-    container.innerHTML = filteredSubs.map((s) => `
+    container.innerHTML = filteredSubs.map((s) => {
+      const submitTimeStr = s.created_at ? new Date(s.created_at).toLocaleString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) + ' WIB' : '-';
+      const reviewTimeStr = s.reviewed_at ? new Date(s.reviewed_at).toLocaleString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) + ' WIB' : '-';
+      return `
       <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2.5 shadow-xs">
         <div class="flex items-center justify-between mb-1">
           <div>
@@ -1182,6 +1230,25 @@ async function loadSubmissionsHistory(silent = false) {
               ${escapeHtml(TYPE_LABEL[s.type] || s.type)}
             </span>
             <span class="text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_STYLE[s.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[s.status] || escapeHtml(s.status)}</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+          <div class="flex items-center gap-1.5 font-mono text-[11px] text-slate-500">
+            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Diajukan: <strong>${submitTimeStr}</strong></span>
+          </div>
+          <div class="text-[11px] flex items-center gap-1.5 flex-wrap">
+            ${s.reviewed_by_name ? `
+              <span class="text-slate-500">Ditinjau oleh:</span>
+              <strong class="text-indigo-600 dark:text-indigo-400">${escapeHtml(s.reviewed_by_name)}</strong>
+              ${s.reviewed_by_role === 'admin_manager'
+                ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200">Middle Management</span>'
+                : (s.reviewed_by_role === 'super_admin' || s.reviewed_by_role === 'superadmin')
+                ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200">Super Admin</span>'
+                : ''}
+              <span class="text-slate-400 font-mono">(${reviewTimeStr})</span>
+            ` : '<span class="text-slate-400 italic">Admin Sistem</span>'}
           </div>
         </div>
 
@@ -1222,7 +1289,8 @@ async function loadSubmissionsHistory(silent = false) {
           <button class="btn-super-del-sub px-3 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold rounded-xl py-1.5 transition-colors" data-id="${s.id}">Hapus</button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     container.querySelectorAll('.btn-super-edit-sub').forEach((b) => b.addEventListener('click', () => openSuperSubModal(JSON.parse(b.dataset.sub))));
     container.querySelectorAll('.btn-super-del-sub').forEach((b) => b.addEventListener('click', () => deleteSuperSubmission(b.dataset.id)));
@@ -1302,10 +1370,10 @@ export async function loadSAOvertimeData(silent = false) {
     await populateSAOvertimeDivisions();
 
     const divId = document.getElementById('sa-ot-filter-division')?.value || '';
-    const period = document.getElementById('sa-ot-filter-period')?.value || 'monthly';
+    const period = document.getElementById('sa-ot-filter-period')?.value || 'all';
     const params = new URLSearchParams();
     if (divId) params.append('division_id', divId);
-    if (period) params.append('period', period);
+    if (period && period !== 'all') params.append('period', period);
     const query = params.toString() ? `?${params.toString()}` : '';
 
     const [resPending, resHistory] = await Promise.all([
@@ -1318,6 +1386,8 @@ export async function loadSAOvertimeData(silent = false) {
 
     if (document.getElementById('sa-ot-badge-pending')) document.getElementById('sa-ot-badge-pending').textContent = saOtPendingList.length;
     if (document.getElementById('sa-ot-badge-history')) document.getElementById('sa-ot-badge-history').textContent = saOtHistoryList.length;
+    if (document.getElementById('sa-sub-badge-ot-pending')) document.getElementById('sa-sub-badge-ot-pending').textContent = saOtPendingList.length;
+    if (document.getElementById('sa-sub-badge-ot-history')) document.getElementById('sa-sub-badge-ot-history').textContent = saOtHistoryList.length;
 
     renderSAOvertimeTables();
   } catch (err) {
@@ -1328,6 +1398,131 @@ export async function loadSAOvertimeData(silent = false) {
 function renderSAOvertimeTables() {
   renderSAOvertimePendingTable();
   renderSAOvertimeHistoryTable();
+  renderSubmissionsOvertimeLists();
+}
+
+function renderSubmissionsOvertimeLists() {
+  const pendingContainer = document.getElementById('submission-overtime-pending-list');
+  const historyContainer = document.getElementById('submission-overtime-history-list');
+
+  // Render Overtime Pending in Submissions panel
+  if (pendingContainer) {
+    if (saOtPendingList.length === 0) {
+      pendingContainer.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">Tidak ada presensi lembur yang menunggu persetujuan.</p>';
+    } else {
+      pendingContainer.innerHTML = saOtPendingList.map(item => {
+        const inTime = item.overtime_clock_in_time ? new Date(item.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+        const outTime = item.overtime_clock_out_time ? new Date(item.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+        const sec = item.overtime_duration_seconds || 0;
+        const durStr = sec > 0 ? `${Math.floor(sec / 3600)}j ${Math.floor((sec % 3600) / 60)}m` : '-';
+
+        return `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)}</span>
+                <span class="text-xs font-semibold text-amber-700 bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-md ml-1.5">${escapeHtml(item.division_name || '-')}</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">Pending</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-xs space-y-1">
+              <div class="flex items-center justify-between font-mono">
+                <span class="text-slate-600 dark:text-slate-300">Tanggal: <strong>${escapeHtml(item.attendance_date)}</strong></span>
+                <span class="font-bold text-amber-700 dark:text-amber-400">Durasi: ${durStr}</span>
+              </div>
+              <div class="text-slate-700 dark:text-slate-200 font-mono text-[11px]">
+                Masuk: <strong>${inTime}</strong> — Pulang: <strong>${outTime}</strong>
+              </div>
+            </div>
+            <div class="text-xs text-slate-700 dark:text-slate-300 space-y-1">
+              <p class="font-bold text-[11px] text-slate-400 uppercase">Tugas Lembur:</p>
+              <p class="leading-relaxed">${escapeHtml(item.overtime_task_reason || '-')}</p>
+            </div>
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <button onclick="openSAOvertimeDetailModal('${item.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Foto & GPS</span>
+              </button>
+              <div class="flex items-center gap-1.5">
+                <button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="approved" class="btn-sa-ot-decide px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-sm cursor-pointer">Setujui</button>
+                <button data-id="${item.id}" data-name="${escapeHtml(item.full_name)}" data-decision="rejected" class="btn-sa-ot-decide px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-sm cursor-pointer">Tolak</button>
+                <button data-id="${item.id}" class="btn-sa-ot-delete px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 cursor-pointer">Hapus</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      pendingContainer.querySelectorAll('.btn-sa-ot-decide').forEach(b => b.addEventListener('click', () => openSAOvertimeDecisionModal(b.dataset.id, b.dataset.name, b.dataset.decision)));
+      pendingContainer.querySelectorAll('.btn-sa-ot-delete').forEach(b => b.addEventListener('click', () => deleteSAOvertime(b.dataset.id)));
+    }
+  }
+
+  // Render Overtime History in Submissions panel
+  if (historyContainer) {
+    if (saOtHistoryList.length === 0) {
+      historyContainer.innerHTML = '<p class="text-slate-400 text-center py-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">Belum ada riwayat presensi lembur.</p>';
+    } else {
+      historyContainer.innerHTML = saOtHistoryList.map(item => {
+        const inTime = item.overtime_clock_in_time ? new Date(item.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+        const outTime = item.overtime_clock_out_time ? new Date(item.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
+        const sec = item.overtime_duration_seconds || 0;
+        const durStr = sec > 0 ? `${Math.floor(sec / 3600)}j ${Math.floor((sec % 3600) / 60)}m` : '-';
+        const reviewTimeStr = item.overtime_reviewed_at ? new Date(item.overtime_reviewed_at).toLocaleString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) + ' WIB' : '-';
+
+        return `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)}</span>
+                <span class="text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md ml-1.5">${escapeHtml(item.division_name || '-')}</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
+                ${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-xs">
+              <div class="font-mono text-slate-600 dark:text-slate-300">
+                Tanggal: <strong>${escapeHtml(item.attendance_date)}</strong> (${inTime} — ${outTime}, Durasi: ${durStr})
+              </div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-slate-500">Ditinjau oleh:</span>
+                <strong class="text-slate-900 dark:text-white">${escapeHtml(item.reviewed_by_name || 'Admin Sistem')}</strong>
+                ${item.reviewed_by_role === 'admin_manager'
+                  ? '<span class="px-2 py-0.5 rounded text-[9px] font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200">Middle Management</span>'
+                  : (item.reviewed_by_role === 'super_admin' || item.reviewed_by_role === 'superadmin')
+                  ? '<span class="px-2 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200">Super Admin</span>'
+                  : ''}
+                <span class="text-slate-400 font-mono">(${reviewTimeStr})</span>
+              </div>
+            </div>
+
+            <div class="text-xs text-slate-700 dark:text-slate-300 space-y-1">
+              <p class="font-bold text-[11px] text-slate-400 uppercase">Tugas Lembur:</p>
+              <p class="leading-relaxed">${escapeHtml(item.overtime_task_reason || '-')}</p>
+            </div>
+
+            ${item.overtime_review_note ? `
+              <div class="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 text-xs text-amber-900 dark:text-amber-300">
+                <span class="font-bold">Catatan Peninjau:</span> ${escapeHtml(item.overtime_review_note)}
+              </div>
+            ` : ''}
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <button onclick="openSAOvertimeDetailModal('${item.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Detail Foto & GPS</span>
+              </button>
+              <button data-id="${item.id}" class="btn-sa-ot-delete px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition-colors cursor-pointer">Hapus</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      historyContainer.querySelectorAll('.btn-sa-ot-delete').forEach(b => b.addEventListener('click', () => deleteSAOvertime(b.dataset.id)));
+    }
+  }
 }
 
 function renderSAOvertimePendingTable() {
@@ -1411,9 +1606,19 @@ function renderSAOvertimeHistoryTable() {
             <span>Verifikasi Foto & GPS</span>
           </button>
         </td>
-        <td class="px-4 py-3.5 text-right whitespace-nowrap text-slate-500 text-xs">
-          <div>${escapeHtml(item.reviewed_by_name || 'Admin')}</div>
-          <button data-id="${item.id}" class="btn-sa-ot-delete mt-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] border border-rose-200 transition-colors">Hapus</button>
+        <td class="px-4 py-3.5 text-right whitespace-nowrap text-xs">
+          <div class="flex flex-col items-end gap-1">
+            <div class="flex items-center gap-1.5 justify-end flex-wrap">
+              <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(item.reviewed_by_name || 'Admin Sistem')}</span>
+              ${item.reviewed_by_role === 'admin_manager'
+                ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">Middle Management</span>'
+                : (item.reviewed_by_role === 'super_admin' || item.reviewed_by_role === 'superadmin')
+                ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">Super Admin</span>'
+                : ''}
+            </div>
+            ${item.overtime_reviewed_at ? `<div class="text-[10px] text-slate-400 font-mono">${new Date(item.overtime_reviewed_at).toLocaleString('id-ID', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })} WIB</div>` : ''}
+            <button data-id="${item.id}" class="btn-sa-ot-delete mt-0.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] border border-rose-200 transition-colors cursor-pointer">Hapus</button>
+          </div>
         </td>
       </tr>
     `;

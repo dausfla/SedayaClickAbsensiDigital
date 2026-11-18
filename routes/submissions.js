@@ -42,6 +42,22 @@ router.post(
         return res.status(400).json({ success: false, message: 'Jam mulai dan jam selesai lembur wajib diisi.' });
       }
 
+      // Aturan Bisnis URF: Pengajuan cuti atau izin operasional wajib diajukan minimal H-3 sebelum tanggal pelaksanaan (sakit dikecualikan)
+      if (['cuti', 'izin'].includes(type)) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const targetDate = new Date(effectiveStartDate);
+        targetDate.setHours(0, 0, 0, 0);
+        const diffTime = targetDate.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 3) {
+          return res.status(400).json({
+            success: false,
+            message: 'Pengajuan cuti dan izin operasional wajib diajukan minimal H-3 sebelum tanggal pelaksanaan.'
+          });
+        }
+      }
+
       const attachmentPath = req.file ? `/uploads/submissions/${req.file.filename}` : null;
 
       const finalHandoverPlan = type === 'cuti' && handover_plan ? handover_plan.trim() : null;

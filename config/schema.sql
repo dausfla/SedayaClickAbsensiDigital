@@ -143,6 +143,9 @@ CREATE TABLE IF NOT EXISTS `sessions` (
 CREATE TABLE IF NOT EXISTS `shift_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
+  `shift_type` enum('fixed','flexible_hours') NOT NULL DEFAULT 'fixed',
+  `min_work_hours` decimal(4,2) NOT NULL DEFAULT 9.00,
+  `is_flexible_arrival` tinyint(1) NOT NULL DEFAULT 0,
   `start_time` time NOT NULL DEFAULT '08:00:00',
   `end_time` time NOT NULL DEFAULT '17:00:00',
   `tolerance_minutes` int(11) NOT NULL DEFAULT 0 COMMENT 'Toleransi keterlambatan dalam menit',

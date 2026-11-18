@@ -395,23 +395,27 @@ router.get('/shifts', ...scoped, async (req, res) => {
 });
 
 router.post('/shifts', ...scoped, async (req, res) => {
-  const { name, start_time, end_time, tolerance_minutes } = req.body;
-  if (!name || !start_time || !end_time) {
-    return res.status(400).json({ success: false, message: 'Nama shift dan jam wajib diisi.' });
+  const { name, start_time, end_time, tolerance_minutes, shift_type, min_work_hours, is_flexible_arrival } = req.body;
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'Nama shift wajib diisi.' });
   }
+  const isFlex = shift_type === 'flexible_hours' || Number(is_flexible_arrival) === 1;
+  const sTime = start_time || '08:00:00';
+  const eTime = end_time || '17:00:00';
   const [result] = await pool.query(
-    'INSERT INTO shift_settings (name, start_time, end_time, tolerance_minutes) VALUES (?, ?, ?, ?)',
-    [name, start_time, end_time, tolerance_minutes || 0]
+    'INSERT INTO shift_settings (name, shift_type, min_work_hours, is_flexible_arrival, start_time, end_time, tolerance_minutes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [name, isFlex ? 'flexible_hours' : 'fixed', Number(min_work_hours) || 9.00, isFlex ? 1 : 0, sTime, eTime, tolerance_minutes || 0]
   );
   res.status(201).json({ success: true, id: result.insertId });
 });
 
 router.put('/shifts/:id', ...scoped, async (req, res) => {
   const { id } = req.params;
-  const { name, start_time, end_time, tolerance_minutes, is_active } = req.body;
+  const { name, start_time, end_time, tolerance_minutes, is_active, shift_type, min_work_hours, is_flexible_arrival } = req.body;
+  const isFlex = shift_type === 'flexible_hours' || Number(is_flexible_arrival) === 1;
   await pool.query(
-    'UPDATE shift_settings SET name = ?, start_time = ?, end_time = ?, tolerance_minutes = ?, is_active = ? WHERE id = ?',
-    [name, start_time, end_time, tolerance_minutes || 0, is_active === undefined ? 1 : is_active, id]
+    'UPDATE shift_settings SET name = ?, shift_type = ?, min_work_hours = ?, is_flexible_arrival = ?, start_time = ?, end_time = ?, tolerance_minutes = ?, is_active = ? WHERE id = ?',
+    [name, isFlex ? 'flexible_hours' : 'fixed', Number(min_work_hours) || 9.00, isFlex ? 1 : 0, start_time || '08:00:00', end_time || '17:00:00', tolerance_minutes || 0, is_active === undefined ? 1 : is_active, id]
   );
   res.json({ success: true, message: 'Pengaturan shift berhasil diperbarui.' });
 });

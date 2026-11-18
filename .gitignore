@@ -6,3 +6,5 @@ uploads/submissions/*
 !uploads/submissions/.gitkeep
 npm-debug.log*
 .DS_Store
+scratch/
+

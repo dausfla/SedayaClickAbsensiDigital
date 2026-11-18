@@ -80,13 +80,15 @@ router.get('/submissions/history', ...scoped, async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
-      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.reason, s.handover_plan, s.handover_to_name, s.handover_to_position, s.status, s.review_note, s.reviewed_at,
-              u.full_name, d.name AS division_name
+      `SELECT s.id, s.type, s.start_date, s.end_date, s.start_time, s.end_time, s.reason, s.attachment, s.handover_plan, s.handover_to_name, s.handover_to_position, s.status, s.review_note, s.reviewed_at, s.created_at,
+              u.full_name, d.name AS division_name,
+              reviewer.full_name AS reviewed_by_name, reviewer.role AS reviewed_by_role
        FROM submissions s
        JOIN users u ON u.id = s.user_id
        LEFT JOIN divisions d ON d.id = u.division_id
+       LEFT JOIN users reviewer ON reviewer.id = s.reviewed_by
        ${where}
-       ORDER BY s.reviewed_at DESC LIMIT 100`,
+       ORDER BY s.reviewed_at DESC LIMIT 150`,
       params
     );
     res.json({ success: true, submissions: rows });
@@ -138,17 +140,24 @@ router.patch('/submissions/:id/decision', ...scoped, async (req, res) => {
  */
 router.get('/monitoring/today', ...scoped, async (req, res) => {
   try {
-    const divisionId = req.session.user.division_id;
+    const { division_id } = req.query;
+    let whereClause = "WHERE u.role = 'employee' AND u.status = 'active'";
+    const params = [];
+    if (division_id) {
+      whereClause += " AND u.division_id = ?";
+      params.push(division_id);
+    }
     const [rows] = await pool.query(
-      `SELECT u.id AS user_id, u.full_name, p.name AS position_name,
+      `SELECT u.id AS user_id, u.full_name, p.name AS position_name, d.name AS division_name,
               a.clock_in_time, a.clock_out_time, a.status,
               a.late_duration_seconds, a.overtime_seconds
        FROM users u
+       LEFT JOIN divisions d ON d.id = u.division_id
        LEFT JOIN positions p ON p.id = u.position_id
        LEFT JOIN attendances a ON a.user_id = u.id AND a.attendance_date = CURDATE()
-       WHERE u.division_id = ? AND u.role = 'employee' AND u.status = 'active'
+       ${whereClause}
        ORDER BY u.full_name ASC`,
-      [divisionId]
+      params
     );
     res.json({ success: true, team: rows });
   } catch (err) {
@@ -229,7 +238,7 @@ router.post('/submissions', ...scoped, async (req, res) => {
 router.put('/submissions/:id', ...scoped, async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status, review_note } = req.body;
+    const { user_id, type, start_date, end_date, start_time, end_time, reason, handover_plan, handover_to_name, handover_to_position, status, review_note } = req.body;
 
     const [check] = await pool.query(
       `SELECT s.id FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`,
@@ -247,7 +256,8 @@ router.put('/submissions/:id', ...scoped, async (req, res) => {
 
     await pool.query(
       `UPDATE submissions 
-       SET type = COALESCE(?, type),
+       SET user_id = COALESCE(?, user_id),
+           type = COALESCE(?, type),
            start_date = COALESCE(?, start_date),
            end_date = COALESCE(?, end_date),
            start_time = COALESCE(?, start_time),
@@ -261,7 +271,7 @@ router.put('/submissions/:id', ...scoped, async (req, res) => {
            reviewed_by = IF(? IS NOT NULL AND ? != 'pending', ?, reviewed_by),
            reviewed_at = IF(? IS NOT NULL AND ? != 'pending', NOW(), reviewed_at)
        WHERE id = ?`,
-      [type, start_date, end_date, start_time, end_time, reason, finalHandoverPlan, finalHandoverToName, finalHandoverToPos, status, review_note, status, status, reviewedBy, status, status, id]
+      [user_id, type, start_date, end_date, start_time, end_time, reason, finalHandoverPlan, finalHandoverToName, finalHandoverToPos, status, review_note, status, status, reviewedBy, status, status, id]
     );
 
     res.json({ success: true, message: 'Pengajuan berhasil diperbarui.' });
@@ -318,11 +328,8 @@ router.get('/overtime/pending', ...scoped, async (req, res) => {
       conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
     }
 
-    // Filter divisi: jika admin_manager, batasi ke divisinya sendiri
-    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-      conditions.push('u.division_id = ?');
-      params.push(req.session.user.division_id);
-    } else if (division_id) {
+    // Filter divisi: jika ada parameter division_id, batasi ke divisi tersebut
+    if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -369,11 +376,8 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
       conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
     }
 
-    // Filter divisi: jika admin_manager, batasi ke divisinya sendiri
-    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-      conditions.push('u.division_id = ?');
-      params.push(req.session.user.division_id);
-    } else if (division_id) {
+    // Filter divisi: jika ada parameter division_id, batasi ke divisi tersebut
+    if (division_id) {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -387,7 +391,7 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
               a.overtime_clock_in_note, a.overtime_clock_out_note, a.overtime_duration_seconds,
               a.overtime_status, a.overtime_review_note, a.overtime_reviewed_at,
               u.full_name, d.name AS division_name, p.name AS position_name,
-              reviewer.full_name AS reviewed_by_name
+              reviewer.full_name AS reviewed_by_name, reviewer.role AS reviewed_by_role
        FROM attendances a
        JOIN users u ON u.id = a.user_id
        LEFT JOIN divisions d ON d.id = u.division_id

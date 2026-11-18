@@ -1,6 +1,13 @@
 // server.js
 // Entry point aplikasi SedayaClick.
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[PROCESS] Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[PROCESS] Uncaught Exception:', err);
+});
+
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
@@ -145,6 +152,11 @@ async function runMigrations() {
     }
     await pool.query("ALTER TABLE submissions MODIFY COLUMN type ENUM('izin','cuti','sakit','lembur') NOT NULL").catch(() => {
       return pool.query("ALTER TABLE submissions MODIFY COLUMN type VARCHAR(50) NOT NULL");
+    });
+
+    // Migration for users role enum to support admin_manager
+    await pool.query("ALTER TABLE users MODIFY COLUMN role ENUM('employee','admin_manager','super_admin') NOT NULL DEFAULT 'employee'").catch((err) => {
+      console.warn('[MIGRATION] users role enum check:', err.message);
     });
 
     // Migration for attendances table overtime columns

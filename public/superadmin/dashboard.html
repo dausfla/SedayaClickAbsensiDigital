@@ -764,15 +764,33 @@
           </div>
         </div>
 
-        <div class="flex gap-6 border-b border-slate-200 mb-4 text-sm font-semibold overflow-x-auto">
+        <div class="flex gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 mb-4 text-xs sm:text-sm font-semibold overflow-x-auto no-scrollbar pb-0.5">
           <button data-submissionstab="pending"
-            class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap">Menunggu Persetujuan</button>
+            class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+            <span>Pengajuan Masuk</span>
+            <span id="sa-sub-badge-pending" class="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold font-mono">0</span>
+          </button>
+          <button data-submissionstab="overtime-pending"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+            <span>Presensi Lembur (Pending)</span>
+            <span id="sa-sub-badge-ot-pending" class="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold font-mono">0</span>
+          </button>
           <button data-submissionstab="history"
-            class="subtab py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Riwayat</button>
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+            <span>Riwayat Pengajuan</span>
+            <span id="sa-sub-badge-history" class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold font-mono">0</span>
+          </button>
+          <button data-submissionstab="overtime-history"
+            class="subtab py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+            <span>Riwayat Lembur</span>
+            <span id="sa-sub-badge-ot-history" class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold font-mono">0</span>
+          </button>
         </div>
 
         <div id="submission-pending-list" class="space-y-3 text-sm text-slate-500">Memuat...</div>
+        <div id="submission-overtime-pending-list" class="hidden space-y-3 text-sm text-slate-500">Memuat...</div>
         <div id="submission-history-list" class="hidden space-y-3 text-sm text-slate-500">Memuat...</div>
+        <div id="submission-overtime-history-list" class="hidden space-y-3 text-sm text-slate-500">Memuat...</div>
       </section>
 
       <!-- PANEL: PRESENSI LEMBUR (OVERTIME ATTENDANCE) -->
@@ -790,10 +808,10 @@
 
           <div class="flex flex-wrap items-center gap-2">
             <select id="sa-ot-filter-period" class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
+              <option value="all" selected>Semua Data (Seluruh Riwayat)</option>
               <option value="today">Hari Ini</option>
-              <option value="weekly">Mingguan</option>
-              <option value="monthly" selected>Bulanan</option>
-              <option value="all">Semua Data</option>
+              <option value="weekly">Mingguan (7 Hari)</option>
+              <option value="monthly">Bulanan (30 Hari)</option>
             </select>
             <select id="sa-ot-filter-division" class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
               <option value="">Semua Divisi</option>
