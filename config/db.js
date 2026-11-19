@@ -71,9 +71,9 @@ pool.on('connection', (connection) => {
       console.log(`[DB] Kolom 'visible_password' berhasil ditambahkan ke tabel users.`);
     }
 
-    // Auto-migrate kolom shift_settings untuk shift fleksibel
+    // Auto-migrate kolom shift_settings untuk shift fleksibel & roster
     const shiftCols = [
-      { name: 'shift_type', type: "ENUM('fixed','flexible_hours') NOT NULL DEFAULT 'fixed'" },
+      { name: 'shift_type', type: "ENUM('fixed','flexible_hours','roster') NOT NULL DEFAULT 'fixed'" },
       { name: 'min_work_hours', type: "DECIMAL(4,2) NOT NULL DEFAULT 9.00" },
       { name: 'is_flexible_arrival', type: "TINYINT(1) NOT NULL DEFAULT 0" }
     ];
@@ -87,6 +87,21 @@ pool.on('connection', (connection) => {
         await conn.query(`ALTER TABLE shift_settings ADD COLUMN ${sc.name} ${sc.type}`);
         console.log(`[DB] Kolom '${sc.name}' berhasil ditambahkan ke tabel shift_settings.`);
       }
+    }
+
+    // Pastikan ENUM shift_type memuat 'roster'
+    await conn.query(`ALTER TABLE shift_settings MODIFY COLUMN shift_type ENUM('fixed','flexible_hours','roster') NOT NULL DEFAULT 'fixed'`).catch(() => {});
+
+    // Pastikan master shift 'Shift Khusus (Roster)' selalu ada di shift_settings
+    const [existingKhusus] = await conn.query(
+      "SELECT id FROM shift_settings WHERE name LIKE '%Khusus%' OR name LIKE '%Roster%' OR shift_type = 'roster' LIMIT 1"
+    );
+    if (existingKhusus.length === 0) {
+      await conn.query(
+        `INSERT INTO shift_settings (name, shift_type, min_work_hours, is_flexible_arrival, start_time, end_time, tolerance_minutes, is_active)
+         VALUES ('Shift Khusus (Roster)', 'roster', 9.00, 1, '08:00:00', '17:00:00', 15, 1)`
+      );
+      console.log("[DB] 'Shift Khusus (Roster)' berhasil dibuat di shift_settings.");
     }
 
     // Auto-migrate kolom overtime_work_attachment di tabel attendances

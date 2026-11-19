@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS `sessions` (
 CREATE TABLE IF NOT EXISTS `shift_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
-  `shift_type` enum('fixed','flexible_hours') NOT NULL DEFAULT 'fixed',
+  `shift_type` enum('fixed','flexible_hours','roster') NOT NULL DEFAULT 'fixed',
   `min_work_hours` decimal(4,2) NOT NULL DEFAULT 9.00,
   `is_flexible_arrival` tinyint(1) NOT NULL DEFAULT 0,
   `start_time` time NOT NULL DEFAULT '08:00:00',
@@ -160,9 +160,10 @@ CREATE TABLE IF NOT EXISTS `shift_settings` (
 -- Dumping data for table `shift_settings`
 --
 
-INSERT IGNORE INTO `shift_settings` (`id`, `name`, `start_time`, `end_time`, `tolerance_minutes`, `is_active`, `created_at`, `updated_at`) VALUES
-(2, 'Reguler', '08:00:00', '17:00:00', 15, 1, '2026-09-21 02:32:27', '2026-09-21 02:32:27'),
-(3, 'test', '08:00:00', '17:00:00', 180, 1, '2026-09-21 02:34:00', '2026-09-21 02:34:00');
+INSERT IGNORE INTO `shift_settings` (`id`, `name`, `shift_type`, `min_work_hours`, `is_flexible_arrival`, `start_time`, `end_time`, `tolerance_minutes`, `is_active`) VALUES
+(2, 'Reguler', 'fixed', 9.00, 0, '08:00:00', '17:00:00', 15, 1),
+(3, 'test', 'fixed', 9.00, 0, '08:00:00', '17:00:00', 180, 1),
+(4, 'Shift Khusus (Roster)', 'roster', 9.00, 1, '08:00:00', '17:00:00', 15, 1);
 
 -- --------------------------------------------------------
 

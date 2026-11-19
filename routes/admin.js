@@ -660,11 +660,11 @@ router.get('/roster/matrix', ...scoped, async (req, res) => {
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const targetMonthStr = req.query.month || defaultMonth;
     const [year, month] = targetMonthStr.split('-');
-
     const days = getDaysInMonth(year, month);
     const startDate = `${year}-${month}-01`;
     const lastDay = days[days.length - 1].day;
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
 
     // Filter divisi
     let divisionId = req.query.division_id || null;
@@ -672,18 +672,36 @@ router.get('/roster/matrix', ...scoped, async (req, res) => {
       divisionId = req.session.user.division_id;
     }
 
-    const userConds = ["u.status = 'active'"];
+    const scope = (req.query.scope || 'roster').toLowerCase();
+    const userConds = ["u.status = 'active'", "u.role = 'employee'"];
     const userParams = [];
     if (divisionId) {
       userConds.push('u.division_id = ?');
       userParams.push(divisionId);
     }
 
+    if (scope !== 'all') {
+      // Hanya tampilkan karyawan yang shift-nya diatur ke Shift Khusus / Roster
+      // ATAU karyawan yang sudah memiliki entri jadwal di employee_schedules pada bulan target
+      userConds.push(`(
+        s.shift_type = 'roster' 
+        OR LOWER(s.name) LIKE '%khusus%' 
+        OR LOWER(s.name) LIKE '%roster%'
+        OR u.id IN (
+          SELECT DISTINCT es.user_id FROM employee_schedules es
+          WHERE es.schedule_date BETWEEN ? AND ?
+        )
+      )`);
+      userParams.push(startDate, endDate);
+    }
+
     const [employees] = await pool.query(
-      `SELECT u.id, u.full_name, u.division_id, d.name AS division_name, p.name AS position_name, u.shift_id
+      `SELECT u.id, u.full_name, u.division_id, d.name AS division_name, p.name AS position_name, 
+              u.shift_id, s.name AS shift_name, s.shift_type
        FROM users u
        LEFT JOIN divisions d ON d.id = u.division_id
        LEFT JOIN positions p ON p.id = u.position_id
+       LEFT JOIN shift_settings s ON s.id = u.shift_id
        WHERE ${userConds.join(' AND ')}
        ORDER BY d.name ASC, u.full_name ASC`,
       userParams
@@ -723,7 +741,8 @@ router.get('/roster/matrix', ...scoped, async (req, res) => {
       days,
       employees,
       schedules: schedulesByEmployee,
-      shiftCodes: DEFAULT_SHIFT_CODES
+      shiftCodes: DEFAULT_SHIFT_CODES,
+      scope
     });
   } catch (err) {
     console.error('Get roster matrix error:', err);
@@ -847,24 +866,43 @@ router.get('/roster/export-template', ...scoped, async (req, res) => {
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const targetMonthStr = req.query.month || defaultMonth;
     const [year, month] = targetMonthStr.split('-');
+    const days = getDaysInMonth(year, month);
+    const startDate = `${year}-${month}-01`;
+    const lastDay = days[days.length - 1].day;
+    const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
 
     let divisionId = req.query.division_id || null;
     if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
       divisionId = req.session.user.division_id;
     }
 
-    const userConds = ["u.status = 'active'"];
+    const scope = (req.query.scope || 'roster').toLowerCase();
+    const userConds = ["u.status = 'active'", "u.role = 'employee'"];
     const userParams = [];
     if (divisionId) {
       userConds.push('u.division_id = ?');
       userParams.push(divisionId);
     }
 
+    if (scope !== 'all') {
+      userConds.push(`(
+        s.shift_type = 'roster' 
+        OR LOWER(s.name) LIKE '%khusus%' 
+        OR LOWER(s.name) LIKE '%roster%'
+        OR u.id IN (
+          SELECT DISTINCT es.user_id FROM employee_schedules es
+          WHERE es.schedule_date BETWEEN ? AND ?
+        )
+      )`);
+      userParams.push(startDate, endDate);
+    }
+
     const [employees] = await pool.query(
-      `SELECT u.id, u.full_name, d.name AS division_name, p.name AS position_name
+      `SELECT u.id, u.full_name, d.name AS division_name, p.name AS position_name, u.shift_id
        FROM users u
        LEFT JOIN divisions d ON d.id = u.division_id
        LEFT JOIN positions p ON p.id = u.position_id
+       LEFT JOIN shift_settings s ON s.id = u.shift_id
        WHERE ${userConds.join(' AND ')}
        ORDER BY d.name ASC, u.full_name ASC`,
       userParams
@@ -895,6 +933,10 @@ router.post('/roster/import-excel', ...scoped, uploadExcel.single('file'), async
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const targetMonthStr = req.body.month || defaultMonth;
     const [year, month] = targetMonthStr.split('-');
+    const days = getDaysInMonth(year, month);
+    const startDate = `${year}-${month}-01`;
+    const lastDay = days[days.length - 1].day;
+    const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
 
     const [usersList] = await pool.query(
       'SELECT id, full_name, division_id FROM users WHERE status = "active"'
@@ -958,29 +1000,44 @@ router.get('/roster/export-matrix', ...scoped, async (req, res) => {
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const targetMonthStr = req.query.month || defaultMonth;
     const [year, month] = targetMonthStr.split('-');
-
     const days = getDaysInMonth(year, month);
     const startDate = `${year}-${month}-01`;
     const lastDay = days[days.length - 1].day;
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
 
     let divisionId = req.query.division_id || null;
     if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
       divisionId = req.session.user.division_id;
     }
 
-    const userConds = ["u.status = 'active'"];
+    const scope = (req.query.scope || 'roster').toLowerCase();
+    const userConds = ["u.status = 'active'", "u.role = 'employee'"];
     const userParams = [];
     if (divisionId) {
       userConds.push('u.division_id = ?');
       userParams.push(divisionId);
     }
 
+    if (scope !== 'all') {
+      userConds.push(`(
+        s.shift_type = 'roster' 
+        OR LOWER(s.name) LIKE '%khusus%' 
+        OR LOWER(s.name) LIKE '%roster%'
+        OR u.id IN (
+          SELECT DISTINCT es.user_id FROM employee_schedules es
+          WHERE es.schedule_date BETWEEN ? AND ?
+        )
+      )`);
+      userParams.push(startDate, endDate);
+    }
+
     const [employees] = await pool.query(
-      `SELECT u.id, u.full_name, d.name AS division_name, p.name AS position_name
+      `SELECT u.id, u.full_name, d.name AS division_name, p.name AS position_name, u.shift_id
        FROM users u
        LEFT JOIN divisions d ON d.id = u.division_id
        LEFT JOIN positions p ON p.id = u.position_id
+       LEFT JOIN shift_settings s ON s.id = u.shift_id
        WHERE ${userConds.join(' AND ')}
        ORDER BY d.name ASC, u.full_name ASC`,
       userParams

@@ -187,6 +187,11 @@ function initEventListeners() {
     state.roster.divisionId = e.target.value;
     loadRosterMatrix();
   });
+  document.getElementById('roster-scope-filter')?.addEventListener('change', (e) => {
+    if (!state.roster) state.roster = {};
+    state.roster.scope = e.target.value;
+    loadRosterMatrix();
+  });
   document.getElementById('roster-search-input')?.addEventListener('input', (e) => {
     if (!state.roster) state.roster = {};
     state.roster.searchKeyword = e.target.value.toLowerCase().trim();
@@ -2008,6 +2013,7 @@ async function loadRosterMatrix(silent = false) {
     const params = new URLSearchParams();
     if (state.roster.month) params.append('month', state.roster.month);
     if (state.roster.divisionId) params.append('division_id', state.roster.divisionId);
+    params.append('scope', state.roster.scope || 'roster');
 
     const res = await fetch(`/api/admin/roster/matrix?${params.toString()}`);
     const data = await res.json();
@@ -2045,9 +2051,20 @@ function renderRosterMatrix() {
   }
 
   if (filteredEmployees.length === 0) {
+    const isRosterOnly = (state.roster?.scope || 'roster') === 'roster';
     container.innerHTML = `
-      <div class="p-12 text-center text-slate-400 text-xs">
-        Tidak ada data karyawan yang cocok dengan filter.
+      <div class="p-12 text-center text-slate-500 max-w-md mx-auto space-y-3">
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div class="font-bold text-slate-800 dark:text-slate-200 text-sm">
+          ${isRosterOnly ? 'Belum Ada Karyawan Shift Khusus' : 'Tidak Ada Data Karyawan'}
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          ${isRosterOnly
+            ? 'Hanya karyawan yang diatur ke <strong>"Shift Khusus (Roster)"</strong> yang masuk ke tabel jadwal ini. Silakan atur shift karyawan di menu <strong>Manajemen User</strong>, atau ubah filter di atas ke <strong>"Tampilkan Semua Karyawan"</strong>.'
+            : 'Tidak ada data karyawan yang cocok dengan filter pencarian.'}
+        </p>
       </div>`;
     return;
   }
@@ -2169,9 +2186,11 @@ async function updateRosterCell(userId, dateStr, shiftCode, selectEl) {
 function downloadRosterTemplate() {
   const month = state.roster.month || document.getElementById('roster-month-input')?.value || '';
   const divId = state.roster.divisionId || document.getElementById('roster-division-filter')?.value || '';
+  const scope = state.roster.scope || document.getElementById('roster-scope-filter')?.value || 'roster';
   const params = new URLSearchParams();
   if (month) params.append('month', month);
   if (divId) params.append('division_id', divId);
+  if (scope) params.append('scope', scope);
 
   window.location.href = `/api/admin/roster/export-template?${params.toString()}`;
 }
@@ -2179,9 +2198,11 @@ function downloadRosterTemplate() {
 function exportRosterMatrix() {
   const month = state.roster.month || document.getElementById('roster-month-input')?.value || '';
   const divId = state.roster.divisionId || document.getElementById('roster-division-filter')?.value || '';
+  const scope = state.roster.scope || document.getElementById('roster-scope-filter')?.value || 'roster';
   const params = new URLSearchParams();
   if (month) params.append('month', month);
   if (divId) params.append('division_id', divId);
+  if (scope) params.append('scope', scope);
 
   window.location.href = `/api/admin/roster/export-matrix?${params.toString()}`;
 }

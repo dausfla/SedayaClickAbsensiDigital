@@ -218,7 +218,7 @@ router.post(
 
       const now = new Date();
       const workDurationSeconds = calculateWorkDuration(existing[0].clock_in_time, now);
-      
+
       let finalStatus = existing[0].status || 'on_time';
       let overtimeSeconds = 0;
 
