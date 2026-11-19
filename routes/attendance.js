@@ -6,7 +6,7 @@
 const express = require('express');
 const pool = require('../config/db');
 const { requireAuth, requireRole, requireActiveAccount } = require('../middleware/auth');
-const { uploadAttendancePhoto } = require('../utils/uploadConfig');
+const { uploadAttendancePhoto, uploadOvertimeClockOut } = require('../utils/uploadConfig');
 const {
   secondsToHMS,
   calculateLateDuration,
@@ -37,7 +37,13 @@ router.get('/today', requireAuth, requireRole('employee'), requireActiveAccount,
       'SELECT id, clock_in_time, clock_out_time, status FROM attendances WHERE user_id = ? AND attendance_date = ?',
       [req.session.user.id, todayStr()]
     );
-    res.json({ success: true, attendance: rows[0] || null });
+    const [scheduleRows] = await pool.query(
+      'SELECT shift_code, start_time, end_time, is_day_off, notes FROM employee_schedules WHERE user_id = ? AND schedule_date = ?',
+      [req.session.user.id, todayStr()]
+    ).catch(() => [[]]);
+    const schedule = scheduleRows && scheduleRows[0] ? scheduleRows[0] : null;
+
+    res.json({ success: true, attendance: rows[0] || null, schedule });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat status absensi.' });
@@ -75,21 +81,45 @@ router.post(
         return res.status(409).json({ success: false, message: 'Anda sudah melakukan Clock In hari ini.' });
       }
 
-      // Ambil shift milik user untuk menghitung keterlambatan.
-      const [userRows] = await pool.query(
-        `SELECT s.id, s.name, s.shift_type, s.min_work_hours, s.is_flexible_arrival, s.start_time, s.tolerance_minutes
-         FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id
-         WHERE u.id = ?`,
-        [userId]
-      );
-      const shift = userRows[0] && userRows[0].start_time
-        ? userRows[0]
-        : { start_time: '08:00:00', tolerance_minutes: 0, shift_type: 'fixed', is_flexible_arrival: 0 };
+      // Ambil shift milik user (prioritaskan jadwal roster harian di employee_schedules)
+      const [scheduleRows] = await pool.query(
+        `SELECT shift_code, start_time, end_time, is_day_off, notes
+         FROM employee_schedules
+         WHERE user_id = ? AND schedule_date = ?`,
+        [userId, date]
+      ).catch(() => [[]]);
+
+      let shift;
+      if (scheduleRows && scheduleRows[0] && scheduleRows[0].shift_code) {
+        const sc = scheduleRows[0];
+        shift = {
+          id: null,
+          name: `Roster (${sc.shift_code})`,
+          shift_code: sc.shift_code,
+          shift_type: sc.is_day_off ? 'flexible_hours' : 'fixed',
+          min_work_hours: 9.00,
+          is_flexible_arrival: sc.is_day_off ? 1 : 0,
+          is_day_off: sc.is_day_off ? 1 : 0,
+          start_time: sc.start_time || '08:00:00',
+          end_time: sc.end_time || '17:00:00',
+          tolerance_minutes: 15
+        };
+      } else {
+        const [userRows] = await pool.query(
+          `SELECT s.id, s.name, s.shift_type, s.min_work_hours, s.is_flexible_arrival, s.start_time, s.end_time, s.tolerance_minutes
+           FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id
+           WHERE u.id = ?`,
+          [userId]
+        );
+        shift = userRows[0] && userRows[0].start_time
+          ? userRows[0]
+          : { start_time: '08:00:00', end_time: '17:00:00', tolerance_minutes: 15, shift_type: 'fixed', is_flexible_arrival: 0, is_day_off: 0 };
+      }
 
       const now = new Date();
-      const isFlexible = shift.shift_type === 'flexible_hours' || shift.is_flexible_arrival === 1;
+      const isFlexible = shift.shift_type === 'flexible_hours' || shift.is_flexible_arrival === 1 || shift.is_day_off === 1;
 
-      // Pada shift khusus fleksibel: tidak ada sanksi/ketentuan keterlambatan saat clock in
+      // Pada shift khusus fleksibel / hari libur rolling: tidak ada sanksi keterlambatan saat clock in
       const lateSeconds = isFlexible ? 0 : calculateLateDuration(date, now, shift.start_time, shift.tolerance_minutes);
       const status = isFlexible ? 'on_time' : determineStatus(lateSeconds);
       const photoPath = `/uploads/attendance/${req.file.filename}`;
@@ -148,7 +178,7 @@ router.post(
       }
 
       const [existing] = await pool.query(
-        'SELECT id, clock_in_time, clock_out_time FROM attendances WHERE user_id = ? AND attendance_date = ?',
+        'SELECT id, clock_in_time, clock_out_time, status FROM attendances WHERE user_id = ? AND attendance_date = ?',
         [userId, date]
       );
       if (existing.length === 0 || !existing[0].clock_in_time) {
@@ -158,19 +188,38 @@ router.post(
         return res.status(409).json({ success: false, message: 'Anda sudah melakukan Clock Out hari ini.' });
       }
 
-      const [userRows] = await pool.query(
-        `SELECT s.id, s.name, s.shift_type, s.min_work_hours, s.is_flexible_arrival, s.end_time 
-         FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id WHERE u.id = ?`,
-        [userId]
-      );
-      const shift = userRows[0] || {};
+      // Ambil shift milik user (prioritaskan jadwal roster harian di employee_schedules)
+      const [scheduleRows] = await pool.query(
+        `SELECT shift_code, start_time, end_time, is_day_off
+         FROM employee_schedules
+         WHERE user_id = ? AND schedule_date = ?`,
+        [userId, date]
+      ).catch(() => [[]]);
+
+      let shift;
+      if (scheduleRows && scheduleRows[0] && scheduleRows[0].shift_code) {
+        const sc = scheduleRows[0];
+        shift = {
+          shift_type: sc.is_day_off ? 'flexible_hours' : 'fixed',
+          min_work_hours: 9.0,
+          is_flexible_arrival: sc.is_day_off ? 1 : 0,
+          end_time: sc.end_time || '17:00:00'
+        };
+      } else {
+        const [userRows] = await pool.query(
+          `SELECT s.id, s.name, s.shift_type, s.min_work_hours, s.is_flexible_arrival, s.end_time 
+           FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id WHERE u.id = ?`,
+          [userId]
+        );
+        shift = userRows[0] || {};
+      }
       const isFlexible = shift.shift_type === 'flexible_hours' || shift.is_flexible_arrival === 1;
       const minWorkSeconds = Math.round((Number(shift.min_work_hours) || 9.0) * 3600);
 
       const now = new Date();
       const workDurationSeconds = calculateWorkDuration(existing[0].clock_in_time, now);
       
-      let finalStatus = existing[0].status;
+      let finalStatus = existing[0].status || 'on_time';
       let overtimeSeconds = 0;
 
       if (isFlexible) {
@@ -229,7 +278,7 @@ router.post(
 router.get('/overtime/today', requireAuth, requireRole('employee'), requireActiveAccount, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, overtime_clock_in_time, overtime_clock_out_time, overtime_task_reason, 
+      `SELECT id, overtime_clock_in_time, overtime_clock_out_time, overtime_task_reason, overtime_work_attachment,
               overtime_duration_seconds, overtime_clock_in_note, overtime_clock_out_note,
               overtime_status, overtime_review_note, overtime_reviewed_at
        FROM attendances WHERE user_id = ? AND attendance_date = ?`,
@@ -316,22 +365,31 @@ router.post(
 
 /**
  * POST /api/attendance/overtime/clock-out
- * multipart/form-data: photo, latitude, longitude, note (WAJIB diisi)
+ * multipart/form-data: photo (selfie), work_attachment (dokumen/hasil kerja), latitude, longitude, note (optional)
  */
 router.post(
   '/overtime/clock-out',
   requireAuth,
   requireRole('employee'),
   requireActiveAccount,
-  uploadAttendancePhoto.single('photo'),
+  uploadOvertimeClockOut.fields([
+    { name: 'photo', maxCount: 1 },
+    { name: 'work_attachment', maxCount: 1 }
+  ]),
   async (req, res) => {
     try {
       const userId = req.session.user.id;
       const { latitude, longitude, note } = req.body;
       const date = todayStr();
 
-      if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Foto Absen Pulang Lembur wajib diambil.' });
+      const photoFile = req.files && req.files['photo'] ? req.files['photo'][0] : null;
+      const workFile = req.files && req.files['work_attachment'] ? req.files['work_attachment'][0] : null;
+
+      if (!photoFile) {
+        return res.status(400).json({ success: false, message: 'Foto selfie Absen Pulang Lembur wajib diambil.' });
+      }
+      if (!workFile) {
+        return res.status(400).json({ success: false, message: 'Bukti berkas hasil kerja lembur (PDF, Gambar, atau Dokumen) wajib dilampirkan sebelum Clock Out.' });
       }
       if (!latitude || !longitude) {
         return res.status(400).json({ success: false, message: 'Lokasi GPS wajib aktif dan terkunci.' });
@@ -351,7 +409,8 @@ router.post(
 
       const now = new Date();
       const overtimeDurationSeconds = calculateWorkDuration(existing[0].overtime_clock_in_time, now);
-      const photoPath = `/uploads/attendance/${req.file.filename}`;
+      const photoPath = `/uploads/attendance/${photoFile.filename}`;
+      const workAttachmentPath = `/uploads/attendance/${workFile.filename}`;
       const overtimeClockOutNote = note && note.trim() ? note.trim() : null;
 
       await pool.query(
@@ -360,16 +419,17 @@ router.post(
            overtime_clock_out_photo = ?, 
            overtime_clock_out_lat = ?, 
            overtime_clock_out_lng = ?,
+           overtime_work_attachment = ?,
            overtime_clock_out_note = ?, 
            overtime_duration_seconds = ?,
            overtime_status = 'pending'
          WHERE id = ?`,
-        [now, photoPath, latitude, longitude, overtimeClockOutNote, overtimeDurationSeconds, existing[0].id]
+        [now, photoPath, latitude, longitude, workAttachmentPath, overtimeClockOutNote, overtimeDurationSeconds, existing[0].id]
       );
 
       res.json({
         success: true,
-        message: 'Absen Pulang Lembur berhasil dicatat dan menunggu persetujuan.',
+        message: 'Absen Pulang Lembur dan berkas hasil kerja berhasil dicatat.',
         overtime_duration_hms: secondsToHMS(overtimeDurationSeconds)
       });
     } catch (err) {

@@ -154,16 +154,51 @@ let mode = 'clock-in';
 
 async function loadTodayStatus() {
   try {
-    const { attendance } = await apiGet('/attendance/today');
+    const { attendance, schedule } = await apiGet('/attendance/today');
     const badge = document.getElementById('status-badge');
     const inEl = document.getElementById('display-clock-in');
     const outEl = document.getElementById('display-clock-out');
     const startBtn = document.getElementById('btn-start-camera');
 
+    // Roster Shift Banner
+    const banner = document.getElementById('roster-schedule-banner');
+    if (banner && schedule && schedule.shift_code) {
+      banner.classList.remove('hidden');
+      const bIcon = document.getElementById('roster-banner-icon');
+      const bTitle = document.getElementById('roster-banner-title');
+      const bBadge = document.getElementById('roster-banner-badge');
+
+      if (schedule.is_day_off || schedule.shift_code === 'L' || schedule.shift_code === 'OFF') {
+        banner.className = 'p-3.5 sm:p-4 rounded-2xl border border-rose-200 bg-rose-50/70 text-rose-950 shadow-xs transition-all';
+        bIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-rose-500 text-white shadow-2xs';
+        bIcon.innerHTML = '🌴';
+        bTitle.textContent = 'Libur Terjadwal (Rolling Day Off)';
+        bBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-rose-200 text-rose-800';
+        bBadge.textContent = 'LIBUR (OFF)';
+      } else {
+        banner.className = 'p-3.5 sm:p-4 rounded-2xl border border-indigo-200 bg-indigo-50/70 text-indigo-950 shadow-xs transition-all';
+        bIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-indigo-600 text-white shadow-2xs';
+        bIcon.textContent = schedule.shift_code;
+        const timeStr = schedule.start_time && schedule.end_time
+          ? ` (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)} WIB)`
+          : '';
+        bTitle.textContent = `Shift ${schedule.shift_code}${timeStr}`;
+        bBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-indigo-200 text-indigo-800';
+        bBadge.textContent = `SHIFT ${schedule.shift_code}`;
+      }
+    } else if (banner) {
+      banner.classList.add('hidden');
+    }
+
     if (!attendance || !attendance.clock_in_time) {
       mode = 'clock-in';
-      badge.textContent = 'Belum Absen';
-      badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500';
+      if (schedule && (schedule.is_day_off || schedule.shift_code === 'L')) {
+        badge.textContent = 'Libur Hari Ini';
+        badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-200';
+      } else {
+        badge.textContent = 'Belum Absen';
+        badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500';
+      }
       inEl.textContent = '-'; outEl.textContent = '-';
       
       startBtn.textContent = 'ABSEN MASUK (Aktifkan Kamera)';
@@ -481,6 +516,7 @@ async function loadTodayOvertimeStatus() {
     const captureBtn = document.getElementById('btn-capture-overtime');
     const titleEl = document.getElementById('overtime-camera-title');
     const taskWrapper = document.getElementById('wrapper-overtime-task-reason');
+    const workWrapper = document.getElementById('wrapper-overtime-work-attachment');
 
     if (!overtime || !overtime.overtime_clock_in_time) {
       overtimeMode = 'clock-in';
@@ -493,6 +529,7 @@ async function loadTodayOvertimeStatus() {
       if (durEl) durEl.textContent = '-';
       if (titleEl) titleEl.textContent = 'Clock In Lembur';
       if (taskWrapper) taskWrapper.classList.remove('hidden');
+      if (workWrapper) workWrapper.classList.add('hidden');
 
       if (startBtn) {
         startBtn.disabled = false;
@@ -510,6 +547,7 @@ async function loadTodayOvertimeStatus() {
       if (durEl) durEl.textContent = '-';
       if (titleEl) titleEl.textContent = 'Clock Out Lembur';
       if (taskWrapper) taskWrapper.classList.add('hidden');
+      if (workWrapper) workWrapper.classList.remove('hidden');
 
       if (startBtn) {
         startBtn.disabled = false;
@@ -519,8 +557,19 @@ async function loadTodayOvertimeStatus() {
     } else {
       overtimeMode = 'done';
       if (badge) {
-        badge.textContent = 'Absensi Lembur Selesai';
-        badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-500 text-white border border-indigo-400 backdrop-blur-md';
+        if (overtime.overtime_status === 'approved') {
+          badge.textContent = 'Lembur Disetujui';
+          badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500 text-white border border-emerald-400 backdrop-blur-md';
+        } else if (overtime.overtime_status === 'rejected') {
+          badge.textContent = 'Lembur Ditolak';
+          badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-500 text-white border border-rose-400 backdrop-blur-md';
+        } else if (overtime.overtime_status === 'under_review') {
+          badge.textContent = 'Sedang Ditinjau';
+          badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500 text-white border border-amber-400 backdrop-blur-md';
+        } else {
+          badge.textContent = 'Menunggu Persetujuan';
+          badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-500 text-white border border-indigo-400 backdrop-blur-md';
+        }
       }
       if (inEl) inEl.textContent = new Date(overtime.overtime_clock_in_time).toLocaleTimeString('id-ID', { hour12: false });
       if (outEl) outEl.textContent = new Date(overtime.overtime_clock_out_time).toLocaleTimeString('id-ID', { hour12: false });
@@ -531,6 +580,7 @@ async function loadTodayOvertimeStatus() {
       if (durEl) durEl.textContent = `${h} Jam ${m} Menit`;
       if (titleEl) titleEl.textContent = 'Absensi Lembur Hari Ini Selesai';
       if (taskWrapper) taskWrapper.classList.add('hidden');
+      if (workWrapper) workWrapper.classList.add('hidden');
 
       if (startBtn) {
         startBtn.disabled = true;
@@ -549,6 +599,22 @@ const otGpsText = document.getElementById('overtime-gps-text');
 const otStartBtn = document.getElementById('btn-start-overtime-camera');
 const otCaptureBtn = document.getElementById('btn-capture-overtime');
 const otPlaceholder = document.getElementById('overtime-camera-placeholder');
+const otWorkFileEl = document.getElementById('overtime-work-attachment');
+const otFileInfoEl = document.getElementById('overtime-file-info');
+const otFileNameEl = document.getElementById('overtime-file-name');
+
+if (otWorkFileEl) {
+  otWorkFileEl.addEventListener('change', () => {
+    if (otWorkFileEl.files && otWorkFileEl.files[0]) {
+      const f = otWorkFileEl.files[0];
+      const sizeMb = (f.size / (1024 * 1024)).toFixed(2);
+      if (otFileNameEl) otFileNameEl.textContent = `${f.name} (${sizeMb} MB)`;
+      if (otFileInfoEl) otFileInfoEl.classList.remove('hidden');
+    } else {
+      if (otFileInfoEl) otFileInfoEl.classList.add('hidden');
+    }
+  });
+}
 
 if (otStartBtn) {
   otStartBtn.addEventListener('click', async () => {
@@ -625,6 +691,14 @@ if (otCaptureBtn) {
       return;
     }
 
+    if (overtimeMode === 'clock-out') {
+      const otWorkFile = otWorkFileEl && otWorkFileEl.files ? otWorkFileEl.files[0] : null;
+      if (!otWorkFile) {
+        showAlert('Bukti / berkas hasil kerja lembur (PDF, Gambar, atau Dokumen) wajib dilampirkan sebelum Clock Out.');
+        return;
+      }
+    }
+
     const noteEl = document.getElementById('overtime-attendance-note');
     const note = noteEl ? noteEl.value.trim() : '';
 
@@ -639,12 +713,17 @@ if (otCaptureBtn) {
       formData.append('longitude', overtimePosition.longitude);
       if (taskReason) formData.append('task_reason', taskReason);
       if (note) formData.append('note', note);
+      if (overtimeMode === 'clock-out' && otWorkFileEl && otWorkFileEl.files && otWorkFileEl.files[0]) {
+        formData.append('work_attachment', otWorkFileEl.files[0]);
+      }
 
       const endpoint = overtimeMode === 'clock-in' ? '/attendance/overtime/clock-in' : '/attendance/overtime/clock-out';
       const result = await apiPostForm(endpoint, formData);
 
       showAlert(result.message, 'success');
       if (noteEl) noteEl.value = '';
+      if (otWorkFileEl) otWorkFileEl.value = '';
+      if (otFileInfoEl) otFileInfoEl.classList.add('hidden');
       if (overtimeCamera) overtimeCamera.stop();
       if (overtimeWatchId) clearWatch(overtimeWatchId);
 
@@ -688,9 +767,10 @@ async function loadSubmissions(silent = false) {
     const STATUS_MAP = {
       approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+      under_review: 'bg-blue-50 text-blue-800 border-blue-200 font-bold',
       pending: 'bg-amber-50 text-amber-700 border-amber-200'
     };
-    const STATUS_TEXT = { approved: 'Disetujui', rejected: 'Ditolak', pending: 'Menunggu Review' };
+    const STATUS_TEXT = { approved: 'Disetujui', rejected: 'Ditolak', under_review: 'Sedang Ditinjau', pending: 'Menunggu Review' };
 
     container.innerHTML = filteredSubs.map((s) => `
       <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-1.5">
@@ -740,9 +820,10 @@ async function loadOvertimeHistory(silent = false) {
     const STATUS_MAP = {
       approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+      under_review: 'bg-blue-50 text-blue-800 border-blue-200 font-bold',
       pending: 'bg-amber-50 text-amber-700 border-amber-200'
     };
-    const STATUS_TEXT = { approved: 'Disetujui', rejected: 'Ditolak', pending: 'Menunggu Review' };
+    const STATUS_TEXT = { approved: 'Disetujui', rejected: 'Ditolak', under_review: 'Sedang Ditinjau', pending: 'Menunggu Review' };
 
     container.innerHTML = overtimeSubs.map((s) => {
       let durationStr = '';

@@ -174,6 +174,30 @@ function initEventListeners() {
   document.getElementById('tab-btn-history')?.addEventListener('click', () => switchTab('history'));
   document.getElementById('tab-btn-overtime-history')?.addEventListener('click', () => switchTab('overtime-history'));
   document.getElementById('tab-btn-reports')?.addEventListener('click', () => switchTab('reports'));
+  document.getElementById('tab-btn-roster')?.addEventListener('click', () => switchTab('roster'));
+
+  // Roster Toolbar & Event Listeners
+  document.getElementById('roster-month-input')?.addEventListener('change', (e) => {
+    if (!state.roster) state.roster = {};
+    state.roster.month = e.target.value;
+    loadRosterMatrix();
+  });
+  document.getElementById('roster-division-filter')?.addEventListener('change', (e) => {
+    if (!state.roster) state.roster = {};
+    state.roster.divisionId = e.target.value;
+    loadRosterMatrix();
+  });
+  document.getElementById('roster-search-input')?.addEventListener('input', (e) => {
+    if (!state.roster) state.roster = {};
+    state.roster.searchKeyword = e.target.value.toLowerCase().trim();
+    renderRosterMatrix();
+  });
+  document.getElementById('btn-roster-download-template')?.addEventListener('click', downloadRosterTemplate);
+  document.getElementById('btn-roster-export-matrix')?.addEventListener('click', exportRosterMatrix);
+  document.getElementById('btn-open-roster-import')?.addEventListener('click', openRosterImportModal);
+  document.getElementById('btn-close-import-modal')?.addEventListener('click', closeRosterImportModal);
+  document.getElementById('btn-cancel-import')?.addEventListener('click', closeRosterImportModal);
+  document.getElementById('form-import-roster')?.addEventListener('submit', handleRosterImport);
 
   // iOS Floating Dock Buttons Switch
   document.querySelectorAll('.dock-item').forEach(btn => {
@@ -240,19 +264,22 @@ function switchTab(tab) {
   const btnHistory = document.getElementById('tab-btn-history');
   const btnOvertimeHistory = document.getElementById('tab-btn-overtime-history');
   const btnReports = document.getElementById('tab-btn-reports');
+  const btnRoster = document.getElementById('tab-btn-roster');
 
   const panelPending = document.getElementById('panel-pending');
   const panelOvertime = document.getElementById('panel-overtime');
   const panelHistory = document.getElementById('panel-history');
   const panelOvertimeHistory = document.getElementById('panel-overtime-history');
   const panelReports = document.getElementById('panel-reports');
+  const panelRoster = document.getElementById('panel-roster');
 
   const tabs = [
     { name: 'pending', btn: btnPending, panel: panelPending },
     { name: 'overtime', btn: btnOvertime, panel: panelOvertime },
     { name: 'history', btn: btnHistory, panel: panelHistory },
     { name: 'overtime-history', btn: btnOvertimeHistory, panel: panelOvertimeHistory },
-    { name: 'reports', btn: btnReports, panel: panelReports }
+    { name: 'reports', btn: btnReports, panel: panelReports },
+    { name: 'roster', btn: btnRoster, panel: panelRoster }
   ];
 
   tabs.forEach(t => {
@@ -282,6 +309,11 @@ function switchTab(tab) {
   if (tab === 'reports' && (!state.reports || state.reports.length === 0)) {
     loadReports();
   }
+
+  // Jika tab roster aktif dan data belum ada, muat roster matrix
+  if (tab === 'roster' && (!state.roster || !state.roster.loaded)) {
+    loadRosterMatrix();
+  }
 }
 
 // Load Divisions
@@ -295,6 +327,12 @@ async function loadDivisions() {
       const filterSelect = document.getElementById('filter-division');
       if (filterSelect) {
         filterSelect.innerHTML = '<option value="">Semua Divisi (Seluruh Karyawan)</option>' +
+          state.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+      }
+
+      const rosterDivSelect = document.getElementById('roster-division-filter');
+      if (rosterDivSelect) {
+        rosterDivSelect.innerHTML = '<option value="">Semua Divisi</option>' +
           state.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
       }
 
@@ -505,8 +543,8 @@ function renderPendingTable() {
         ` : ''}
       </td>
       <td class="px-4 py-3.5 text-center">
-        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-          Pending
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${item.status === 'under_review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}">
+          ${item.status === 'under_review' ? 'Sedang Ditinjau' : 'Pending'}
         </span>
       </td>
       <td class="px-4 py-3.5 text-right whitespace-nowrap">
@@ -514,11 +552,17 @@ function renderPendingTable() {
           <button onclick="openDecisionModal(${item.id}, 'approved')" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] shadow-sm transition-colors cursor-pointer">
             Setujui
           </button>
+          <button onclick="openDecisionModal(${item.id}, 'under_review')" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] shadow-sm transition-colors cursor-pointer">
+            Tinjau
+          </button>
           <button onclick="openDecisionModal(${item.id}, 'rejected')" class="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] shadow-sm transition-colors cursor-pointer">
             Tolak
           </button>
           <button onclick="editSubmission(${item.id}, 'pending')" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-[11px] transition-colors cursor-pointer">
             Edit
+          </button>
+          <button onclick="deleteSubmission(${item.id})" class="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-[11px] transition-colors cursor-pointer">
+            Hapus
           </button>
         </div>
       </td>
@@ -592,15 +636,21 @@ function renderPendingCards() {
         </div>
       ` : ''}
 
-      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-        <button onclick="openDecisionModal(${item.id}, 'approved')" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors text-center cursor-pointer">
+      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+        <button onclick="openDecisionModal(${item.id}, 'approved')" class="flex-1 min-w-[70px] py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors text-center cursor-pointer">
           Setujui
         </button>
-        <button onclick="openDecisionModal(${item.id}, 'rejected')" class="flex-1 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition-colors text-center cursor-pointer">
+        <button onclick="openDecisionModal(${item.id}, 'under_review')" class="flex-1 min-w-[70px] py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-colors text-center cursor-pointer">
+          Tinjau
+        </button>
+        <button onclick="openDecisionModal(${item.id}, 'rejected')" class="flex-1 min-w-[70px] py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition-colors text-center cursor-pointer">
           Tolak
         </button>
         <button onclick="editSubmission(${item.id}, 'pending')" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer">
           Edit
+        </button>
+        <button onclick="deleteSubmission(${item.id})" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-colors cursor-pointer">
+          Hapus
         </button>
       </div>
     </div>
@@ -809,8 +859,8 @@ function renderOvertimePendingCards() {
               <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(item.position_name || '-')}</span>
             </div>
           </div>
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-            Pending
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.overtime_status === 'under_review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}">
+            ${item.overtime_status === 'under_review' ? 'Sedang Ditinjau' : 'Pending'}
           </span>
         </div>
 
@@ -829,6 +879,15 @@ function renderOvertimePendingCards() {
           <p class="leading-relaxed">${escapeHtml(item.overtime_task_reason || '-')}</p>
         </div>
 
+        ${item.overtime_work_attachment ? `
+          <div>
+            <a href="${item.overtime_work_attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="w-full py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Lihat Berkas Hasil Kerja</span>
+            </a>
+          </div>
+        ` : ''}
+
         <div>
           <button onclick="openOvertimeDetailModal(${item.id})" class="w-full py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
             <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -836,12 +895,18 @@ function renderOvertimePendingCards() {
           </button>
         </div>
 
-        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-          <button onclick="openOvertimeDecisionModal(${item.id}, 'approved')" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors text-center cursor-pointer">
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+          <button onclick="openOvertimeDecisionModal(${item.id}, 'approved')" class="flex-1 min-w-[70px] py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors text-center cursor-pointer">
             Setujui
           </button>
-          <button onclick="openOvertimeDecisionModal(${item.id}, 'rejected')" class="flex-1 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition-colors text-center cursor-pointer">
+          <button onclick="openOvertimeDecisionModal(${item.id}, 'under_review')" class="flex-1 min-w-[70px] py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-colors text-center cursor-pointer">
+            Tinjau
+          </button>
+          <button onclick="openOvertimeDecisionModal(${item.id}, 'rejected')" class="flex-1 min-w-[70px] py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition-colors text-center cursor-pointer">
             Tolak
+          </button>
+          <button onclick="deleteOvertime(${item.id})" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-colors cursor-pointer">
+            Hapus
           </button>
         </div>
       </div>
@@ -922,9 +987,21 @@ function renderOvertimeHistoryCards() {
           <span class="text-[10px] text-slate-400 font-mono">${formatDateTime(item.overtime_reviewed_at)}</span>
         </div>
 
-        <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-          <button onclick="openOvertimeDetailModal(${item.id})" class="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold text-center cursor-pointer transition-colors">
+        ${item.overtime_work_attachment ? `
+          <div>
+            <a href="${item.overtime_work_attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="w-full py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Lihat Berkas Hasil Kerja</span>
+            </a>
+          </div>
+        ` : ''}
+
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+          <button onclick="openOvertimeDetailModal(${item.id})" class="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold text-center cursor-pointer transition-colors">
             Detail Foto & GPS
+          </button>
+          <button onclick="deleteOvertime(${item.id})" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 text-xs font-bold transition-colors cursor-pointer">
+            Hapus
           </button>
         </div>
       </div>
@@ -980,6 +1057,14 @@ function renderOvertimePendingTable() {
         </td>
         <td class="px-4 py-3.5 text-slate-700 dark:text-slate-300 max-w-xs text-xs">
           <div class="font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(item.overtime_task_reason || '-')}</div>
+          ${item.overtime_work_attachment ? `
+            <div class="mt-1.5">
+              <a href="${item.overtime_work_attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 px-2.5 py-0.5 rounded-lg shadow-2xs">
+                <svg class="w-3.5 h-3.5 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Lihat Berkas Kerja</span>
+              </a>
+            </div>
+          ` : ''}
         </td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
           <button onclick="openOvertimeDetailModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 text-[11px] font-bold shadow-xs cursor-pointer">
@@ -988,8 +1073,8 @@ function renderOvertimePendingTable() {
           </button>
         </td>
         <td class="px-4 py-3.5 text-center">
-          <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-            Pending
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${item.overtime_status === 'under_review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}">
+            ${item.overtime_status === 'under_review' ? 'Sedang Ditinjau' : 'Pending'}
           </span>
         </td>
         <td class="px-4 py-3.5 text-right whitespace-nowrap">
@@ -997,8 +1082,14 @@ function renderOvertimePendingTable() {
             <button onclick="openOvertimeDecisionModal(${item.id}, 'approved')" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] shadow-sm transition-colors cursor-pointer">
               Setujui
             </button>
+            <button onclick="openOvertimeDecisionModal(${item.id}, 'under_review')" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] shadow-sm transition-colors cursor-pointer">
+              Tinjau
+            </button>
             <button onclick="openOvertimeDecisionModal(${item.id}, 'rejected')" class="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] shadow-sm transition-colors cursor-pointer">
               Tolak
+            </button>
+            <button onclick="deleteOvertime(${item.id})" class="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-[11px] transition-colors cursor-pointer">
+              Hapus
             </button>
           </div>
         </td>
@@ -1050,7 +1141,15 @@ function renderOvertimeHistoryTable() {
           <div class="text-[11px] text-slate-400">${inTime} — ${outTime} (${durStr})</div>
         </td>
         <td class="px-4 py-3.5 text-slate-700 dark:text-slate-300 text-xs max-w-xs">
-          ${escapeHtml(item.overtime_task_reason || '-')}
+          <div>${escapeHtml(item.overtime_task_reason || '-')}</div>
+          ${item.overtime_work_attachment ? `
+            <div class="mt-1.5">
+              <a href="${item.overtime_work_attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 px-2.5 py-0.5 rounded-lg shadow-2xs">
+                <svg class="w-3.5 h-3.5 stroke-[2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Hasil Kerja</span>
+              </a>
+            </div>
+          ` : ''}
         </td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs">
           <div class="flex items-center gap-1.5 mb-1">
@@ -1076,9 +1175,14 @@ function renderOvertimeHistoryTable() {
           ` : '<span class="text-slate-400 text-[11px] italic">Admin Sistem</span>'}
         </td>
         <td class="px-4 py-3.5 text-right whitespace-nowrap">
-          <button onclick="openOvertimeDetailModal(${item.id})" class="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-[11px] font-bold cursor-pointer">
-            Detail Foto
-          </button>
+          <div class="flex items-center justify-end gap-1.5">
+            <button onclick="openOvertimeDetailModal(${item.id})" class="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-[11px] font-bold cursor-pointer">
+              Detail Foto
+            </button>
+            <button onclick="deleteOvertime(${item.id})" class="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-bold text-[11px] transition-colors cursor-pointer">
+              Hapus
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -1365,10 +1469,22 @@ function openDecisionModal(submissionId, decision) {
   const title = document.getElementById('modal-decision-title');
   const note = document.getElementById('decision-review-note');
   
-  if (title) title.textContent = decision === 'approved' ? 'Persetujuan Pengajuan' : 'Penolakan Pengajuan';
+  if (title) {
+    if (decision === 'approved') title.textContent = 'Persetujuan Pengajuan';
+    else if (decision === 'rejected') title.textContent = 'Penolakan Pengajuan';
+    else if (decision === 'under_review') title.textContent = 'Tandai Pengajuan Sedang Ditinjau';
+  }
   if (note) {
-    note.value = decision === 'approved' ? 'Disetujui' : '';
-    note.placeholder = decision === 'approved' ? 'Catatan persetujuan...' : 'Alasan penolakan wajib diisi...';
+    if (decision === 'approved') {
+      note.value = 'Disetujui';
+      note.placeholder = 'Catatan persetujuan...';
+    } else if (decision === 'rejected') {
+      note.value = '';
+      note.placeholder = 'Alasan penolakan wajib diisi...';
+    } else {
+      note.value = 'Pengajuan sedang ditinjau oleh manajemen';
+      note.placeholder = 'Catatan peninjauan...';
+    }
   }
 
   if (modal) {
@@ -1383,10 +1499,22 @@ function openOvertimeDecisionModal(overtimeId, decision) {
   const title = document.getElementById('modal-decision-title');
   const note = document.getElementById('decision-review-note');
 
-  if (title) title.textContent = decision === 'approved' ? 'Persetujuan Lembur' : 'Penolakan Lembur';
+  if (title) {
+    if (decision === 'approved') title.textContent = 'Persetujuan Lembur';
+    else if (decision === 'rejected') title.textContent = 'Penolakan Lembur';
+    else if (decision === 'under_review') title.textContent = 'Tandai Lembur Sedang Ditinjau';
+  }
   if (note) {
-    note.value = decision === 'approved' ? 'Disetujui' : '';
-    note.placeholder = decision === 'approved' ? 'Catatan lembur...' : 'Alasan penolakan lembur...';
+    if (decision === 'approved') {
+      note.value = 'Disetujui';
+      note.placeholder = 'Catatan lembur...';
+    } else if (decision === 'rejected') {
+      note.value = '';
+      note.placeholder = 'Alasan penolakan lembur...';
+    } else {
+      note.value = 'Presensi lembur sedang ditinjau oleh manajemen';
+      note.placeholder = 'Catatan peninjauan...';
+    }
   }
 
   if (modal) {
@@ -1413,12 +1541,17 @@ async function handleDecisionSubmit() {
   try {
     let url = '';
     let body = {};
+    const defaultNote = currentDecisionContext.decision === 'under_review' 
+      ? 'Sedang ditinjau oleh manajemen' 
+      : (currentDecisionContext.decision === 'approved' ? 'Disetujui' : '');
+    const reviewNote = note || defaultNote;
+
     if (currentDecisionContext.type === 'submission') {
       url = `/api/admin/submissions/${currentDecisionContext.id}/decision`;
-      body = { decision: currentDecisionContext.decision, review_note: note || 'Disetujui' };
+      body = { decision: currentDecisionContext.decision, review_note: reviewNote };
     } else {
       url = `/api/admin/overtime/${currentDecisionContext.id}/decision`;
-      body = { decision: currentDecisionContext.decision, review_note: note || 'Disetujui' };
+      body = { decision: currentDecisionContext.decision, review_note: reviewNote };
     }
 
     const res = await fetch(url, {
@@ -1434,6 +1567,23 @@ async function handleDecisionSubmit() {
       await refreshAllData();
     } else {
       alert(data.message || 'Gagal memproses keputusan.');
+    }
+  } catch (err) {
+    alert('Terjadi kesalahan jaringan: ' + err.message);
+  }
+}
+
+// Delete Overtime Attendance Handler
+async function deleteOvertime(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus data presensi lembur ini?')) return;
+  try {
+    const res = await fetch(`/api/admin/overtime/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Presensi lembur berhasil dihapus', 'success');
+      await refreshAllData();
+    } else {
+      alert(data.message || 'Gagal menghapus presensi lembur.');
     }
   } catch (err) {
     alert('Terjadi kesalahan jaringan: ' + err.message);
@@ -1485,6 +1635,22 @@ function openOvertimeDetailModal(overtimeId) {
         ` : '<span class="text-xs text-slate-400 block">Koordinat tidak tersedia</span>'}
       </div>
     </div>
+
+    ${item.overtime_work_attachment ? `
+      <div class="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0">📄</div>
+          <div class="min-w-0">
+            <div class="text-xs font-bold text-indigo-950 dark:text-indigo-200 truncate">Berkas Hasil Kerja Lembur</div>
+            <div class="text-[11px] text-slate-500 truncate">Bukti berkas output pekerjaan yang telah diunggah</div>
+          </div>
+        </div>
+        <a href="${item.overtime_work_attachment.replace('/uploads/', '/secure-uploads/')}" target="_blank" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 shrink-0 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Buka File</span>
+        </a>
+      </div>
+    ` : '<div class="text-xs text-slate-400 italic p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center">Tidak ada berkas bukti hasil kerja yang dilampirkan.</div>'}
   `;
 
   const modal = document.getElementById('modal-overtime-detail');
@@ -1776,6 +1942,345 @@ function showToast(message, type = 'info') {
   }, 3500);
 }
 
+// =========================================================
+// SISTEM ROSTER SHIFT & LIBUR ROLLING BULANAN
+// =========================================================
+state.roster = {
+  month: '',
+  divisionId: '',
+  searchKeyword: '',
+  days: [],
+  employees: [],
+  schedules: {},
+  shiftCodes: {},
+  loaded: false
+};
+
+// Shift color helpers for interactive UI cells
+function getShiftPillStyle(code) {
+  switch (code) {
+    case 'P':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-black';
+    case 'S':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800 font-black';
+    case 'VK':
+      return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800 font-black';
+    case 'VW':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-300 dark:border-blue-800 font-black';
+    case 'VH':
+      return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border-cyan-300 dark:border-cyan-800 font-black';
+    case 'R':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300 dark:border-purple-800 font-black';
+    case 'PL':
+      return 'bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border-teal-300 dark:border-teal-800 font-black';
+    case 'SAT':
+      return 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 font-black';
+    case 'L':
+    case 'OFF':
+      return 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800 font-black';
+    default:
+      return 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700';
+  }
+}
+
+async function loadRosterMatrix(silent = false) {
+  const container = document.getElementById('roster-matrix-container');
+  const monthInput = document.getElementById('roster-month-input');
+
+  if (!state.roster.month) {
+    const now = new Date();
+    state.roster.month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  if (monthInput && !monthInput.value) {
+    monthInput.value = state.roster.month;
+  }
+
+  const divisionSelect = document.getElementById('roster-division-filter');
+  if (divisionSelect && state.roster.divisionId === undefined) {
+    state.roster.divisionId = divisionSelect.value || '';
+  }
+
+  try {
+    if (!silent && container) {
+      container.innerHTML = '<div class="p-12 text-center text-slate-400 text-xs">Memuat matriks jadwal roster bulanan...</div>';
+    }
+
+    const params = new URLSearchParams();
+    if (state.roster.month) params.append('month', state.roster.month);
+    if (state.roster.divisionId) params.append('division_id', state.roster.divisionId);
+
+    const res = await fetch(`/api/admin/roster/matrix?${params.toString()}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'Gagal memuat matriks roster.');
+    }
+
+    state.roster.days = data.days || [];
+    state.roster.employees = data.employees || [];
+    state.roster.schedules = data.schedules || {};
+    state.roster.shiftCodes = data.shiftCodes || {};
+    state.roster.loaded = true;
+
+    renderRosterMatrix();
+  } catch (err) {
+    console.error('Load roster error:', err);
+    if (container) {
+      container.innerHTML = `<div class="p-8 text-center text-rose-500 text-xs">${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+function renderRosterMatrix() {
+  const container = document.getElementById('roster-matrix-container');
+  if (!container) return;
+
+  const { days, employees, schedules } = state.roster;
+
+  let filteredEmployees = employees || [];
+  if (state.roster.searchKeyword) {
+    filteredEmployees = filteredEmployees.filter(emp =>
+      emp.full_name && emp.full_name.toLowerCase().includes(state.roster.searchKeyword)
+    );
+  }
+
+  if (filteredEmployees.length === 0) {
+    container.innerHTML = `
+      <div class="p-12 text-center text-slate-400 text-xs">
+        Tidak ada data karyawan yang cocok dengan filter.
+      </div>`;
+    return;
+  }
+
+  const shiftOptions = [
+    { code: '', label: '- Reguler' },
+    { code: 'P', label: 'P - Pagi (06:00-15:00)' },
+    { code: 'S', label: 'S - Siang (13:00-22:00)' },
+    { code: 'VK', label: 'VK - Kantor SSV (08:00-17:00)' },
+    { code: 'VW', label: 'VW - SSV + PIC WA (08:00-17:00)' },
+    { code: 'VH', label: 'VH - 1/2 Hari SSV (08:00-13:00)' },
+    { code: 'R', label: 'R - Sore (14:00-23:00)' },
+    { code: 'PL', label: 'PL - Lapangan' },
+    { code: 'SAT', label: 'SAT - Satpam' },
+    { code: 'L', label: 'L - Libur Terjadwal (OFF)' }
+  ];
+
+  let html = `
+    <table class="w-full border-collapse text-xs">
+      <thead>
+        <!-- Header Row 1: Tanggal (1..N) -->
+        <tr class="bg-slate-900 text-white font-mono sticky top-0 z-20">
+          <th class="px-3 py-2.5 text-center font-bold sticky left-0 z-30 bg-slate-900 border-r border-slate-800 w-12 min-w-[48px]">No</th>
+          <th class="px-4 py-2.5 text-left font-bold sticky left-12 z-30 bg-slate-900 border-r border-slate-800 min-w-[200px]">Nama Karyawan</th>
+          <th class="px-3 py-2.5 text-left font-bold border-r border-slate-800 min-w-[140px]">Divisi</th>
+          ${days.map(d => {
+            const isWk = d.isWeekend;
+            return `<th class="px-1 py-2 text-center font-black border-r border-slate-800 min-w-[56px] ${isWk ? 'bg-rose-950/80 text-rose-300' : ''}">${d.day}</th>`;
+          }).join('')}
+        </tr>
+
+        <!-- Header Row 2: Nama Hari (Sen, Sel, ...) -->
+        <tr class="bg-slate-800 text-slate-300 font-bold sticky top-9 z-20 text-[10px]">
+          <th class="py-1 text-center sticky left-0 z-30 bg-slate-800 border-r border-slate-700"></th>
+          <th class="py-1 text-center sticky left-12 z-30 bg-slate-800 border-r border-slate-700"></th>
+          <th class="py-1 text-center border-r border-slate-700"></th>
+          ${days.map(d => {
+            const isWk = d.isWeekend;
+            return `<th class="py-1 text-center border-r border-slate-700 ${isWk ? 'bg-rose-900/40 text-rose-300' : 'text-slate-400'}">${d.dayName}</th>`;
+          }).join('')}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+  `;
+
+  filteredEmployees.forEach((emp, idx) => {
+    const userSchedules = schedules[emp.id] || {};
+    html += `
+      <tr class="hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition-colors">
+        <td class="px-2 py-2 text-center font-mono text-slate-400 sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">${idx + 1}</td>
+        <td class="px-3 py-2 font-bold text-slate-900 dark:text-white sticky left-12 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 truncate" title="${escapeHtml(emp.full_name)}">
+          <div>${escapeHtml(emp.full_name)}</div>
+          <div class="text-[10px] text-slate-400 font-normal truncate">${escapeHtml(emp.position_name || '-')}</div>
+        </td>
+        <td class="px-3 py-2 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800 text-[11px] truncate" title="${escapeHtml(emp.division_name || '-')}">
+          ${escapeHtml(emp.division_name || '-')}
+        </td>
+    `;
+
+    days.forEach(d => {
+      const sch = userSchedules[d.date];
+      const curCode = sch ? sch.shift_code : '';
+      const pillClass = getShiftPillStyle(curCode);
+      const isWk = d.isWeekend;
+
+      html += `
+        <td class="p-1 text-center border-r border-slate-100 dark:border-slate-800 ${isWk ? 'bg-slate-50/50 dark:bg-slate-900/40' : ''}">
+          <select
+            onchange="updateRosterCell(${emp.id}, '${d.date}', this.value, this)"
+            title="${d.date}: ${curCode || 'Reguler'}"
+            class="roster-cell-select w-full text-center py-1 px-0.5 rounded-lg border text-[11px] cursor-pointer outline-none transition-all ${pillClass}"
+          >
+            ${shiftOptions.map(opt => `
+              <option value="${opt.code}" ${opt.code === curCode ? 'selected' : ''}>
+                ${opt.code || '-'}
+              </option>
+            `).join('')}
+          </select>
+        </td>
+      `;
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+async function updateRosterCell(userId, dateStr, shiftCode, selectEl) {
+  try {
+    const res = await fetch('/api/admin/roster/cell', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, schedule_date: dateStr, shift_code: shiftCode })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Gagal menyimpan jadwal.');
+    }
+
+    if (!state.roster.schedules[userId]) state.roster.schedules[userId] = {};
+    if (shiftCode) {
+      state.roster.schedules[userId][dateStr] = data.schedule || { shift_code: shiftCode };
+    } else {
+      delete state.roster.schedules[userId][dateStr];
+    }
+
+    if (selectEl) {
+      selectEl.className = `roster-cell-select w-full text-center py-1 px-0.5 rounded-lg border text-[11px] cursor-pointer outline-none transition-all ${getShiftPillStyle(shiftCode)}`;
+    }
+
+    showToast(`Jadwal ${dateStr.slice(8, 10)}: ${shiftCode || 'Default'} disimpan`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function downloadRosterTemplate() {
+  const month = state.roster.month || document.getElementById('roster-month-input')?.value || '';
+  const divId = state.roster.divisionId || document.getElementById('roster-division-filter')?.value || '';
+  const params = new URLSearchParams();
+  if (month) params.append('month', month);
+  if (divId) params.append('division_id', divId);
+
+  window.location.href = `/api/admin/roster/export-template?${params.toString()}`;
+}
+
+function exportRosterMatrix() {
+  const month = state.roster.month || document.getElementById('roster-month-input')?.value || '';
+  const divId = state.roster.divisionId || document.getElementById('roster-division-filter')?.value || '';
+  const params = new URLSearchParams();
+  if (month) params.append('month', month);
+  if (divId) params.append('division_id', divId);
+
+  window.location.href = `/api/admin/roster/export-matrix?${params.toString()}`;
+}
+
+function openRosterImportModal() {
+  const modal = document.getElementById('modal-import-roster');
+  const monthInput = document.getElementById('import-roster-month');
+  if (monthInput) {
+    monthInput.value = state.roster.month || document.getElementById('roster-month-input')?.value || '';
+  }
+  const feedback = document.getElementById('import-roster-feedback');
+  if (feedback) feedback.classList.add('hidden');
+  const form = document.getElementById('form-import-roster');
+  if (form) form.reset();
+  if (monthInput) {
+    monthInput.value = state.roster.month || document.getElementById('roster-month-input')?.value || '';
+  }
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeRosterImportModal() {
+  const modal = document.getElementById('modal-import-roster');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+async function handleRosterImport(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById('import-roster-file');
+  const monthInput = document.getElementById('import-roster-month');
+  const feedback = document.getElementById('import-roster-feedback');
+  const btnSubmit = document.getElementById('btn-submit-import');
+
+  if (!fileInput.files || fileInput.files.length === 0) {
+    showToast('Pilih file Excel terlebih dahulu', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  formData.append('month', monthInput.value);
+
+  try {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Mengimpor...';
+    if (feedback) {
+      feedback.classList.remove('hidden');
+      feedback.className = 'text-xs p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+      feedback.textContent = 'Sedang membaca dan memvalidasi file Excel...';
+    }
+
+    const res = await fetch('/api/admin/roster/import-excel', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'Gagal mengimpor file.');
+    }
+
+    if (feedback) {
+      feedback.className = 'text-xs p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200';
+      feedback.innerHTML = `<strong>Berhasil!</strong> ${escapeHtml(data.message)}`;
+      if (data.unrecognizedNames && data.unrecognizedNames.length > 0) {
+        feedback.innerHTML += `<div class="mt-1 text-[11px] text-amber-700">Nama tidak dikenali: ${data.unrecognizedNames.map(escapeHtml).join(', ')}</div>`;
+      }
+    }
+
+    showToast('Import jadwal roster berhasil!', 'success');
+    state.roster.month = monthInput.value;
+    const mainMonthInput = document.getElementById('roster-month-input');
+    if (mainMonthInput) mainMonthInput.value = monthInput.value;
+
+    await loadRosterMatrix(true);
+
+    setTimeout(() => {
+      closeRosterImportModal();
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Unggah & Terapkan';
+    }, 1800);
+  } catch (err) {
+    console.error('Import error:', err);
+    if (feedback) {
+      feedback.className = 'text-xs p-3 rounded-xl bg-rose-50 text-rose-800 border border-rose-200';
+      feedback.textContent = err.message;
+    }
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = 'Unggah & Terapkan';
+    showToast(err.message, 'error');
+  }
+}
+
 // Expose handlers globally for inline HTML onclick attributes
 window.openDecisionModal = openDecisionModal;
 window.closeDecisionModal = closeDecisionModal;
@@ -1786,7 +2291,13 @@ window.openSubmissionModal = openSubmissionModal;
 window.closeSubmissionModal = closeSubmissionModal;
 window.editSubmission = editSubmission;
 window.deleteSubmission = deleteSubmission;
+window.deleteOvertime = deleteOvertime;
 window.viewAttendanceReportDetail = viewAttendanceReportDetail;
 window.exportReport = exportReport;
 window.switchTab = switchTab;
 window.refreshAllData = refreshAllData;
+window.updateRosterCell = updateRosterCell;
+window.downloadRosterTemplate = downloadRosterTemplate;
+window.exportRosterMatrix = exportRosterMatrix;
+window.openRosterImportModal = openRosterImportModal;
+window.closeRosterImportModal = closeRosterImportModal;

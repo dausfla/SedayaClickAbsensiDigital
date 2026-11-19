@@ -14,6 +14,7 @@ const REPORT_FIELDS = [
   { label: 'Divisi', value: 'division_name', key: 'division_name', align: 'left' },
   { label: 'Jabatan', value: 'position_name', key: 'position_name', align: 'left' },
   { label: 'Tanggal', value: 'attendance_date', key: 'attendance_date', align: 'center' },
+  { label: 'Shift Terjadwal', value: 'shift_code_display', key: 'shift_code_display', align: 'center' },
   { label: 'Hari Kerja', value: 'work_day_count', key: 'work_day_count', align: 'right', numFmt: '#,##0' },
   { label: 'Jam Masuk Shift', value: 'clock_in_display', key: 'clock_in_display', align: 'center' },
   { label: 'Jam Keluar Shift', value: 'clock_out_display', key: 'clock_out_display', align: 'center' },
@@ -28,6 +29,7 @@ const REPORT_FIELDS = [
   { label: 'Total Jam Lembur (Desimal)', value: 'overtime_duration_hours', key: 'overtime_duration_hours', align: 'right', numFmt: '0.00' },
   { label: 'Tugas Lembur', value: 'overtime_task_reason', key: 'overtime_task_reason', align: 'left' },
   { label: 'Catatan Lembur', value: 'overtime_note', key: 'overtime_note', align: 'left' },
+  { label: 'Bukti Hasil Kerja Lembur', value: 'overtime_work_attachment_display', key: 'overtime_work_attachment_display', align: 'left' },
   { label: 'Status Kehadiran', value: 'status_label', key: 'status_label', align: 'center' }
 ];
 
@@ -86,6 +88,7 @@ function prepareRows(rawRows) {
     if (r.overtime_clock_in_time || otSec > 0) {
       if (r.overtime_status === 'approved') otStatusLabel = 'Disetujui';
       else if (r.overtime_status === 'rejected') otStatusLabel = 'Ditolak';
+      else if (r.overtime_status === 'under_review') otStatusLabel = 'Sedang Ditinjau';
       else otStatusLabel = 'Menunggu Review';
     }
 
@@ -104,12 +107,25 @@ function prepareRows(rawRows) {
       }
     }
 
+    let shiftDisplay = 'Reguler (08:00)';
+    if (r.shift_code) {
+      if (r.schedule_is_day_off || r.shift_code === 'L' || r.shift_code === 'OFF') {
+        shiftDisplay = `${r.shift_code} (Libur / OFF)`;
+      } else {
+        const timePart = r.schedule_start_time ? ` (${r.schedule_start_time.slice(0, 5)})` : '';
+        shiftDisplay = `${r.shift_code}${timePart}`;
+      }
+    }
+
+    const otAttachmentDisplay = r.overtime_work_attachment ? 'Tersedia (Terlampir)' : '-';
+
     return {
       ...r,
       full_name: r.full_name || '-',
       division_name: r.division_name || '-',
       position_name: r.position_name || '-',
       attendance_date: formatDateOnly(r.attendance_date),
+      shift_code_display: shiftDisplay,
       work_day_count: 1,
       clock_in_display: formatTimeOnly(r.clock_in_time),
       clock_out_display: formatTimeOnly(r.clock_out_time),
@@ -125,6 +141,7 @@ function prepareRows(rawRows) {
       overtime_duration_hours: otHours,
       overtime_task_reason: r.overtime_task_reason || '-',
       overtime_note: otNote,
+      overtime_work_attachment_display: otAttachmentDisplay,
       status_label: STATUS_LABELS[r.status] || r.status || 'Hadir'
     };
   });
@@ -373,6 +390,7 @@ const SUBMISSION_TYPE_LABELS = {
 
 const SUBMISSION_STATUS_LABELS = {
   pending: 'Menunggu Persetujuan',
+  under_review: 'Sedang Ditinjau',
   approved: 'Disetujui',
   rejected: 'Ditolak'
 };
@@ -524,6 +542,7 @@ const OVERTIME_REPORT_FIELDS = [
   { label: 'Durasi Lembur (HH:mm:ss)', value: 'overtime_duration_hms', key: 'overtime_duration_hms', align: 'center' },
   { label: 'Total Jam Lembur (Desimal)', value: 'overtime_duration_hours', key: 'overtime_duration_hours', align: 'right', numFmt: '0.00' },
   { label: 'Tugas Lembur', value: 'overtime_task_reason', key: 'overtime_task_reason', align: 'left' },
+  { label: 'Bukti Hasil Kerja', value: 'overtime_work_attachment_display', key: 'overtime_work_attachment_display', align: 'left' },
   { label: 'Status Review', value: 'overtime_status_label', key: 'overtime_status_label', align: 'center' },
   { label: 'Peninjau', value: 'reviewed_by_name', key: 'reviewed_by_name', align: 'left' },
   { label: 'Catatan Peninjau', value: 'overtime_review_note', key: 'overtime_review_note', align: 'left' },
@@ -541,6 +560,7 @@ function prepareOvertimeRows(rawRows) {
     let otStatusLabel = 'Menunggu Review';
     if (r.overtime_status === 'approved') otStatusLabel = 'Disetujui';
     else if (r.overtime_status === 'rejected') otStatusLabel = 'Ditolak';
+    else if (r.overtime_status === 'under_review') otStatusLabel = 'Sedang Ditinjau';
 
     const otNoteParts = [];
     if (r.overtime_clock_in_note) otNoteParts.push(`In: ${r.overtime_clock_in_note}`);
@@ -558,6 +578,7 @@ function prepareOvertimeRows(rawRows) {
       overtime_duration_hms: otDurHms,
       overtime_duration_hours: otHours,
       overtime_task_reason: r.overtime_task_reason || '-',
+      overtime_work_attachment_display: r.overtime_work_attachment ? r.overtime_work_attachment.replace('/uploads/', '/secure-uploads/') : '-',
       overtime_status_label: otStatusLabel,
       reviewed_by_name: r.reviewed_by_name || (r.overtime_status === 'approved' || r.overtime_status === 'rejected' ? 'Admin' : '-'),
       overtime_review_note: r.overtime_review_note || '-',

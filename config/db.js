@@ -89,6 +89,45 @@ pool.on('connection', (connection) => {
       }
     }
 
+    // Auto-migrate kolom overtime_work_attachment di tabel attendances
+    const [otWorkCol] = await conn.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'attendances' AND COLUMN_NAME = 'overtime_work_attachment'`
+    );
+    if (otWorkCol.length === 0) {
+      await conn.query(`ALTER TABLE attendances ADD COLUMN overtime_work_attachment VARCHAR(255) NULL AFTER overtime_task_reason`);
+      console.log(`[DB] Kolom 'overtime_work_attachment' berhasil ditambahkan ke tabel attendances.`);
+    }
+
+    // Auto-migrate ENUM status untuk mendukung 'under_review' (Sedang Ditinjau)
+    await conn.query(`ALTER TABLE submissions MODIFY COLUMN status ENUM('pending','under_review','approved','rejected') NOT NULL DEFAULT 'pending'`).catch(err => {
+      console.warn('[DB] Migration submissions.status enum:', err.message);
+    });
+    await conn.query(`ALTER TABLE attendances MODIFY COLUMN overtime_status ENUM('pending','under_review','approved','rejected') DEFAULT 'pending'`).catch(err => {
+      console.warn('[DB] Migration attendances.overtime_status enum:', err.message);
+    });
+
+    // Auto-migrate tabel employee_schedules untuk sistem roster shift & libur rolling
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS employee_schedules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        schedule_date DATE NOT NULL,
+        shift_code VARCHAR(20) NOT NULL,
+        start_time TIME NULL,
+        end_time TIME NULL,
+        is_day_off TINYINT(1) NOT NULL DEFAULT 0,
+        notes VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_date (user_id, schedule_date),
+        KEY idx_schedule_date (schedule_date),
+        KEY idx_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `).catch(err => {
+      console.warn('[DB] Migration employee_schedules:', err.message);
+    });
+
     // Auto-migrate tabel push_subscriptions untuk Web Push PWA
     await conn.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (

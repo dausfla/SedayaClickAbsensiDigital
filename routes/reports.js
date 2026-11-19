@@ -58,11 +58,13 @@ function buildFilter(req) {
 async function fetchReportRows(req) {
   const { where, params } = buildFilter(req);
   const [rows] = await pool.query(
-    `SELECT a.*, u.full_name, d.name AS division_name, p.name AS position_name
+    `SELECT a.*, u.full_name, d.name AS division_name, p.name AS position_name,
+            es.shift_code, es.is_day_off AS schedule_is_day_off, es.start_time AS schedule_start_time, es.end_time AS schedule_end_time
      FROM attendances a
      JOIN users u ON u.id = a.user_id
      LEFT JOIN divisions d ON d.id = u.division_id
      LEFT JOIN positions p ON p.id = u.position_id
+     LEFT JOIN employee_schedules es ON (es.user_id = a.user_id AND es.schedule_date = a.attendance_date)
      ${where}
      ORDER BY a.attendance_date DESC, u.full_name ASC`,
     params
@@ -301,6 +303,7 @@ router.get('/overtime/export', ...scoped, async (req, res) => {
     const [rows] = await pool.query(
       `SELECT a.id, a.user_id, a.attendance_date, a.overtime_clock_in_time, a.overtime_clock_out_time,
               a.overtime_duration_seconds, COALESCE(a.overtime_status, 'pending') AS overtime_status, a.overtime_task_reason,
+              a.overtime_work_attachment,
               a.overtime_clock_in_note, a.overtime_clock_out_note,
               a.overtime_review_note, a.overtime_reviewed_at,
               u.full_name, d.name AS division_name, p.name AS position_name,

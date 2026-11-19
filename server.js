@@ -197,14 +197,40 @@ async function runMigrations() {
     if (otStatusCols.length === 0) {
       await pool.query(`
         ALTER TABLE attendances
-        ADD COLUMN overtime_status ENUM('pending','approved','rejected') DEFAULT 'pending',
+        ADD COLUMN overtime_status ENUM('pending','under_review','approved','rejected') DEFAULT 'pending',
         ADD COLUMN overtime_review_note TEXT NULL,
         ADD COLUMN overtime_reviewed_by INT NULL,
         ADD COLUMN overtime_reviewed_at DATETIME NULL
       `);
     }
 
-    console.log('[MIGRATION] Database schema updated for Overtime module.');
+    const [otWorkCol] = await pool.query("SHOW COLUMNS FROM attendances LIKE 'overtime_work_attachment'");
+    if (otWorkCol.length === 0) {
+      await pool.query("ALTER TABLE attendances ADD COLUMN overtime_work_attachment VARCHAR(255) NULL AFTER overtime_task_reason");
+    }
+
+    await pool.query("ALTER TABLE submissions MODIFY COLUMN status ENUM('pending','under_review','approved','rejected') NOT NULL DEFAULT 'pending'").catch(() => {});
+    await pool.query("ALTER TABLE attendances MODIFY COLUMN overtime_status ENUM('pending','under_review','approved','rejected') DEFAULT 'pending'").catch(() => {});
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS employee_schedules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        schedule_date DATE NOT NULL,
+        shift_code VARCHAR(20) NOT NULL,
+        start_time TIME NULL,
+        end_time TIME NULL,
+        is_day_off TINYINT(1) NOT NULL DEFAULT 0,
+        notes VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_date (user_id, schedule_date),
+        KEY idx_schedule_date (schedule_date),
+        KEY idx_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `).catch(() => {});
+
+    console.log('[MIGRATION] Database schema updated for Overtime module, Under Review status, & Shift Roster.');
   } catch (err) {
     console.warn('[MIGRATION] Migration check:', err.message);
   }

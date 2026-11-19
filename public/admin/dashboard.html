@@ -484,6 +484,13 @@
           <span>Laporan & Rekap Absensi</span>
           <span class="px-2 py-0.5 rounded-full text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-extrabold uppercase">Ekspor</span>
         </button>
+
+        <!-- Tab 6: Jadwal & Roster Shift -->
+        <button id="tab-btn-roster" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer">
+          <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Jadwal & Roster Shift</span>
+          <span class="px-2 py-0.5 rounded-full text-[9px] bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 font-extrabold uppercase">Matriks</span>
+        </button>
       </div>
 
       <!-- Tab Content 1: Pending Submissions Table -->
@@ -735,6 +742,82 @@
         </div>
       </div>
 
+      <!-- Tab Content 6: Shift Roster Matrix Panel -->
+      <div id="panel-roster" class="hidden space-y-4">
+        <!-- Control Card for Roster -->
+        <div class="glass-card p-4 sm:p-5 rounded-2xl space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h3 class="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span>Matriks Roster Shift & Libur Rolling Bulanan</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Kelola shift harian dan libur bergilir (Casa Nawasena, SSV, Housekeeping, dll).</p>
+            </div>
+
+            <!-- Action Toolbar Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-roster-download-template" type="button" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Unduh Template</span>
+              </button>
+              <button id="btn-open-roster-import" type="button" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>Import Excel</span>
+              </button>
+              <button id="btn-roster-export-matrix" type="button" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Ekspor Matriks</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Month Picker Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Pilih Bulan & Tahun</label>
+              <input type="month" id="roster-month-input" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Filter Divisi</label>
+              <select id="roster-division-filter" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20">
+                <option value="">Semua Divisi</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Cari Karyawan</label>
+              <input type="text" id="roster-search-input" placeholder="Ketik nama karyawan..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs outline-none focus:ring-2 focus:ring-indigo-500/20">
+            </div>
+          </div>
+        </div>
+
+        <!-- Matrix Grid Container (Horizontally Scrollable) -->
+        <div class="glass-card rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div id="roster-matrix-container" class="overflow-x-auto overflow-y-auto max-h-[65vh] custom-scrollbar">
+            <div class="p-8 text-center text-slate-400 text-xs">Memuat matriks jadwal roster...</div>
+          </div>
+        </div>
+
+        <!-- Shift Codes Legend Card -->
+        <div class="glass-card p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2">
+          <h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Panduan Kode Shift:</span>
+          </h4>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold"><strong class="font-mono">P</strong> = Pagi (06:00 - 15:00)</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold"><strong class="font-mono">S</strong> = Siang (13:00 - 22:00)</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 font-bold"><strong class="font-mono">VK</strong> = Kantor SSV (08:00 - 17:00)</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 font-bold"><strong class="font-mono">VW</strong> = Kantor + PIC WA (08:00 - 17:00)</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 font-bold"><strong class="font-mono">VH</strong> = Setengah Hari SSV (08:00 - 13:00)</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 font-bold"><strong class="font-mono">R</strong> = Sore (14:00 - 23:00)</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 font-bold"><strong class="font-mono">PL</strong> = Pengelola Lapangan</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 font-bold"><strong class="font-mono">SAT</strong> = Standby / Satpam</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 font-bold"><strong class="font-mono">L</strong> = Libur Terjadwal (OFF)</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 
@@ -769,7 +852,45 @@
       </div>
       <span class="dock-label">Laporan</span>
     </button>
+
+    <button data-dock="roster" class="dock-item" title="Jadwal & Roster Shift">
+      <div class="dock-icon-wrap">
+        <svg class="stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <span class="dock-label">Roster</span>
+    </button>
   </nav>
+
+  <!-- Modal Import Roster Excel -->
+  <div id="modal-import-roster" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-card bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span>Import File Roster Excel</span>
+        </h3>
+        <button id="btn-close-import-modal" type="button" class="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="form-import-roster" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Target Bulan</label>
+          <input type="month" id="import-roster-month" required class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs font-bold">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Berkas Excel (.xlsx)</label>
+          <input type="file" id="import-roster-file" accept=".xlsx,.xls" required class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+          <p class="text-[11px] text-slate-400 mt-1.5">Mendukung format template sistem atau file roster tim bulanan.</p>
+        </div>
+        <div id="import-roster-feedback" class="hidden text-xs p-3 rounded-xl"></div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" id="btn-cancel-import" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer">Batal</button>
+          <button type="submit" id="btn-submit-import" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer">Unggah & Terapkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- ========================================== -->
   <!-- MODAL POP-UP FORM: BUAT / EDIT PENGAJUAN   -->
@@ -860,6 +981,7 @@
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
             <select id="form-status" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
               <option value="pending">Pending (Menunggu Persetujuan)</option>
+              <option value="under_review">Sedang Ditinjau (Under Review)</option>
               <option value="approved">Approved (Disetujui Langsung)</option>
               <option value="rejected">Rejected (Ditolak)</option>
             </select>

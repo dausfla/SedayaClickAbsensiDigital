@@ -39,10 +39,11 @@ router.get('/attendance/:filename', requireAuth, async (req, res) => {
         `SELECT id FROM attendances 
          WHERE user_id = ? AND (
            clock_in_photo LIKE ? OR clock_out_photo LIKE ? OR 
-           overtime_clock_in_photo LIKE ? OR overtime_clock_out_photo LIKE ?
+           overtime_clock_in_photo LIKE ? OR overtime_clock_out_photo LIKE ? OR
+           overtime_work_attachment LIKE ?
          ) 
          LIMIT 1`,
-        [user.id, filePattern, filePattern, filePattern, filePattern]
+        [user.id, filePattern, filePattern, filePattern, filePattern, filePattern]
       );
       isAuthorized = rows.length > 0;
     }

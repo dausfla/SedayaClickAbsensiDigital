@@ -56,10 +56,11 @@ CREATE TABLE IF NOT EXISTS `attendances` (
   `overtime_clock_out_lat` decimal(10,7) DEFAULT NULL,
   `overtime_clock_out_lng` decimal(10,7) DEFAULT NULL,
   `overtime_task_reason` text DEFAULT NULL,
+  `overtime_work_attachment` varchar(255) DEFAULT NULL,
   `overtime_clock_in_note` text DEFAULT NULL,
   `overtime_clock_out_note` text DEFAULT NULL,
   `overtime_duration_seconds` int(11) DEFAULT 0,
-  `overtime_status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `overtime_status` enum('pending','under_review','approved','rejected') DEFAULT 'pending',
   `overtime_review_note` text DEFAULT NULL,
   `overtime_reviewed_by` int(11) DEFAULT NULL,
   `overtime_reviewed_at` datetime DEFAULT NULL,
@@ -179,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `submissions` (
   `end_time` time DEFAULT NULL,
   `reason` text NOT NULL,
   `attachment` varchar(255) DEFAULT NULL,
-  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `status` enum('pending','under_review','approved','rejected') NOT NULL DEFAULT 'pending',
   `reviewed_by` int(11) DEFAULT NULL,
   `review_note` text DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
@@ -241,6 +242,27 @@ INSERT IGNORE INTO `users` (`id`, `full_name`, `email`, `password`, `whatsapp`, 
 (13, 'daus', 'daus@gmail.com', '$2a$10$vIdldk9ej34Yao3PKsVtaO3b/reCFCWU0V/wlj1RegKqJN83mqsW6', '08090', 'Jl', 4, 3, NULL, 'employee', 'active', NULL, '2026-09-20 16:29:23', '2026-09-20 16:29:49'),
 (14, 'contoh', 'contoh@gmail.com', '$2a$10$WcpJCnJpMbzQQWjTKFgO.ewWbwDrOim8rgbvk/bwforXQMHaqtGVS', '88', 'jl', 4, 3, NULL, 'employee', 'active', NULL, '2026-09-21 02:28:48', '2026-09-21 02:34:25'),
 (15, 'mas adit', 'adit321@gmail.com', '$2a$10$cBFPLYFXfT0UHCoOW6RNCOdHYoUo5ZdsU.p7X6zpEb4.4wo9Ztpem', '09', 'jl', 3, 3, NULL, 'employee', 'active', NULL, '2026-09-21 03:02:48', '2026-09-21 03:03:59');
+
+--
+-- Table structure for table `employee_schedules` (Sistem Roster & Libur Rolling)
+--
+
+CREATE TABLE IF NOT EXISTS `employee_schedules` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `schedule_date` date NOT NULL,
+  `shift_code` varchar(20) NOT NULL,
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
+  `is_day_off` tinyint(1) NOT NULL DEFAULT 0,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_date` (`user_id`, `schedule_date`),
+  KEY `idx_schedule_date` (`schedule_date`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Structure for view `view_attendance_report`

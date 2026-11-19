@@ -156,6 +156,22 @@
           <p class="text-[10px] sm:text-xs text-slate-400 mt-1 sm:mt-1.5">Sinkronisasi presisi waktu kerja digital</p>
         </div>
 
+        <!-- Roster / Schedule Banner -->
+        <div id="roster-schedule-banner" class="hidden p-3.5 sm:p-4 rounded-2xl border transition-all shadow-xs">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div id="roster-banner-icon" class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">
+                <!-- Icon -->
+              </div>
+              <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Jadwal Shift Hari Ini</p>
+                <p id="roster-banner-title" class="font-black text-slate-900 text-xs sm:text-sm leading-snug">-</p>
+              </div>
+            </div>
+            <span id="roster-banner-badge" class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase shrink-0">-</span>
+          </div>
+        </div>
+
         <!-- Today Status Widget -->
         <div class="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm">
           <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
@@ -381,6 +397,27 @@
               Keterangan Tugas Lembur (Aktivitas Pekerjaan) <span class="text-rose-500">*</span>
             </label>
             <textarea id="overtime-task-reason" rows="2" placeholder="Contoh: Perbaikan bug backend, audit laporan bulanan, dll." class="w-full min-w-0 box-border rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50/50"></textarea>
+          </div>
+
+          <!-- Upload Berkas Bukti Hasil Kerja Lembur (Hanya saat Clock Out) -->
+          <div id="wrapper-overtime-work-attachment" class="hidden">
+            <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+              Unggah Berkas / Bukti Hasil Kerja Lembur <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-50/80 rounded-2xl p-4 text-center transition cursor-pointer">
+              <input type="file" id="overtime-work-attachment" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.zip,.rar,.txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              <div class="flex flex-col items-center justify-center gap-1.5 pointer-events-none">
+                <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <span id="overtime-file-label" class="text-xs font-bold text-amber-900">Pilih Berkas Hasil Kerja</span>
+                <span class="text-[11px] text-amber-700">Format PDF, Foto (PNG/JPG), Word, Excel, atau ZIP (Maks. 15MB)</span>
+              </div>
+            </div>
+            <div id="overtime-file-info" class="hidden mt-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span id="overtime-file-name" class="truncate"></span>
+            </div>
           </div>
 
           <!-- Catatan Presensi Lembur -->
