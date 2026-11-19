@@ -9,11 +9,23 @@ let state = {
   historySubmissions: [],
   pendingOvertimes: [],
   historyOvertimes: [],
-  reports: [],
   selectedDivisionId: '',
   searchKeyword: '',
   activeTab: 'pending',
-  pollingInterval: null
+  historyStatusFilter: 'all',
+  overtimeHistoryStatusFilter: 'all',
+  pollingInterval: null,
+  roster: {
+    month: '',
+    divisionId: '',
+    scope: 'roster',
+    days: [],
+    employees: [],
+    schedules: {},
+    shiftCodes: {},
+    searchKeyword: '',
+    loaded: false
+  }
 };
 
 // DOM Content Loaded
@@ -24,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ok = await checkAuth();
   if (!ok) return;
 
+  // Initial load: divisions & employees, then initial data
   await Promise.all([
     loadDivisions(),
     loadEmployees()
@@ -31,8 +44,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await refreshAllData();
 
-  // Start polling every 4 seconds for live data sync
-  state.pollingInterval = setInterval(refreshAllData, 4000);
+  // Smart polling every 6 seconds: only polls lightweight pending queues for maximum speed and smoothness
+  state.pollingInterval = setInterval(pollPendingData, 6000);
 });
 
 // Theme Initialization
@@ -142,10 +155,14 @@ function initEventListeners() {
     await refreshAllData();
   });
 
-  // Search Input
+  // Search Input (Debounced to eliminate input lag and stutter)
+  let searchDebounceTimer = null;
   document.getElementById('search-input')?.addEventListener('input', (e) => {
-    state.searchKeyword = e.target.value.toLowerCase().trim();
-    renderTables();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      state.searchKeyword = e.target.value.toLowerCase().trim();
+      renderTables();
+    }, 200);
   });
 
   // Terapkan Filter Button
@@ -168,13 +185,32 @@ function initEventListeners() {
     showToast('Data berhasil disinkronkan', 'success');
   });
 
-  // Desktop SubTabs Switch
+  // Desktop SubTabs Switch (Paired Nomenclature)
   document.getElementById('tab-btn-pending')?.addEventListener('click', () => switchTab('pending'));
   document.getElementById('tab-btn-overtime')?.addEventListener('click', () => switchTab('overtime'));
   document.getElementById('tab-btn-history')?.addEventListener('click', () => switchTab('history'));
   document.getElementById('tab-btn-overtime-history')?.addEventListener('click', () => switchTab('overtime-history'));
-  document.getElementById('tab-btn-reports')?.addEventListener('click', () => switchTab('reports'));
   document.getElementById('tab-btn-roster')?.addEventListener('click', () => switchTab('roster'));
+
+  // Status Action Filter Pills (Riwayat Izin & Cuti)
+  document.querySelectorAll('.history-status-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.historyStatusFilter = btn.getAttribute('data-status') || 'all';
+      updateHistoryStatusPills();
+      renderHistoryTable();
+      renderHistoryCards();
+    });
+  });
+
+  // Status Action Filter Pills (Riwayat Presensi Lembur)
+  document.querySelectorAll('.ot-history-status-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.overtimeHistoryStatusFilter = btn.getAttribute('data-status') || 'all';
+      updateOtHistoryStatusPills();
+      renderOvertimeHistoryTable();
+      renderOvertimeHistoryCards();
+    });
+  });
 
   // Roster Toolbar & Event Listeners
   document.getElementById('roster-month-input')?.addEventListener('change', (e) => {
@@ -229,26 +265,6 @@ function initEventListeners() {
   document.getElementById('btn-close-ot-detail')?.addEventListener('click', closeOvertimeDetailModal);
   document.getElementById('btn-done-ot-detail')?.addEventListener('click', closeOvertimeDetailModal);
 
-  // Reports Filter Period Change
-  document.getElementById('report-filter-period')?.addEventListener('change', (e) => {
-    const isCustom = e.target.value === 'custom';
-    const customWrapper = document.getElementById('wrapper-custom-dates');
-    if (customWrapper) {
-      if (isCustom) {
-        customWrapper.classList.remove('hidden');
-      } else {
-        customWrapper.classList.add('hidden');
-      }
-    }
-  });
-
-  // Reports Apply Filter Button
-  document.getElementById('btn-load-reports')?.addEventListener('click', loadReports);
-
-  // Reports Export Excel & CSV
-  document.getElementById('btn-export-excel')?.addEventListener('click', () => exportReport('xlsx'));
-  document.getElementById('btn-export-csv')?.addEventListener('click', () => exportReport('csv'));
-
   // Attachment modal close
   document.getElementById('btn-close-attachment-modal')?.addEventListener('click', () => {
     const modal = document.getElementById('modal-attachment-viewer');
@@ -260,7 +276,7 @@ function initEventListeners() {
   });
 }
 
-// Switch Tabs & Sync with Floating iOS Dock
+// Switch Tabs & Sync with Floating iOS Dock (Paired Nomenclature)
 function switchTab(tab) {
   state.activeTab = tab;
 
@@ -268,14 +284,12 @@ function switchTab(tab) {
   const btnOvertime = document.getElementById('tab-btn-overtime');
   const btnHistory = document.getElementById('tab-btn-history');
   const btnOvertimeHistory = document.getElementById('tab-btn-overtime-history');
-  const btnReports = document.getElementById('tab-btn-reports');
   const btnRoster = document.getElementById('tab-btn-roster');
 
   const panelPending = document.getElementById('panel-pending');
   const panelOvertime = document.getElementById('panel-overtime');
   const panelHistory = document.getElementById('panel-history');
   const panelOvertimeHistory = document.getElementById('panel-overtime-history');
-  const panelReports = document.getElementById('panel-reports');
   const panelRoster = document.getElementById('panel-roster');
 
   const tabs = [
@@ -283,7 +297,6 @@ function switchTab(tab) {
     { name: 'overtime', btn: btnOvertime, panel: panelOvertime },
     { name: 'history', btn: btnHistory, panel: panelHistory },
     { name: 'overtime-history', btn: btnOvertimeHistory, panel: panelOvertimeHistory },
-    { name: 'reports', btn: btnReports, panel: panelReports },
     { name: 'roster', btn: btnRoster, panel: panelRoster }
   ];
 
@@ -310,13 +323,11 @@ function switchTab(tab) {
     }
   });
 
-  // Jika tab laporan aktif dan data belum ada, muat laporan
-  if (tab === 'reports' && (!state.reports || state.reports.length === 0)) {
-    loadReports();
-  }
+  // Render immediately for the newly active tab
+  renderTables();
 
-  // Jika tab roster aktif dan data belum ada, muat roster matrix
-  if (tab === 'roster' && (!state.roster || !state.roster.loaded)) {
+  // Jika tab roster aktif, selalu reload matriks agar sinkron dengan Super Admin
+  if (tab === 'roster') {
     loadRosterMatrix();
   }
 }
@@ -338,12 +349,6 @@ async function loadDivisions() {
       const rosterDivSelect = document.getElementById('roster-division-filter');
       if (rosterDivSelect) {
         rosterDivSelect.innerHTML = '<option value="">Semua Divisi</option>' +
-          state.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
-      }
-
-      const reportFilterSelect = document.getElementById('report-filter-division');
-      if (reportFilterSelect) {
-        reportFilterSelect.innerHTML = '<option value="">Semua Divisi</option>' +
           state.divisions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
       }
     }
@@ -376,7 +381,34 @@ async function loadEmployees() {
 let syncCycleCount = 0;
 let isRefreshing = false;
 
-// Refresh All Data
+// Polling Ringan & Cepat (Hanya antrean pending untuk notifikasi real-time & hemat bandwidth/CPU)
+async function pollPendingData() {
+  if (isRefreshing) return;
+  try {
+    const divisionParam = state.selectedDivisionId ? `?division_id=${state.selectedDivisionId}` : '';
+    const [resPending, resOvertimePending] = await Promise.all([
+      fetch(`/api/admin/submissions/pending${divisionParam}`),
+      fetch(`/api/admin/overtime/pending${divisionParam}`)
+    ]);
+
+    const [dataPending, dataOtPending] = await Promise.all([
+      resPending.json(),
+      resOvertimePending.json()
+    ]);
+
+    if (dataPending.success) state.pendingSubmissions = dataPending.submissions || [];
+    if (dataOtPending.success) state.pendingOvertimes = dataOtPending.overtimes || [];
+
+    updateStats();
+    if (state.activeTab === 'pending' || state.activeTab === 'overtime') {
+      renderTables();
+    }
+  } catch (err) {
+    console.warn('[Polling Pending Warning]:', err.message);
+  }
+}
+
+// Refresh All Data (Termasuk riwayat & audit trail)
 async function refreshAllData() {
   if (isRefreshing) return;
   isRefreshing = true;
@@ -403,17 +435,12 @@ async function refreshAllData() {
     if (dataOtHistory.success) state.historyOvertimes = dataOtHistory.overtimes || [];
 
     updateStats();
+    updateHistoryStatusPills();
+    updateOtHistoryStatusPills();
     renderTables();
 
-    // Auto-sync master data (employees & divisions) every 4 cycles (~16s)
-    if (syncCycleCount % 4 === 0) {
-      loadEmployees();
-      loadDivisions();
-    }
-
-    // Auto-refresh reports if currently on reports tab
-    if (state.activeTab === 'reports') {
-      loadReports(true);
+    if (state.activeTab === 'roster') {
+      loadRosterMatrix(true);
     }
   } catch (err) {
     console.error('Error saat sinkronisasi data:', err);
@@ -434,14 +461,21 @@ function updateStats() {
   const approvedOtCount = (state.historyOvertimes || []).filter(s => s.overtime_status === 'approved').length;
   const rejectedOtCount = (state.historyOvertimes || []).filter(s => s.overtime_status === 'rejected').length;
 
-  document.getElementById('stat-pending').textContent = totalPending;
-  document.getElementById('stat-approved').textContent = approvedSubCount + approvedOtCount;
-  document.getElementById('stat-rejected').textContent = rejectedSubCount + rejectedOtCount;
+  const statPending = document.getElementById('stat-pending');
+  if (statPending) statPending.textContent = totalPending;
+  const statApproved = document.getElementById('stat-approved');
+  if (statApproved) statApproved.textContent = approvedSubCount + approvedOtCount;
+  const statRejected = document.getElementById('stat-rejected');
+  if (statRejected) statRejected.textContent = rejectedSubCount + rejectedOtCount;
 
-  document.getElementById('badge-pending-count').textContent = pendingSubCount;
-  document.getElementById('badge-overtime-pending-count').textContent = pendingOtCount;
-  document.getElementById('badge-history-count').textContent = state.historySubmissions.length;
-  document.getElementById('badge-overtime-history-count').textContent = state.historyOvertimes.length;
+  const bPending = document.getElementById('badge-pending-count');
+  if (bPending) bPending.textContent = pendingSubCount;
+  const bOtPending = document.getElementById('badge-overtime-pending-count');
+  if (bOtPending) bOtPending.textContent = pendingOtCount;
+  const bHistory = document.getElementById('badge-history-count');
+  if (bHistory) bHistory.textContent = state.historySubmissions.length;
+  const bOtHistory = document.getElementById('badge-overtime-history-count');
+  if (bOtHistory) bOtHistory.textContent = state.historyOvertimes.length;
 
   // Dock badges
   const dockBadgePending = document.getElementById('dock-badge-pending');
@@ -469,16 +503,86 @@ function updateStats() {
   }
 }
 
-// Render All Tables & Mobile Cards
-function renderTables() {
-  renderPendingTable();
-  renderPendingCards();
-  renderOvertimePendingTable();
-  renderOvertimePendingCards();
-  renderHistoryTable();
-  renderHistoryCards();
-  renderOvertimeHistoryTable();
-  renderOvertimeHistoryCards();
+// Update Filter Pill Badges & Active Styles (Riwayat Izin/Cuti)
+function updateHistoryStatusPills() {
+  const allList = (state.historySubmissions || []).filter(s => s.type !== 'lembur');
+  const countAll = allList.length;
+  const countApproved = allList.filter(s => s.status === 'approved').length;
+  const countRejected = allList.filter(s => s.status === 'rejected').length;
+  const countReview = allList.filter(s => s.status === 'under_review').length;
+
+  const elAll = document.getElementById('pill-count-history-all');
+  if (elAll) elAll.textContent = countAll;
+  const elApp = document.getElementById('pill-count-history-approved');
+  if (elApp) elApp.textContent = countApproved;
+  const elRej = document.getElementById('pill-count-history-rejected');
+  if (elRej) elRej.textContent = countRejected;
+  const elRev = document.getElementById('pill-count-history-review');
+  if (elRev) elRev.textContent = countReview;
+
+  document.querySelectorAll('.history-status-pill').forEach(btn => {
+    const st = btn.getAttribute('data-status');
+    if (st === state.historyStatusFilter) {
+      btn.className = 'history-status-pill active px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs';
+    } else {
+      if (st === 'approved') btn.className = 'history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50';
+      else if (st === 'rejected') btn.className = 'history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50';
+      else if (st === 'under_review') btn.className = 'history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50';
+      else btn.className = 'history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
+    }
+  });
+}
+
+// Update Filter Pill Badges & Active Styles (Riwayat Lembur)
+function updateOtHistoryStatusPills() {
+  const allList = state.historyOvertimes || [];
+  const countAll = allList.length;
+  const countApproved = allList.filter(s => s.overtime_status === 'approved').length;
+  const countRejected = allList.filter(s => s.overtime_status === 'rejected').length;
+  const countReview = allList.filter(s => s.overtime_status === 'under_review').length;
+
+  const elAll = document.getElementById('pill-count-ot-history-all');
+  if (elAll) elAll.textContent = countAll;
+  const elApp = document.getElementById('pill-count-ot-history-approved');
+  if (elApp) elApp.textContent = countApproved;
+  const elRej = document.getElementById('pill-count-ot-history-rejected');
+  if (elRej) elRej.textContent = countRejected;
+  const elRev = document.getElementById('pill-count-ot-history-review');
+  if (elRev) elRev.textContent = countReview;
+
+  document.querySelectorAll('.ot-history-status-pill').forEach(btn => {
+    const st = btn.getAttribute('data-status');
+    if (st === state.overtimeHistoryStatusFilter) {
+      btn.className = 'ot-history-status-pill active px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs';
+    } else {
+      if (st === 'approved') btn.className = 'ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50';
+      else if (st === 'rejected') btn.className = 'ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50';
+      else if (st === 'under_review') btn.className = 'ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50';
+      else btn.className = 'ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
+    }
+  });
+}
+
+// Render Table Pintar (Hanya render DOM tab yang sedang aktif untuk menghilangkan LAG)
+function renderTables(forceAll = false) {
+  if (forceAll || state.activeTab === 'pending') {
+    renderPendingTable();
+    renderPendingCards();
+  }
+  if (forceAll || state.activeTab === 'overtime') {
+    renderOvertimePendingTable();
+    renderOvertimePendingCards();
+  }
+  if (forceAll || state.activeTab === 'history') {
+    renderHistoryTable();
+    renderHistoryCards();
+    updateHistoryStatusPills();
+  }
+  if (forceAll || state.activeTab === 'overtime-history') {
+    renderOvertimeHistoryTable();
+    renderOvertimeHistoryCards();
+    updateOtHistoryStatusPills();
+  }
 }
 
 // Render Pending Submissions Table
@@ -668,6 +772,9 @@ function renderHistoryTable() {
   if (!tbody) return;
 
   let list = (state.historySubmissions || []).filter(s => s.type !== 'lembur');
+  if (state.historyStatusFilter && state.historyStatusFilter !== 'all') {
+    list = list.filter(s => s.status === state.historyStatusFilter);
+  }
   if (state.searchKeyword) {
     list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
   }
@@ -676,13 +783,24 @@ function renderHistoryTable() {
     tbody.innerHTML = `
       <tr>
         <td colspan="8" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
-          Belum ada riwayat pengajuan yang diproses.
+          Tidak ada riwayat pengajuan dengan filter status ini.
         </td>
       </tr>`;
     return;
   }
 
-  tbody.innerHTML = list.map(item => `
+  tbody.innerHTML = list.map(item => {
+    let stBadgeStyle = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+    let stLabel = 'Ditolak';
+    if (item.status === 'approved') {
+      stBadgeStyle = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+      stLabel = 'Disetujui';
+    } else if (item.status === 'under_review') {
+      stBadgeStyle = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+      stLabel = 'Ditinjau';
+    }
+
+    return `
     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
       <td class="px-4 py-3.5 font-bold text-slate-900 dark:text-white">
         ${escapeHtml(item.full_name)}
@@ -705,8 +823,8 @@ function renderHistoryTable() {
       </td>
       <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs">
         <div class="flex items-center gap-2 mb-1">
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
-            ${item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${stBadgeStyle}">
+            ${stLabel}
           </span>
           <span class="text-xs text-slate-500 truncate" title="${escapeHtml(item.review_note)}">
             ${escapeHtml(item.review_note || '-')}
@@ -736,8 +854,8 @@ function renderHistoryTable() {
           </button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 // Render History Submissions Cards (Mobile View)
@@ -746,6 +864,9 @@ function renderHistoryCards() {
   if (!container) return;
 
   let list = (state.historySubmissions || []).filter(s => s.type !== 'lembur');
+  if (state.historyStatusFilter && state.historyStatusFilter !== 'all') {
+    list = list.filter(s => s.status === state.historyStatusFilter);
+  }
   if (state.searchKeyword) {
     list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
   }
@@ -753,12 +874,23 @@ function renderHistoryCards() {
   if (list.length === 0) {
     container.innerHTML = `
       <div class="glass-card rounded-2xl p-6 text-center text-slate-400 text-xs">
-        Belum ada riwayat pengajuan yang diproses.
+        Tidak ada riwayat pengajuan dengan filter status ini.
       </div>`;
     return;
   }
 
-  container.innerHTML = list.map(item => `
+  container.innerHTML = list.map(item => {
+    let stBadgeStyle = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+    let stLabel = 'Ditolak';
+    if (item.status === 'approved') {
+      stBadgeStyle = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+      stLabel = 'Disetujui';
+    } else if (item.status === 'under_review') {
+      stBadgeStyle = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+      stLabel = 'Ditinjau';
+    }
+
+    return `
     <div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-200/80 dark:border-slate-800 shadow-xs">
       <div class="flex items-center justify-between">
         <div>
@@ -770,9 +902,7 @@ function renderHistoryCards() {
         </div>
         <div class="flex items-center gap-1.5">
           <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${getTypeBadgeStyle(item.type)}">${escapeHtml(item.type)}</span>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
-            ${item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
-          </span>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${stBadgeStyle}">${stLabel}</span>
         </div>
       </div>
 
@@ -824,8 +954,8 @@ function renderHistoryCards() {
           Hapus
         </button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // Render Pending Overtime Cards (Mobile View)
@@ -925,6 +1055,9 @@ function renderOvertimeHistoryCards() {
   if (!container) return;
 
   let list = state.historyOvertimes || [];
+  if (state.overtimeHistoryStatusFilter && state.overtimeHistoryStatusFilter !== 'all') {
+    list = list.filter(s => s.overtime_status === state.overtimeHistoryStatusFilter);
+  }
   if (state.searchKeyword) {
     list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
   }
@@ -932,7 +1065,7 @@ function renderOvertimeHistoryCards() {
   if (list.length === 0) {
     container.innerHTML = `
       <div class="glass-card rounded-2xl p-6 text-center text-slate-400 text-xs">
-        Belum ada riwayat presensi lembur yang diproses.
+        Tidak ada riwayat presensi lembur dengan filter status ini.
       </div>`;
     return;
   }
@@ -945,6 +1078,16 @@ function renderOvertimeHistoryCards() {
     const m = Math.floor((sec % 3600) / 60);
     const durStr = sec > 0 ? `${h}j ${m}m` : '-';
 
+    let otBadgeStyle = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+    let otLabel = 'Ditolak';
+    if (item.overtime_status === 'approved') {
+      otBadgeStyle = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+      otLabel = 'Disetujui';
+    } else if (item.overtime_status === 'under_review') {
+      otBadgeStyle = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+      otLabel = 'Ditinjau';
+    }
+
     return `
       <div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div class="flex items-center justify-between">
@@ -954,8 +1097,8 @@ function renderOvertimeHistoryCards() {
               <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">${escapeHtml(item.division_name || '-')}</span>
             </div>
           </div>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
-            ${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${otBadgeStyle}">
+            ${otLabel}
           </span>
         </div>
 
@@ -1109,6 +1252,9 @@ function renderOvertimeHistoryTable() {
   if (!tbody) return;
 
   let list = state.historyOvertimes || [];
+  if (state.overtimeHistoryStatusFilter && state.overtimeHistoryStatusFilter !== 'all') {
+    list = list.filter(s => s.overtime_status === state.overtimeHistoryStatusFilter);
+  }
   if (state.searchKeyword) {
     list = list.filter(s => s.full_name && s.full_name.toLowerCase().includes(state.searchKeyword));
   }
@@ -1117,7 +1263,7 @@ function renderOvertimeHistoryTable() {
     tbody.innerHTML = `
       <tr>
         <td colspan="7" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
-          Belum ada riwayat presensi lembur yang diproses.
+          Tidak ada riwayat presensi lembur dengan filter status ini.
         </td>
       </tr>`;
     return;
@@ -1130,6 +1276,16 @@ function renderOvertimeHistoryTable() {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const durStr = sec > 0 ? `${h}j ${m}m` : '-';
+
+    let otBadgeStyle = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+    let otLabel = 'Ditolak';
+    if (item.overtime_status === 'approved') {
+      otBadgeStyle = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+      otLabel = 'Disetujui';
+    } else if (item.overtime_status === 'under_review') {
+      otBadgeStyle = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+      otLabel = 'Ditinjau';
+    }
 
     return `
       <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -1158,8 +1314,8 @@ function renderOvertimeHistoryTable() {
         </td>
         <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-xs">
           <div class="flex items-center gap-1.5 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.overtime_status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'}">
-              ${item.overtime_status === 'approved' ? 'Disetujui' : 'Ditolak'}
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${otBadgeStyle}">
+              ${otLabel}
             </span>
           </div>
           <div class="text-[11px] text-slate-500 truncate" title="${escapeHtml(item.overtime_review_note)}">
@@ -1192,277 +1348,6 @@ function renderOvertimeHistoryTable() {
       </tr>
     `;
   }).join('');
-}
-
-// Load Attendance Reports
-async function loadReports(silent = false) {
-  const tbody = document.getElementById('tbody-reports');
-  const cards = document.getElementById('cards-reports');
-  if (!silent) {
-    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-12 text-center text-slate-400">Memuat data laporan absensi...</td></tr>`;
-    if (cards) cards.innerHTML = `<div class="glass-card rounded-2xl p-6 text-center text-slate-400 text-xs">Memuat data laporan absensi...</div>`;
-  }
-
-  try {
-    const period = document.getElementById('report-filter-period')?.value || 'today';
-    const startDate = document.getElementById('report-start-date')?.value || '';
-    const endDate = document.getElementById('report-end-date')?.value || '';
-    const divId = document.getElementById('report-filter-division')?.value || '';
-
-    let url = `/api/reports/attendance?period=${period}`;
-    if (divId) url += `&division_id=${divId}`;
-    if (period === 'custom' && startDate && endDate) {
-      url += `&start_date=${startDate}&end_date=${endDate}`;
-    }
-
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.success) {
-      state.reports = data.rows || [];
-      renderReportsTable();
-    } else {
-      if (!silent) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-rose-500">${data.message || 'Gagal memuat laporan.'}</td></tr>`;
-        if (cards) cards.innerHTML = `<div class="glass-card rounded-2xl p-6 text-center text-rose-500 text-xs">${data.message || 'Gagal memuat laporan.'}</div>`;
-      }
-    }
-  } catch (err) {
-    console.error('Error load reports:', err);
-    if (!silent) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-rose-500">Terjadi kesalahan jaringan saat memuat laporan.</td></tr>`;
-      if (cards) cards.innerHTML = `<div class="glass-card rounded-2xl p-6 text-center text-rose-500 text-xs">Terjadi kesalahan jaringan saat memuat laporan.</div>`;
-    }
-  }
-}
-
-// Render Attendance Report Table
-function renderReportsTable() {
-  const tbody = document.getElementById('tbody-reports');
-  if (tbody) {
-    if (!state.reports || state.reports.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-12 text-center text-slate-400">Tidak ada data absensi pada periode atau filter yang dipilih.</td></tr>`;
-    } else {
-      tbody.innerHTML = state.reports.map(item => {
-        const inTime = item.clock_in_time ? new Date(item.clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
-        const outTime = item.clock_out_time ? new Date(item.clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
-        
-        const workSec = item.work_duration_seconds || 0;
-        const is9hTarget = workSec >= 32400; // 9 jam
-        const workHms = item.work_duration_hms || (workSec > 0 ? `${Math.floor(workSec / 3600)}j ${Math.floor((workSec % 3600) / 60)}m` : '-');
-
-        const lateSec = item.late_duration_seconds || 0;
-        const lateHms = lateSec > 0 ? `${Math.floor(lateSec / 60)}m` : '-';
-
-        const otSec = item.overtime_seconds || 0;
-        const otHms = otSec > 0 ? `${Math.floor(otSec / 3600)}j ${Math.floor((otSec % 3600) / 60)}m` : '-';
-
-        let statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Belum Selesai</span>';
-        if (item.status === 'on_time') {
-          statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">Hadir Lengkap</span>';
-        } else if (item.status === 'late') {
-          statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">Terlambat</span>';
-        } else if (item.status === 'early_leave') {
-          statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300">Pulang Awal</span>';
-        }
-
-        return `
-          <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-            <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
-              ${escapeHtml(item.full_name)}
-              <div class="text-[10px] font-normal text-slate-400">${escapeHtml(item.position_name || '-')}</div>
-            </td>
-            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
-              <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold">
-                ${escapeHtml(item.division_name || '-')}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-slate-600 dark:text-slate-300 font-mono text-xs whitespace-nowrap">
-              ${formatDate(item.attendance_date)}
-            </td>
-            <td class="px-4 py-3 text-slate-700 dark:text-slate-200 font-mono font-bold text-xs">
-              ${inTime}
-            </td>
-            <td class="px-4 py-3 text-slate-700 dark:text-slate-200 font-mono font-bold text-xs">
-              ${outTime}
-            </td>
-            <td class="px-4 py-3 text-slate-800 dark:text-slate-100 font-mono font-bold text-xs">
-              ${workHms}
-              ${is9hTarget ? '<span class="ml-1 text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 font-extrabold">9 Jam ✔</span>' : ''}
-            </td>
-            <td class="px-4 py-3 text-slate-500 font-mono text-xs">
-              ${lateHms}
-            </td>
-            <td class="px-4 py-3 text-slate-500 font-mono text-xs">
-              ${otHms}
-            </td>
-            <td class="px-4 py-3 text-center">
-              ${statusBadge}
-            </td>
-            <td class="px-4 py-3 text-right">
-              ${item.clock_in_photo || item.clock_in_lat ? `
-                <button onclick="viewAttendanceReportDetail(${item.id})" class="px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-[11px] transition-colors cursor-pointer">
-                  Foto/GPS
-                </button>
-              ` : '<span class="text-[11px] text-slate-400 italic">-</span>'}
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-  }
-
-  renderReportsCards();
-}
-
-// Render Attendance Reports Cards (Mobile View)
-function renderReportsCards() {
-  const container = document.getElementById('cards-reports');
-  if (!container) return;
-
-  if (!state.reports || state.reports.length === 0) {
-    container.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 text-center text-slate-400 text-xs">
-        Tidak ada data absensi pada periode atau filter yang dipilih.
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = state.reports.map(item => {
-    const inTime = item.clock_in_time ? new Date(item.clock_in_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
-    const outTime = item.clock_out_time ? new Date(item.clock_out_time).toLocaleTimeString('id-ID', { hour12: false }) : '-';
-    
-    const workSec = item.work_duration_seconds || 0;
-    const is9hTarget = workSec >= 32400; // 9 jam
-    const workHms = item.work_duration_hms || (workSec > 0 ? `${Math.floor(workSec / 3600)}j ${Math.floor((workSec % 3600) / 60)}m` : '-');
-
-    const lateSec = item.late_duration_seconds || 0;
-    const lateHms = lateSec > 0 ? `${Math.floor(lateSec / 60)}m` : '-';
-
-    const otSec = item.overtime_seconds || 0;
-    const otHms = otSec > 0 ? `${Math.floor(otSec / 3600)}j ${Math.floor((otSec % 3600) / 60)}m` : '-';
-
-    let statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Belum Selesai</span>';
-    if (item.status === 'on_time') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">Hadir Lengkap</span>';
-    } else if (item.status === 'late') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">Terlambat</span>';
-    } else if (item.status === 'early_leave') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300">Pulang Awal</span>';
-    }
-
-    return `
-      <div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div class="flex items-center justify-between">
-          <div>
-            <h4 class="font-black text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)}</h4>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">${escapeHtml(item.division_name || '-')}</span>
-              <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(item.position_name || '-')}</span>
-            </div>
-          </div>
-          <div>${statusBadge}</div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-            <span class="text-[10px] text-slate-400 uppercase font-bold block">Tanggal</span>
-            <span class="font-mono font-bold text-slate-800 dark:text-slate-200">${formatDate(item.attendance_date)}</span>
-          </div>
-          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-            <span class="text-[10px] text-slate-400 uppercase font-bold block">Durasi Kerja</span>
-            <div class="flex items-center gap-1">
-              <span class="font-mono font-bold text-slate-800 dark:text-slate-100">${workHms}</span>
-              ${is9hTarget ? '<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-600 font-extrabold">9j ✔</span>' : ''}
-            </div>
-          </div>
-        </div>
-
-        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-xs flex items-center justify-between font-mono">
-          <div>In: <strong class="text-slate-800 dark:text-slate-200">${inTime}</strong> | Out: <strong class="text-slate-800 dark:text-slate-200">${outTime}</strong></div>
-          <div class="text-[11px] text-slate-500">Late: <strong>${lateHms}</strong> | OT: <strong>${otHms}</strong></div>
-        </div>
-
-        ${item.clock_in_photo || item.clock_in_lat ? `
-          <div class="pt-1">
-            <button onclick="viewAttendanceReportDetail(${item.id})" class="w-full py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-xs transition-colors cursor-pointer text-center">
-              Lihat Foto & Lokasi GPS
-            </button>
-          </div>
-        ` : ''}
-      </div>
-    `;
-  }).join('');
-}
-
-// Export Report Handler
-function exportReport(format = 'xlsx') {
-  const period = document.getElementById('report-filter-period')?.value || 'today';
-  const startDate = document.getElementById('report-start-date')?.value || '';
-  const endDate = document.getElementById('report-end-date')?.value || '';
-  const divId = document.getElementById('report-filter-division')?.value || '';
-
-  let url = `/api/reports/attendance/export?format=${format}&period=${period}`;
-  if (divId) url += `&division_id=${divId}`;
-  if (period === 'custom' && startDate && endDate) {
-    url += `&start_date=${startDate}&end_date=${endDate}`;
-  }
-
-  window.open(url, '_blank');
-}
-
-// View Attendance Detail Modal
-async function viewAttendanceReportDetail(attendanceId) {
-  try {
-    const res = await fetch(`/api/reports/attendance/${attendanceId}`);
-    const data = await res.json();
-    if (!data.success || !data.attendance) {
-      alert('Data detail absensi tidak ditemukan.');
-      return;
-    }
-    const item = data.attendance;
-    const content = document.getElementById('ot-detail-content');
-    if (!content) return;
-
-    const inPhoto = item.clock_in_photo ? item.clock_in_photo.replace('/uploads/', '/secure-uploads/') : null;
-    const outPhoto = item.clock_out_photo ? item.clock_out_photo.replace('/uploads/', '/secure-uploads/') : null;
-
-    content.innerHTML = `
-      <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs space-y-1">
-        <div class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(item.full_name)} (${escapeHtml(item.division_name || '-')})</div>
-        <div class="text-slate-500 font-mono">Tanggal Absensi: ${formatDate(item.attendance_date)}</div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
-          <span class="text-xs font-bold text-emerald-600 uppercase">Clock In</span>
-          ${inPhoto ? `<img src="${inPhoto}" class="w-full aspect-[4/3] object-cover rounded-xl border border-slate-200 shadow-sm" alt="Foto Clock In"/>` : '<div class="w-full aspect-[4/3] bg-slate-200 dark:bg-slate-800 rounded-xl flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
-          ${item.clock_in_lat ? `
-            <a href="https://www.google.com/maps?q=${item.clock_in_lat},${item.clock_in_lng}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 rounded-xl border border-indigo-200/60">
-              Lihat di Google Maps
-            </a>
-          ` : '<span class="text-xs text-slate-400 block">Koordinat tidak tersedia</span>'}
-        </div>
-
-        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
-          <span class="text-xs font-bold text-rose-600 uppercase">Clock Out</span>
-          ${outPhoto ? `<img src="${outPhoto}" class="w-full aspect-[4/3] object-cover rounded-xl border border-slate-200 shadow-sm" alt="Foto Clock Out"/>` : '<div class="w-full aspect-[4/3] bg-slate-200 dark:bg-slate-800 rounded-xl flex items-center justify-center text-xs text-slate-400">Tidak ada foto</div>'}
-          ${item.clock_out_lat ? `
-            <a href="https://www.google.com/maps?q=${item.clock_out_lat},${item.clock_out_lng}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 rounded-xl border border-indigo-200/60">
-              Lihat di Google Maps
-            </a>
-          ` : '<span class="text-xs text-slate-400 block">Koordinat tidak tersedia</span>'}
-        </div>
-      </div>
-    `;
-
-    const modal = document.getElementById('modal-overtime-detail');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-  } catch (err) {
-    alert('Gagal mengambil rincian absensi: ' + err.message);
-  }
 }
 
 // Modal Decision Handling

@@ -459,17 +459,17 @@
     <div class="space-y-4">
       <div class="flex overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-slate-800 gap-1 pb-0.5">
         <button id="tab-btn-pending" class="tab-toggle active whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-indigo-600 text-indigo-600 dark:border-indigo-500 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer">
-          <span>Pengajuan Masuk</span>
+          <span>Pengajuan Izin & Cuti</span>
           <span id="badge-pending-count" class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 font-extrabold font-mono">0</span>
         </button>
 
         <button id="tab-btn-overtime" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer">
-          <span>Presensi Lembur (Pending)</span>
+          <span>Pengajuan Lembur</span>
           <span id="badge-overtime-pending-count" class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 font-extrabold font-mono">0</span>
         </button>
 
         <button id="tab-btn-history" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer">
-          <span>Riwayat Pengajuan</span>
+          <span>Riwayat Izin & Cuti</span>
           <span id="badge-history-count" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-extrabold font-mono">0</span>
         </button>
 
@@ -478,14 +478,7 @@
           <span id="badge-overtime-history-count" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-extrabold font-mono">0</span>
         </button>
 
-        <!-- Tab 5: Laporan & Rekap Absensi -->
-        <button id="tab-btn-reports" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer">
-          <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-          <span>Laporan & Rekap Absensi</span>
-          <span class="px-2 py-0.5 rounded-full text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-extrabold uppercase">Ekspor</span>
-        </button>
-
-        <!-- Tab 6: Jadwal & Roster Shift -->
+        <!-- Tab 5: Jadwal & Roster Shift (Supervisi Tim Operasional) -->
         <button id="tab-btn-roster" class="tab-toggle whitespace-nowrap shrink-0 px-4 sm:px-5 py-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer">
           <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           <span>Jadwal & Roster Shift</span>
@@ -567,8 +560,27 @@
         </div>
       </div>
 
-      <!-- Tab Content 3: History Submissions Table (With Reviewer Audit Trail) -->
+      <!-- Tab Content 3: History Submissions Table (With Reviewer Audit Trail & Status Filter) -->
       <div id="panel-history" class="hidden space-y-3">
+        <!-- Status Action Filter Bar -->
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button type="button" class="history-status-pill active px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs" data-status="all">
+              Semua Status <span id="pill-count-history-all" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+            <button type="button" class="history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50" data-status="approved">
+              Disetujui <span id="pill-count-history-approved" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+            <button type="button" class="history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50" data-status="rejected">
+              Ditolak <span id="pill-count-history-rejected" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+            <button type="button" class="history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50" data-status="under_review">
+              Ditinjau <span id="pill-count-history-review" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+          </div>
+          <span class="text-[11px] text-slate-400">Riwayat pengajuan izin, sakit & cuti</span>
+        </div>
+
         <!-- Desktop Table View -->
         <div class="hidden md:block glass-card rounded-2xl overflow-hidden">
           <div class="overflow-x-auto">
@@ -604,8 +616,27 @@
         </div>
       </div>
 
-      <!-- Tab Content 4: Overtime History Table (With Reviewer Audit Trail) -->
+      <!-- Tab Content 4: Overtime History Table (With Reviewer Audit Trail & Status Filter) -->
       <div id="panel-overtime-history" class="hidden space-y-3">
+        <!-- Status Action Filter Bar -->
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button type="button" class="ot-history-status-pill active px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs" data-status="all">
+              Semua Status <span id="pill-count-ot-history-all" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+            <button type="button" class="ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50" data-status="approved">
+              Disetujui <span id="pill-count-ot-history-approved" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+            <button type="button" class="ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50" data-status="rejected">
+              Ditolak <span id="pill-count-ot-history-rejected" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+            <button type="button" class="ot-history-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50" data-status="under_review">
+              Ditinjau <span id="pill-count-ot-history-review" class="ml-1 opacity-75 font-mono text-[10px]">0</span>
+            </button>
+          </div>
+          <span class="text-[11px] text-slate-400">Riwayat presensi lembur karyawan</span>
+        </div>
+
         <!-- Desktop Table View -->
         <div class="hidden md:block glass-card rounded-2xl overflow-hidden">
           <div class="overflow-x-auto">
@@ -636,108 +667,6 @@
         <div id="cards-overtime-history" class="block md:hidden space-y-3">
           <div class="glass-card rounded-2xl p-6 text-center text-slate-400 text-xs">
             Memuat riwayat presensi lembur...
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Content 5: Attendance Reporting & Export Panel -->
-      <div id="panel-reports" class="hidden space-y-4">
-        <!-- Filter Card for Reports -->
-        <div class="glass-card p-5 rounded-2xl space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div>
-              <h3 class="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Rekapitulasi & Laporan Absensi Tim
-              </h3>
-              <p class="text-[11px] text-slate-400 mt-0.5">Pantau jam kerja real-time, keterlambatan, dan pemenuhan shift khusus 9 jam.</p>
-            </div>
-
-            <!-- Export Buttons -->
-            <div class="flex items-center gap-2">
-              <button id="btn-export-excel" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Ekspor Excel (.xlsx)</span>
-              </button>
-              <button id="btn-export-csv" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 transition-all cursor-pointer">
-                <span>Ekspor CSV</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Report Filter Controls -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Periode Waktu</label>
-              <select id="report-filter-period" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="today">Hari Ini</option>
-                <option value="weekly">7 Hari Terakhir</option>
-                <option value="monthly">30 Hari Terakhir</option>
-                <option value="custom">Rentang Tanggal Kustom</option>
-                <option value="all">Semua Riwayat</option>
-              </select>
-            </div>
-
-            <div id="wrapper-custom-dates" class="hidden sm:col-span-2 grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mulai</label>
-                <input type="date" id="report-start-date" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3 py-2">
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sampai</label>
-                <input type="date" id="report-end-date" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3 py-2">
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter Divisi</label>
-              <select id="report-filter-division" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="">Semua Divisi</option>
-              </select>
-            </div>
-
-            <div class="flex items-end">
-              <button id="btn-load-reports" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <span>Terapkan Filter Laporan</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Attendance Report Table (Desktop) -->
-        <div class="hidden md:block glass-card rounded-2xl overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs min-w-[900px]">
-              <thead class="bg-slate-50/70 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th class="px-4 py-3.5">Nama Karyawan</th>
-                  <th class="px-4 py-3.5">Divisi</th>
-                  <th class="px-4 py-3.5">Tanggal</th>
-                  <th class="px-4 py-3.5">Jam Masuk</th>
-                  <th class="px-4 py-3.5">Jam Pulang</th>
-                  <th class="px-4 py-3.5">Durasi Kerja</th>
-                  <th class="px-4 py-3.5">Terlambat</th>
-                  <th class="px-4 py-3.5">Lembur</th>
-                  <th class="px-4 py-3.5 text-center">Status</th>
-                  <th class="px-4 py-3.5 text-right">Detail</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-reports" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                <tr>
-                  <td colspan="10" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
-                    Memuat data laporan absensi...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Attendance Report Cards (Mobile) -->
-        <div id="cards-reports" class="block md:hidden space-y-3">
-          <div class="glass-card rounded-2xl p-6 text-center text-slate-400 text-xs">
-            Memuat data laporan absensi...
           </div>
         </div>
       </div>
@@ -830,15 +759,15 @@
 
   <!-- iOS Floating Dock Navigation Bar -->
   <nav class="floating-dock">
-    <button data-dock="pending" class="dock-item active" title="Pengajuan Masuk">
+    <button data-dock="pending" class="dock-item active" title="Pengajuan Izin & Cuti">
       <div class="dock-icon-wrap">
         <svg class="stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <span id="dock-badge-pending" class="dock-badge hidden">0</span>
       </div>
-      <span class="dock-label">Pengajuan</span>
+      <span class="dock-label">Izin/Cuti</span>
     </button>
 
-    <button data-dock="overtime" class="dock-item" title="Presensi Lembur">
+    <button data-dock="overtime" class="dock-item" title="Pengajuan Lembur">
       <div class="dock-icon-wrap">
         <svg class="stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span id="dock-badge-overtime" class="dock-badge hidden">0</span>
@@ -846,18 +775,18 @@
       <span class="dock-label">Lembur</span>
     </button>
 
-    <button data-dock="history" class="dock-item" title="Riwayat Persetujuan">
+    <button data-dock="history" class="dock-item" title="Riwayat Izin & Cuti">
       <div class="dock-icon-wrap">
         <svg class="stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
       </div>
-      <span class="dock-label">Riwayat</span>
+      <span class="dock-label">Riw. Izin</span>
     </button>
 
-    <button data-dock="reports" class="dock-item" title="Laporan & Rekap Absensi">
+    <button data-dock="overtime-history" class="dock-item" title="Riwayat Lembur">
       <div class="dock-icon-wrap">
-        <svg class="stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <svg class="stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <span class="dock-label">Laporan</span>
+      <span class="dock-label">Riw. Lembur</span>
     </button>
 
     <button data-dock="roster" class="dock-item" title="Jadwal & Roster Shift">

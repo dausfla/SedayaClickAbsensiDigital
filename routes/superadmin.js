@@ -391,6 +391,12 @@ router.delete('/positions/:id', ...scoped, async (req, res) => {
 
 router.get('/shifts', ...scoped, async (req, res) => {
   try {
+    // Pastikan skema tabel shift_settings memuat kolom-kolom fleksibel & roster
+    await pool.query(`ALTER TABLE shift_settings ADD COLUMN shift_type ENUM('fixed','flexible_hours','roster') NOT NULL DEFAULT 'fixed'`).catch(() => {});
+    await pool.query(`ALTER TABLE shift_settings MODIFY COLUMN shift_type ENUM('fixed','flexible_hours','roster') NOT NULL DEFAULT 'fixed'`).catch(() => {});
+    await pool.query(`ALTER TABLE shift_settings ADD COLUMN min_work_hours DECIMAL(4,2) NOT NULL DEFAULT 9.00`).catch(() => {});
+    await pool.query(`ALTER TABLE shift_settings ADD COLUMN is_flexible_arrival TINYINT(1) NOT NULL DEFAULT 0`).catch(() => {});
+
     const [existing] = await pool.query(
       "SELECT id FROM shift_settings WHERE name LIKE '%Khusus%' OR name LIKE '%Roster%' OR shift_type = 'roster' LIMIT 1"
     );

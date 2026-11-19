@@ -83,12 +83,19 @@ router.get('/submissions/pending', ...scoped, async (req, res) => {
  */
 router.get('/submissions/history', ...scoped, async (req, res) => {
   try {
-    const { division_id } = req.query;
+    const { division_id, status } = req.query;
 
-    const conditions = ["s.status IN ('approved','rejected')"];
+    const conditions = [];
     const params = [];
 
-    if (division_id) {
+    if (status && status !== 'all') {
+      conditions.push('s.status = ?');
+      params.push(status);
+    } else {
+      conditions.push("s.status IN ('approved','rejected','under_review')");
+    }
+
+    if (division_id && division_id !== 'all') {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -104,7 +111,7 @@ router.get('/submissions/history', ...scoped, async (req, res) => {
        LEFT JOIN divisions d ON d.id = u.division_id
        LEFT JOIN users reviewer ON reviewer.id = s.reviewed_by
        ${where}
-       ORDER BY s.reviewed_at DESC LIMIT 150`,
+       ORDER BY COALESCE(s.reviewed_at, s.created_at) DESC LIMIT 200`,
       params
     );
     res.json({ success: true, submissions: rows });
@@ -392,9 +399,16 @@ router.get('/overtime/pending', ...scoped, async (req, res) => {
  */
 router.get('/overtime/history', ...scoped, async (req, res) => {
   try {
-    const { division_id, period } = req.query;
-    const conditions = ["a.overtime_status IN ('approved','rejected')"];
+    const { division_id, period, status } = req.query;
+    const conditions = [];
     const params = [];
+
+    if (status && status !== 'all') {
+      conditions.push('a.overtime_status = ?');
+      params.push(status);
+    } else {
+      conditions.push("a.overtime_status IN ('approved','rejected','under_review')");
+    }
 
     // Filter periode tanggal
     if (period === 'today') {
@@ -406,7 +420,7 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
     }
 
     // Filter divisi: jika ada parameter division_id, batasi ke divisi tersebut
-    if (division_id) {
+    if (division_id && division_id !== 'all') {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
@@ -427,7 +441,7 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
        LEFT JOIN positions p ON p.id = u.position_id
        LEFT JOIN users reviewer ON reviewer.id = a.overtime_reviewed_by
        ${where}
-       ORDER BY a.overtime_reviewed_at DESC LIMIT 500`,
+       ORDER BY COALESCE(a.overtime_reviewed_at, a.attendance_date) DESC LIMIT 500`,
       params
     );
     res.json({ success: true, overtimes: rows });
@@ -666,11 +680,9 @@ router.get('/roster/matrix', ...scoped, async (req, res) => {
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
 
 
-    // Filter divisi
-    let divisionId = req.query.division_id || null;
-    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-      divisionId = req.session.user.division_id;
-    }
+    // Filter divisi: jika user memilih divisi spesifik, filter berdasarkan divisi tersebut.
+    // Jika kosong atau 'all', tampilkan seluruh karyawan roster yang dikelola Super Admin.
+    let divisionId = (req.query.division_id && req.query.division_id !== 'all') ? req.query.division_id : null;
 
     const scope = (req.query.scope || 'roster').toLowerCase();
     const userConds = ["u.status = 'active'", "u.role = 'employee'"];
@@ -681,18 +693,12 @@ router.get('/roster/matrix', ...scoped, async (req, res) => {
     }
 
     if (scope !== 'all') {
-      // Hanya tampilkan karyawan yang shift-nya diatur ke Shift Khusus / Roster
-      // ATAU karyawan yang sudah memiliki entri jadwal di employee_schedules pada bulan target
+      // Hanya tampilkan karyawan yang shift-nya diatur ke Shift Khusus / Roster oleh Super Admin
       userConds.push(`(
         s.shift_type = 'roster' 
         OR LOWER(s.name) LIKE '%khusus%' 
         OR LOWER(s.name) LIKE '%roster%'
-        OR u.id IN (
-          SELECT DISTINCT es.user_id FROM employee_schedules es
-          WHERE es.schedule_date BETWEEN ? AND ?
-        )
       )`);
-      userParams.push(startDate, endDate);
     }
 
     const [employees] = await pool.query(
@@ -871,10 +877,7 @@ router.get('/roster/export-template', ...scoped, async (req, res) => {
     const lastDay = days[days.length - 1].day;
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
 
-    let divisionId = req.query.division_id || null;
-    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-      divisionId = req.session.user.division_id;
-    }
+    let divisionId = (req.query.division_id && req.query.division_id !== 'all') ? req.query.division_id : null;
 
     const scope = (req.query.scope || 'roster').toLowerCase();
     const userConds = ["u.status = 'active'", "u.role = 'employee'"];
@@ -889,12 +892,7 @@ router.get('/roster/export-template', ...scoped, async (req, res) => {
         s.shift_type = 'roster' 
         OR LOWER(s.name) LIKE '%khusus%' 
         OR LOWER(s.name) LIKE '%roster%'
-        OR u.id IN (
-          SELECT DISTINCT es.user_id FROM employee_schedules es
-          WHERE es.schedule_date BETWEEN ? AND ?
-        )
       )`);
-      userParams.push(startDate, endDate);
     }
 
     const [employees] = await pool.query(
@@ -1006,10 +1004,7 @@ router.get('/roster/export-matrix', ...scoped, async (req, res) => {
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
 
 
-    let divisionId = req.query.division_id || null;
-    if (req.session.user.role === 'admin_manager' && req.session.user.division_id) {
-      divisionId = req.session.user.division_id;
-    }
+    let divisionId = (req.query.division_id && req.query.division_id !== 'all') ? req.query.division_id : null;
 
     const scope = (req.query.scope || 'roster').toLowerCase();
     const userConds = ["u.status = 'active'", "u.role = 'employee'"];
@@ -1024,12 +1019,7 @@ router.get('/roster/export-matrix', ...scoped, async (req, res) => {
         s.shift_type = 'roster' 
         OR LOWER(s.name) LIKE '%khusus%' 
         OR LOWER(s.name) LIKE '%roster%'
-        OR u.id IN (
-          SELECT DISTINCT es.user_id FROM employee_schedules es
-          WHERE es.schedule_date BETWEEN ? AND ?
-        )
       )`);
-      userParams.push(startDate, endDate);
     }
 
     const [employees] = await pool.query(
