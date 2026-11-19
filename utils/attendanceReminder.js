@@ -1,8 +1,10 @@
 // utils/attendanceReminder.js
 // Scheduler otomatis untuk pengingat absensi karyawan (H-15 Menit Clock In & Clock Out)
+// Mendukung jadwal shift reguler, shift khusus, dan roster dinamis (P, S, VK, VW, VH, R, PL, SAT, L).
 
 const pool = require('../config/db');
 const { webpush } = require('../config/webpush');
+const { resolveShiftCode } = require('./rosterHelper');
 
 // Menyimpan riwayat pengingat harian di memori agar user tidak dispam berkali-kali
 const sentReminders = {
@@ -13,10 +15,18 @@ const sentReminders = {
 
 function getLocalTimeInfo() {
   const now = new Date();
-  // Format jam lokal server ke WIB (Asia/Jakarta) atau waktu lokal
-  const timeStr = now.toTimeString().slice(0, 5); // "HH:MM"
-  const offset = now.getTimezoneOffset();
-  const localDate = new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const timeStr = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(now);
+  const localDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
   return { now, timeStr, localDate };
 }
 
@@ -44,30 +54,68 @@ async function checkAndSendReminders() {
   }
 
   try {
-    // 1. Ambil seluruh karyawan aktif beserta shift dan status absensi hari ini
+    // 1. Ambil seluruh karyawan aktif beserta jadwal roster harian dan status absensi hari ini
     const [employees] = await pool.query(`
       SELECT 
         u.id, 
         u.full_name, 
-        COALESCE(s.name, 'Shift Reguler') AS shift_name,
-        COALESCE(s.start_time, '08:00:00') AS start_time,
-        COALESCE(s.end_time, '17:00:00') AS end_time,
+        es.shift_code,
+        es.start_time AS roster_start_time,
+        es.end_time AS roster_end_time,
+        es.is_day_off AS roster_is_day_off,
+        s.name AS shift_setting_name,
+        s.shift_type,
+        s.is_flexible_arrival,
+        s.start_time AS default_start_time,
+        s.end_time AS default_end_time,
         a.clock_in_time,
         a.clock_out_time
       FROM users u
       LEFT JOIN shift_settings s ON u.shift_id = s.id
+      LEFT JOIN employee_schedules es ON es.user_id = u.id AND es.schedule_date = ?
       LEFT JOIN attendances a ON a.user_id = u.id AND a.attendance_date = ?
       WHERE u.role = 'employee' AND u.status = 'active'
-    `, [localDate]);
+    `, [localDate, localDate]);
 
     if (!employees || employees.length === 0) return;
 
     for (const emp of employees) {
-      const shiftStartDiff = getMinutesDiff(timeStr, emp.start_time);
-      const shiftEndDiff = getMinutesDiff(timeStr, emp.end_time);
+      // A. Jika karyawan terjadwal LIBUR hari ini (is_day_off = 1):
+      // JANGAN kirim pengingat masuk atau pulang!
+      if (emp.roster_is_day_off === 1 || emp.shift_code === 'L' || emp.shift_code === 'OFF') {
+        continue;
+      }
+
+      // B. Tentukan shift aktual hari ini:
+      let startTime = null;
+      let endTime = null;
+      let shiftTitle = 'Shift Reguler';
+
+      if (emp.shift_code) {
+        const meta = resolveShiftCode(emp.shift_code) || {};
+        startTime = emp.roster_start_time || meta.start_time || '08:00:00';
+        endTime = emp.roster_end_time || meta.end_time || '17:00:00';
+        shiftTitle = `Shift ${meta.name || emp.shift_code}`;
+      } else {
+        const isRosterProfile = emp.shift_type === 'roster' ||
+                                emp.is_flexible_arrival === 1 ||
+                                (emp.shift_setting_name && (emp.shift_setting_name.toLowerCase().includes('khusus') || emp.shift_setting_name.toLowerCase().includes('roster')));
+        if (isRosterProfile) {
+          // Karyawan Shift Khusus tapi belum ada sel spesifik hari ini:
+          // Jangan kirim notifikasi kaku jam 08:00
+          continue;
+        }
+        startTime = emp.default_start_time || '08:00:00';
+        endTime = emp.default_end_time || '17:00:00';
+        shiftTitle = emp.shift_setting_name || 'Shift Reguler';
+      }
+
+      if (!startTime || !endTime) continue;
+
+      const shiftStartDiff = getMinutesDiff(timeStr, startTime);
+      const shiftEndDiff = getMinutesDiff(timeStr, endTime);
 
       // --- KASUS 1: PENGINGAT CLOCK IN (H-15 Menit sebelum jam shift masuk) ---
-      // Aktif jika selisih waktu 14 - 16 menit, belum clock in, dan belum pernah diingatkan hari ini
       if (
         shiftStartDiff !== null &&
         shiftStartDiff >= 13 &&
@@ -78,7 +126,7 @@ async function checkAndSendReminders() {
         sentReminders.clockIn.add(emp.id);
         await sendNotificationToUser(emp.id, {
           title: '⏰ Pengingat Absensi Masuk',
-          body: `Halo ${emp.full_name}, 15 menit lagi shift kerja (${emp.start_time.slice(0, 5)} WIB) dimulai. Jangan lupa Clock In tepat waktu ya!`,
+          body: `Halo ${emp.full_name}, 15 menit lagi ${shiftTitle} (${startTime.slice(0, 5)} WIB) dimulai. Jangan lupa Clock In tepat waktu ya!`,
           icon: '/icons/icon-192.png',
           badge: '/favicon.png',
           url: '/employee/dashboard.html',
@@ -88,7 +136,6 @@ async function checkAndSendReminders() {
       }
 
       // --- KASUS 2: PENGINGAT CLOCK OUT (H-15 Menit sebelum jam shift berakhir) ---
-      // Aktif jika selisih waktu 14 - 16 menit, sudah clock in tapi belum clock out
       if (
         shiftEndDiff !== null &&
         shiftEndDiff >= 13 &&
@@ -100,7 +147,7 @@ async function checkAndSendReminders() {
         sentReminders.clockOut.add(emp.id);
         await sendNotificationToUser(emp.id, {
           title: '🏁 Jam Pulang Kerja Segera Tiba',
-          body: `Halo ${emp.full_name}, 15 menit lagi shift kerja (${emp.end_time.slice(0, 5)} WIB) berakhir. Pastikan Anda Clock Out sebelum pulang!`,
+          body: `Halo ${emp.full_name}, 15 menit lagi ${shiftTitle} (${endTime.slice(0, 5)} WIB) berakhir. Pastikan Anda Clock Out sebelum pulang!`,
           icon: '/icons/icon-192.png',
           badge: '/favicon.png',
           url: '/employee/dashboard.html',

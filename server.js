@@ -186,6 +186,27 @@ async function runMigrations() {
       console.log("[MIGRATION] Seed 'Shift Khusus (Roster)' berhasil ditambahkan ke shift_settings.");
     }
 
+    // Auto-koreksi data absensi yang salah terdeteksi terlambat pada shift siang / roster (misal masuk jam 11:00 - 13:15 WIB)
+    try {
+      await pool.query(`
+        UPDATE attendances a
+        JOIN users u ON u.id = a.user_id
+        LEFT JOIN shift_settings s ON s.id = u.shift_id
+        LEFT JOIN employee_schedules es ON es.user_id = a.user_id AND es.schedule_date = a.attendance_date
+        SET a.status = 'on_time', a.late_duration_seconds = 0
+        WHERE a.status = 'late'
+          AND (
+            es.shift_code IN ('S', 'R') 
+            OR s.shift_type = 'roster' 
+            OR s.name LIKE '%Khusus%' 
+            OR s.name LIKE '%Roster%'
+          )
+          AND TIME(a.clock_in_time) BETWEEN '11:00:00' AND '13:15:00'
+      `);
+    } catch (e) {
+      console.warn('[MIGRATION] Auto-correct midday shift attendance warning:', e.message);
+    }
+
     // Migration for attendances table overtime columns
     const [otInCols] = await pool.query("SHOW COLUMNS FROM attendances LIKE 'overtime_clock_in_time'");
     if (otInCols.length === 0) {

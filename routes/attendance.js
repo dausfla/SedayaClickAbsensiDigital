@@ -14,14 +14,18 @@ const {
   calculateWorkDuration,
   determineStatus
 } = require('../utils/timeCalc');
+const { resolveShiftCode } = require('../utils/rosterHelper');
 
 const router = express.Router();
 
 function todayStr() {
   const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
 }
 
 /**
@@ -41,7 +45,31 @@ router.get('/today', requireAuth, requireRole('employee'), requireActiveAccount,
       'SELECT shift_code, start_time, end_time, is_day_off, notes FROM employee_schedules WHERE user_id = ? AND schedule_date = ?',
       [req.session.user.id, todayStr()]
     ).catch(() => [[]]);
-    const schedule = scheduleRows && scheduleRows[0] ? scheduleRows[0] : null;
+    
+    let schedule = scheduleRows && scheduleRows[0] ? scheduleRows[0] : null;
+    if (schedule && schedule.shift_code) {
+      const meta = resolveShiftCode(schedule.shift_code) || {};
+      schedule.start_time = schedule.start_time || meta.start_time;
+      schedule.end_time = schedule.end_time || meta.end_time;
+      schedule.shift_name = meta.name || schedule.shift_code;
+    } else {
+      const [uShift] = await pool.query(
+        `SELECT s.name, s.shift_type, s.start_time, s.end_time, s.is_flexible_arrival
+         FROM users u JOIN shift_settings s ON s.id = u.shift_id
+         WHERE u.id = ?`,
+        [req.session.user.id]
+      ).catch(() => [[]]);
+      if (uShift && uShift[0]) {
+        schedule = {
+          shift_code: uShift[0].shift_type === 'roster' ? 'Khusus' : 'Reguler',
+          shift_name: uShift[0].name,
+          start_time: uShift[0].start_time,
+          end_time: uShift[0].end_time,
+          is_day_off: 0,
+          is_profile_shift: true
+        };
+      }
+    }
 
     res.json({ success: true, attendance: rows[0] || null, schedule });
   } catch (err) {
@@ -81,6 +109,16 @@ router.post(
         return res.status(409).json({ success: false, message: 'Anda sudah melakukan Clock In hari ini.' });
       }
 
+      const now = new Date();
+      // Jam sekarang dalam WIB (Asia/Jakarta)
+      const nowWIB = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(now);
+      const [curHour, curMin] = nowWIB.split(':').map(Number);
+
       // Ambil shift milik user (prioritaskan jadwal roster harian di employee_schedules)
       const [scheduleRows] = await pool.query(
         `SELECT shift_code, start_time, end_time, is_day_off, notes
@@ -89,34 +127,90 @@ router.post(
         [userId, date]
       ).catch(() => [[]]);
 
+      const [userRows] = await pool.query(
+        `SELECT s.id, s.name, s.shift_type, s.min_work_hours, s.is_flexible_arrival, s.start_time, s.end_time, s.tolerance_minutes
+         FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id
+         WHERE u.id = ?`,
+        [userId]
+      );
+      const userProfileShift = userRows[0] || {};
+      const isRosterProfile = userProfileShift.shift_type === 'roster' ||
+        userProfileShift.is_flexible_arrival === 1 ||
+        (userProfileShift.name && (userProfileShift.name.toLowerCase().includes('khusus') || userProfileShift.name.toLowerCase().includes('roster')));
+
       let shift;
       if (scheduleRows && scheduleRows[0] && scheduleRows[0].shift_code) {
         const sc = scheduleRows[0];
+        const meta = resolveShiftCode(sc.shift_code) || {};
         shift = {
           id: null,
-          name: `Roster (${sc.shift_code})`,
+          name: `Roster (${meta.name || sc.shift_code})`,
           shift_code: sc.shift_code,
-          shift_type: sc.is_day_off ? 'flexible_hours' : 'fixed',
+          shift_type: (sc.is_day_off || meta.is_day_off) ? 'flexible_hours' : 'fixed',
           min_work_hours: 9.00,
-          is_flexible_arrival: sc.is_day_off ? 1 : 0,
-          is_day_off: sc.is_day_off ? 1 : 0,
-          start_time: sc.start_time || '08:00:00',
-          end_time: sc.end_time || '17:00:00',
+          is_flexible_arrival: (sc.is_day_off || meta.is_day_off) ? 1 : 0,
+          is_day_off: (sc.is_day_off || meta.is_day_off) ? 1 : 0,
+          start_time: sc.start_time || meta.start_time || '08:00:00',
+          end_time: sc.end_time || meta.end_time || '17:00:00',
+          tolerance_minutes: meta.tolerance_minutes !== undefined ? meta.tolerance_minutes : 15
+        };
+      } else if (isRosterProfile) {
+        // Karyawan Shift Khusus (Roster) yang belum memiliki sel spesifik di employee_schedules hari ini:
+        // Cek jam clock in saat ini dalam WIB (Asia/Jakarta)
+        let resolvedCode = 'S';
+        let startTime = '13:00:00';
+        let endTime = '22:00:00';
+
+        if (curHour < 7) {
+          resolvedCode = 'P';
+          startTime = '06:00:00';
+          endTime = '15:00:00';
+        } else if (curHour >= 7 && curHour < 11) {
+          resolvedCode = 'VK';
+          startTime = '08:00:00';
+          endTime = '17:00:00';
+        } else if (curHour >= 11 && curHour <= 15) {
+          // Siang (cth: masuk pukul 12:33 WIB -> Shift Siang 13:00 - 22:00)
+          resolvedCode = 'S';
+          startTime = '13:00:00';
+          endTime = '22:00:00';
+        } else {
+          resolvedCode = 'R';
+          startTime = '14:00:00';
+          endTime = '23:00:00';
+        }
+
+        const meta = resolveShiftCode(resolvedCode) || {};
+        shift = {
+          id: userProfileShift.id || null,
+          name: `Shift Khusus (${meta.name || resolvedCode})`,
+          shift_code: resolvedCode,
+          shift_type: 'roster',
+          min_work_hours: 9.00,
+          is_flexible_arrival: 1, // Fleksibel kedatangan
+          is_day_off: 0,
+          start_time: startTime,
+          end_time: endTime,
           tolerance_minutes: 15
         };
+
+        // Simpan / upsert ke employee_schedules agar konsisten untuk pengingat dan clock out
+        try {
+          await pool.query(
+            `INSERT INTO employee_schedules (user_id, schedule_date, shift_code, start_time, end_time, is_day_off, notes)
+             VALUES (?, ?, ?, ?, ?, 0, 'Auto-assigned saat Clock In')
+             ON DUPLICATE KEY UPDATE shift_code = VALUES(shift_code), start_time = VALUES(start_time), end_time = VALUES(end_time)`,
+            [userId, date, resolvedCode, startTime, endTime]
+          );
+        } catch (e) {
+          console.warn('[Attendance ClockIn] Auto-schedule upsert warning:', e.message);
+        }
       } else {
-        const [userRows] = await pool.query(
-          `SELECT s.id, s.name, s.shift_type, s.min_work_hours, s.is_flexible_arrival, s.start_time, s.end_time, s.tolerance_minutes
-           FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id
-           WHERE u.id = ?`,
-          [userId]
-        );
-        shift = userRows[0] && userRows[0].start_time
-          ? userRows[0]
+        shift = userProfileShift && userProfileShift.start_time
+          ? userProfileShift
           : { start_time: '08:00:00', end_time: '17:00:00', tolerance_minutes: 15, shift_type: 'fixed', is_flexible_arrival: 0, is_day_off: 0 };
       }
 
-      const now = new Date();
       const isFlexible = shift.shift_type === 'flexible_hours' || shift.is_flexible_arrival === 1 || shift.is_day_off === 1;
 
       // Pada shift khusus fleksibel / hari libur rolling: tidak ada sanksi keterlambatan saat clock in
@@ -199,11 +293,13 @@ router.post(
       let shift;
       if (scheduleRows && scheduleRows[0] && scheduleRows[0].shift_code) {
         const sc = scheduleRows[0];
+        const meta = resolveShiftCode(sc.shift_code) || {};
         shift = {
-          shift_type: sc.is_day_off ? 'flexible_hours' : 'fixed',
+          shift_code: sc.shift_code,
+          shift_type: (sc.is_day_off || meta.is_day_off) ? 'flexible_hours' : 'fixed',
           min_work_hours: 9.0,
-          is_flexible_arrival: sc.is_day_off ? 1 : 0,
-          end_time: sc.end_time || '17:00:00'
+          is_flexible_arrival: (sc.is_day_off || meta.is_day_off) ? 1 : 0,
+          end_time: sc.end_time || meta.end_time || '17:00:00'
         };
       } else {
         const [userRows] = await pool.query(

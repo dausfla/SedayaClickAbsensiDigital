@@ -390,6 +390,19 @@ router.delete('/positions/:id', ...scoped, async (req, res) => {
    ============================================================ */
 
 router.get('/shifts', ...scoped, async (req, res) => {
+  try {
+    const [existing] = await pool.query(
+      "SELECT id FROM shift_settings WHERE name LIKE '%Khusus%' OR name LIKE '%Roster%' OR shift_type = 'roster' LIMIT 1"
+    );
+    if (existing.length === 0) {
+      await pool.query(
+        `INSERT INTO shift_settings (name, shift_type, min_work_hours, is_flexible_arrival, start_time, end_time, tolerance_minutes, is_active)
+         VALUES ('Shift Khusus (Roster)', 'roster', 9.00, 1, '08:00:00', '17:00:00', 15, 1)`
+      );
+    }
+  } catch (err) {
+    console.error('Error auto-seeding Shift Khusus in GET /shifts:', err.message);
+  }
   const [rows] = await pool.query('SELECT * FROM shift_settings ORDER BY name');
   res.json({ success: true, shifts: rows });
 });

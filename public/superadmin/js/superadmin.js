@@ -664,11 +664,25 @@ document.getElementById('form-add-position').addEventListener('submit', async (e
 
 async function loadShifts() {
   const { shifts } = await apiGet('/superadmin/shifts');
-  document.getElementById('list-shifts').innerHTML = shifts.map((s) => `
-    <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2.5">
-      <span class="text-sm text-slate-700">${escapeHtml(s.name)} · ${escapeHtml(s.start_time)} - ${escapeHtml(s.end_time)} (toleransi ${s.tolerance_minutes} menit)</span>
-      <button class="btn-del-shift text-xs text-red-600 font-semibold" data-id="${s.id}">Hapus</button>
-    </div>`).join('');
+  document.getElementById('list-shifts').innerHTML = shifts.map((s) => {
+    let typeBadge = '';
+    if (s.shift_type === 'roster' || (s.name && (s.name.toLowerCase().includes('khusus') || s.name.toLowerCase().includes('roster')))) {
+      typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">Shift Khusus / Roster</span>';
+    } else if (s.shift_type === 'flexible_hours') {
+      typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-50 text-amber-700 border border-amber-200">Fleksibel (9 Jam)</span>';
+    } else {
+      typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-50 text-slate-700 border border-slate-200">Reguler</span>';
+    }
+    return `
+    <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2.5 shadow-2xs">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm font-semibold text-slate-800">${escapeHtml(s.name)}</span>
+        ${typeBadge}
+        <span class="text-xs text-slate-500">· ${escapeHtml(s.start_time ? s.start_time.slice(0, 5) : '08:00')} - ${escapeHtml(s.end_time ? s.end_time.slice(0, 5) : '17:00')} WIB (toleransi ${s.tolerance_minutes} mnt)</span>
+      </div>
+      <button class="btn-del-shift text-xs text-red-600 font-semibold hover:text-red-700" data-id="${s.id}">Hapus</button>
+    </div>`;
+  }).join('');
   document.querySelectorAll('.btn-del-shift').forEach((b) => b.addEventListener('click', async () => {
     if (!confirm('Hapus pengaturan shift ini?')) return;
     await apiDelete(`/superadmin/shifts/${b.dataset.id}`);
@@ -679,15 +693,19 @@ document.getElementById('form-add-shift').addEventListener('submit', async (e) =
   e.preventDefault();
   hideAlert();
   try {
+    const shiftTypeEl = document.getElementById('input-shift-type');
+    const sType = shiftTypeEl ? shiftTypeEl.value : 'fixed';
     await apiPost('/superadmin/shifts', {
       name: document.getElementById('input-shift-name').value.trim(),
+      shift_type: sType,
       start_time: document.getElementById('input-shift-start').value,
       end_time: document.getElementById('input-shift-end').value,
-      tolerance_minutes: document.getElementById('input-shift-tolerance').value || 0
+      tolerance_minutes: document.getElementById('input-shift-tolerance').value || 15
     });
     e.target.reset();
     document.getElementById('input-shift-start').value = '08:00:00';
     document.getElementById('input-shift-end').value = '17:00:00';
+    document.getElementById('input-shift-tolerance').value = '15';
     loadShifts();
   } catch (err) { showAlert(err.message); }
 });

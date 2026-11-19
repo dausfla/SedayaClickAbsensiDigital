@@ -665,16 +665,21 @@
         </div>
 
         <div id="master-shifts" class="master-panel space-y-4 hidden">
-          <form id="form-add-shift" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <input required id="input-shift-name" placeholder="Nama shift"
+          <form id="form-add-shift" class="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+            <input required id="input-shift-name" placeholder="Nama shift (cth: Shift Khusus / Reguler)"
               class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
+            <select id="input-shift-type" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="fixed">Reguler (Jam Tetap)</option>
+              <option value="roster">Shift Khusus (Roster)</option>
+              <option value="flexible_hours">Fleksibel (9 Jam)</option>
+            </select>
             <input required type="time" step="1" id="input-shift-start" value="08:00:00"
               class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             <input required type="time" step="1" id="input-shift-end" value="17:00:00"
               class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            <input type="number" min="0" id="input-shift-tolerance" placeholder="Toleransi (menit)"
-              class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-3" />
-            <button class="bg-brand-600 text-white text-sm font-semibold rounded-lg px-4 py-2">Tambah Shift</button>
+            <input type="number" min="0" id="input-shift-tolerance" placeholder="Toleransi (menit)" value="15"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-4" />
+            <button class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg px-4 py-2 transition shadow-xs">Tambah Shift</button>
           </form>
           <div id="list-shifts" class="space-y-2"></div>
         </div>

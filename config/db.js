@@ -104,6 +104,27 @@ pool.on('connection', (connection) => {
       console.log("[DB] 'Shift Khusus (Roster)' berhasil dibuat di shift_settings.");
     }
 
+    // Auto-koreksi data absensi yang salah terdeteksi terlambat pada shift siang / roster (misal masuk jam 11:00 - 13:15 WIB)
+    try {
+      await conn.query(`
+        UPDATE attendances a
+        JOIN users u ON u.id = a.user_id
+        LEFT JOIN shift_settings s ON s.id = u.shift_id
+        LEFT JOIN employee_schedules es ON es.user_id = a.user_id AND es.schedule_date = a.attendance_date
+        SET a.status = 'on_time', a.late_duration_seconds = 0
+        WHERE a.status = 'late'
+          AND (
+            es.shift_code IN ('S', 'R') 
+            OR s.shift_type = 'roster' 
+            OR s.name LIKE '%Khusus%' 
+            OR s.name LIKE '%Roster%'
+          )
+          AND TIME(a.clock_in_time) BETWEEN '11:00:00' AND '13:15:00'
+      `);
+    } catch (e) {
+      console.warn('[DB] Auto-correct midday shift attendance warning:', e.message);
+    }
+
     // Auto-migrate kolom overtime_work_attachment di tabel attendances
     const [otWorkCol] = await conn.query(
       `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
