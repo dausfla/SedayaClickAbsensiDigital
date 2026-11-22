@@ -154,40 +154,51 @@ let mode = 'clock-in';
 
 async function loadTodayStatus() {
   try {
-    const { attendance, schedule } = await apiGet('/attendance/today');
+    const todayRes = await apiGet('/attendance/today');
+    const attendance = todayRes ? todayRes.attendance : null;
+    const schedule = todayRes ? todayRes.schedule : null;
+    const isRosterEmployee = Boolean(todayRes && todayRes.is_roster_employee);
     const badge = document.getElementById('status-badge');
     const inEl = document.getElementById('display-clock-in');
     const outEl = document.getElementById('display-clock-out');
     const startBtn = document.getElementById('btn-start-camera');
 
-    // Roster Shift Banner
+    // Komponen Jadwal Roster (HANYA untuk karyawan Shift Khusus / Roster)
     const banner = document.getElementById('roster-schedule-banner');
-    if (banner && schedule && schedule.shift_code) {
-      banner.classList.remove('hidden');
-      const bIcon = document.getElementById('roster-banner-icon');
-      const bTitle = document.getElementById('roster-banner-title');
-      const bBadge = document.getElementById('roster-banner-badge');
+    const rosterShortcut = document.getElementById('roster-quick-shortcut');
 
-      if (schedule.is_day_off || schedule.shift_code === 'L' || schedule.shift_code === 'OFF') {
-        banner.className = 'p-3.5 sm:p-4 rounded-2xl border border-rose-200 bg-rose-50/70 text-rose-950 shadow-xs transition-all';
-        bIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-rose-500 text-white shadow-2xs';
-        bIcon.innerHTML = '🌴';
-        bTitle.textContent = 'Libur Terjadwal (Rolling Day Off)';
-        bBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-rose-200 text-rose-800';
-        bBadge.textContent = 'LIBUR (OFF)';
-      } else {
-        banner.className = 'p-3.5 sm:p-4 rounded-2xl border border-indigo-200 bg-indigo-50/70 text-indigo-950 shadow-xs transition-all';
-        bIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-indigo-600 text-white shadow-2xs';
-        bIcon.textContent = schedule.shift_code;
-        const timeStr = schedule.start_time && schedule.end_time
-          ? ` (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)} WIB)`
-          : '';
-        bTitle.textContent = `Shift ${schedule.shift_code}${timeStr}`;
-        bBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-indigo-200 text-indigo-800';
-        bBadge.textContent = `SHIFT ${schedule.shift_code}`;
+    if (isRosterEmployee && schedule && schedule.shift_code) {
+      if (banner) {
+        banner.classList.remove('hidden');
+        const bIcon = document.getElementById('roster-banner-icon');
+        const bTitle = document.getElementById('roster-banner-title');
+        const bBadge = document.getElementById('roster-banner-badge');
+
+        if (schedule.is_day_off || schedule.shift_code === 'L' || schedule.shift_code === 'OFF') {
+          banner.className = 'p-3.5 sm:p-4 rounded-2xl border border-rose-200 bg-rose-50/70 text-rose-950 shadow-xs transition-all';
+          bIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-rose-500 text-white shadow-2xs';
+          bIcon.innerHTML = '🌴';
+          bTitle.textContent = 'Libur Terjadwal (Rolling Day Off)';
+          bBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-rose-200 text-rose-800';
+          bBadge.textContent = 'LIBUR (OFF)';
+        } else {
+          banner.className = 'p-3.5 sm:p-4 rounded-2xl border border-indigo-200 bg-indigo-50/70 text-indigo-950 shadow-xs transition-all';
+          bIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-indigo-600 text-white shadow-2xs';
+          bIcon.textContent = schedule.shift_code;
+          const timeStr = schedule.start_time && schedule.end_time
+            ? ` (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)} WIB)`
+            : '';
+          bTitle.textContent = `Shift ${schedule.shift_code}${timeStr}`;
+          bBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-indigo-200 text-indigo-800';
+          bBadge.textContent = `SHIFT ${schedule.shift_code}`;
+        }
       }
-    } else if (banner) {
-      banner.classList.add('hidden');
+      if (rosterShortcut) {
+        rosterShortcut.classList.remove('hidden');
+      }
+    } else {
+      if (banner) banner.classList.add('hidden');
+      if (rosterShortcut) rosterShortcut.classList.add('hidden');
     }
 
     if (!attendance || !attendance.clock_in_time) {

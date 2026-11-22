@@ -37,41 +37,63 @@ function todayStr() {
  */
 router.get('/today', requireAuth, requireRole('employee'), requireActiveAccount, async (req, res) => {
   try {
+    const userId = req.session.user.id;
     const [rows] = await pool.query(
       'SELECT id, clock_in_time, clock_out_time, status FROM attendances WHERE user_id = ? AND attendance_date = ?',
-      [req.session.user.id, todayStr()]
+      [userId, todayStr()]
     );
+
+    // Cek apakah karyawan terdaftar pada Shift Khusus (Roster)
+    const [userShiftRows] = await pool.query(
+      `SELECT s.id, s.name, s.shift_type, s.start_time, s.end_time, s.is_flexible_arrival
+       FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id
+       WHERE u.id = ?`,
+      [userId]
+    ).catch(() => [[]]);
+    const userShift = userShiftRows && userShiftRows[0] ? userShiftRows[0] : null;
+    const isRosterShift = Boolean(
+      userShift && (
+        userShift.shift_type === 'roster' ||
+        (userShift.name && (userShift.name.toLowerCase().includes('khusus') || userShift.name.toLowerCase().includes('roster')))
+      )
+    );
+
     const [scheduleRows] = await pool.query(
       'SELECT shift_code, start_time, end_time, is_day_off, notes FROM employee_schedules WHERE user_id = ? AND schedule_date = ?',
-      [req.session.user.id, todayStr()]
+      [userId, todayStr()]
     ).catch(() => [[]]);
-    
-    let schedule = scheduleRows && scheduleRows[0] ? scheduleRows[0] : null;
-    if (schedule && schedule.shift_code) {
-      const meta = resolveShiftCode(schedule.shift_code) || {};
-      schedule.start_time = schedule.start_time || meta.start_time;
-      schedule.end_time = schedule.end_time || meta.end_time;
-      schedule.shift_name = meta.name || schedule.shift_code;
-    } else {
-      const [uShift] = await pool.query(
-        `SELECT s.name, s.shift_type, s.start_time, s.end_time, s.is_flexible_arrival
-         FROM users u JOIN shift_settings s ON s.id = u.shift_id
-         WHERE u.id = ?`,
-        [req.session.user.id]
-      ).catch(() => [[]]);
-      if (uShift && uShift[0]) {
+
+    const hasRosterRecord = Boolean(scheduleRows && scheduleRows.length > 0 && scheduleRows[0].shift_code);
+    const isRosterEmployee = Boolean(isRosterShift || hasRosterRecord);
+
+    let schedule = null;
+    if (isRosterEmployee) {
+      if (hasRosterRecord) {
+        schedule = scheduleRows[0];
+        const meta = resolveShiftCode(schedule.shift_code) || {};
+        schedule.start_time = schedule.start_time || meta.start_time;
+        schedule.end_time = schedule.end_time || meta.end_time;
+        schedule.shift_name = meta.name || schedule.shift_code;
+        schedule.is_roster_employee = true;
+      } else if (isRosterShift) {
+        // Terdaftar di Shift Khusus tetapi belum diunggah tanggal hari ini
         schedule = {
-          shift_code: uShift[0].shift_type === 'roster' ? 'Khusus' : 'Reguler',
-          shift_name: uShift[0].name,
-          start_time: uShift[0].start_time,
-          end_time: uShift[0].end_time,
+          shift_code: 'Khusus',
+          shift_name: userShift ? userShift.name : 'Shift Khusus',
+          start_time: userShift ? userShift.start_time : '08:00:00',
+          end_time: userShift ? userShift.end_time : '17:00:00',
           is_day_off: 0,
-          is_profile_shift: true
+          is_roster_employee: true
         };
       }
     }
 
-    res.json({ success: true, attendance: rows[0] || null, schedule });
+    res.json({
+      success: true,
+      attendance: rows[0] || null,
+      is_roster_employee: isRosterEmployee,
+      schedule
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat status absensi.' });
