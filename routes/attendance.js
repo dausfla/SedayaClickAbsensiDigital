@@ -79,6 +79,48 @@ router.get('/today', requireAuth, requireRole('employee'), requireActiveAccount,
 });
 
 /**
+ * GET /api/attendance/my-roster
+ * Mengembalikan jadwal roster bulanan milik karyawan yang sedang login
+ */
+router.get('/my-roster', requireAuth, requireRole('employee'), requireActiveAccount, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const now = new Date();
+    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const targetMonthStr = req.query.month || defaultMonth;
+    const [year, month] = targetMonthStr.split('-');
+    const startDate = `${year}-${month}-01`;
+    const lastDay = new Date(Number(year), Number(month), 0).getDate();
+    const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
+    const [rows] = await pool.query(
+      `SELECT schedule_date, shift_code, start_time, end_time, is_day_off, notes
+       FROM employee_schedules
+       WHERE user_id = ? AND schedule_date BETWEEN ? AND ?
+       ORDER BY schedule_date ASC`,
+      [userId, startDate, endDate]
+    );
+
+    const [userRows] = await pool.query(
+      `SELECT u.id, u.full_name, s.name AS shift_name, s.shift_type, s.start_time, s.end_time
+       FROM users u LEFT JOIN shift_settings s ON s.id = u.shift_id
+       WHERE u.id = ?`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      month: targetMonthStr,
+      schedules: rows,
+      user_shift: userRows[0] || null
+    });
+  } catch (err) {
+    console.error('Error load my-roster:', err);
+    res.status(500).json({ success: false, message: 'Gagal memuat jadwal roster saya.' });
+  }
+});
+
+/**
  * POST /api/attendance/clock-in
  * multipart/form-data: photo, latitude, longitude, note(optional)
  */

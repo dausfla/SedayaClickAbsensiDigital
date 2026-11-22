@@ -170,6 +170,26 @@
             </div>
             <span id="roster-banner-badge" class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase shrink-0">-</span>
           </div>
+          <button id="btn-open-my-roster" type="button" class="mt-2.5 w-full py-2 px-3 rounded-xl bg-white/90 border border-indigo-200 text-indigo-700 font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs hover:bg-white active:scale-98 transition-all cursor-pointer">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>Lihat Jadwal Roster Sebulan Penuh</span>
+          </button>
+        </div>
+
+        <!-- Roster Calendar Quick Shortcut Card -->
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100/90 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between shadow-2xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-bold text-slate-800 text-xs sm:text-sm truncate">Jadwal Roster & Shift Kerja</h3>
+              <p class="text-[11px] text-slate-500 truncate">Cek jadwal shift & libur rolling Anda</p>
+            </div>
+          </div>
+          <button id="btn-open-roster-calendar" type="button" class="px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-indigo-700 text-xs font-bold shadow-2xs active:scale-95 hover:bg-indigo-50 transition-all shrink-0 cursor-pointer">
+            Buka
+          </button>
         </div>
 
         <!-- Today Status Widget -->
@@ -583,6 +603,50 @@
           <button type="button" id="btn-close-h3-info" class="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-brand-500/20 active:scale-[0.98] transition cursor-pointer">
             Saya Mengerti & Lanjutkan Pengajuan
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Kalender Jadwal Roster Shift Saya -->
+    <div id="modal-my-roster" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[88vh] animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/80">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200/60 shadow-2xs">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900 leading-snug">Jadwal Roster Shift Saya</h3>
+              <p class="text-[11px] text-slate-500" id="roster-employee-profile-shift">Memuat...</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-my-roster" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer" title="Tutup">
+            <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Filter Bulan -->
+        <div class="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-3">
+          <label class="text-xs font-bold text-slate-600">Pilih Bulan:</label>
+          <input type="month" id="my-roster-month-input" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none">
+        </div>
+
+        <!-- Body: List Hari & Shift -->
+        <div id="my-roster-content" class="p-4 overflow-y-auto flex-1 space-y-2 custom-scrollbar min-h-[220px]">
+          <div class="p-8 text-center text-slate-400 text-xs">Memuat jadwal shift...</div>
+        </div>
+
+        <!-- Shift Legend Footer -->
+        <div class="px-4 py-3 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-500 space-y-1">
+          <span class="font-bold text-slate-700 uppercase tracking-wider block text-[10px]">Panduan Kode Shift:</span>
+          <div class="flex flex-wrap gap-1.5 font-bold">
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">P = Pagi (06-15)</span>
+            <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800">S = Siang (13-22)</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">VK = Kantor (08-17)</span>
+            <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800">R = Sore (14-23)</span>
+            <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800">L = Libur (OFF)</span>
+          </div>
         </div>
       </div>
     </div>

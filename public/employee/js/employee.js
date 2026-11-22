@@ -1131,3 +1131,143 @@ document.addEventListener('touchend', (e) => {
   }
   lastTouchTime = now;
 }, { passive: false });
+
+/* ---------------------------------------------------------
+   Jadwal Roster Shift Karyawan (Modal Kalender)
+--------------------------------------------------------- */
+const modalMyRoster = document.getElementById('modal-my-roster');
+const btnOpenMyRoster = document.getElementById('btn-open-my-roster');
+const btnOpenRosterCal = document.getElementById('btn-open-roster-calendar');
+const btnCloseMyRoster = document.getElementById('btn-close-my-roster');
+const myRosterMonthInput = document.getElementById('my-roster-month-input');
+const myRosterContent = document.getElementById('my-roster-content');
+const rosterProfileShiftEl = document.getElementById('roster-employee-profile-shift');
+
+function getShiftBadgeClass(code) {
+  switch (code) {
+    case 'P': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    case 'S': return 'bg-amber-100 text-amber-800 border-amber-200';
+    case 'VK': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+    case 'VW': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'VH': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+    case 'R': return 'bg-purple-100 text-purple-800 border-purple-200';
+    case 'L':
+    case 'OFF': return 'bg-rose-100 text-rose-800 border-rose-200';
+    default: return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+}
+
+async function loadMyRosterSchedule(targetMonth) {
+  if (!myRosterContent) return;
+  myRosterContent.innerHTML = '<div class="p-8 text-center text-slate-400 text-xs">Memuat jadwal shift bulan ini...</div>';
+
+  try {
+    const url = targetMonth ? `/api/attendance/my-roster?month=${targetMonth}` : '/api/attendance/my-roster';
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.success) {
+      myRosterContent.innerHTML = `<div class="p-6 text-center text-rose-500 text-xs">${data.message || 'Gagal memuat jadwal.'}</div>`;
+      return;
+    }
+
+    if (myRosterMonthInput && data.month) {
+      myRosterMonthInput.value = data.month;
+    }
+
+    if (rosterProfileShiftEl && data.user_shift) {
+      rosterProfileShiftEl.textContent = `Shift Induk: ${data.user_shift.shift_name || 'Reguler'} (${data.user_shift.start_time?.slice(0,5) || '08:00'} - ${data.user_shift.end_time?.slice(0,5) || '17:00'})`;
+    }
+
+    const schedules = data.schedules || [];
+    const scheduleMap = {};
+    schedules.forEach(s => {
+      const dKey = typeof s.schedule_date === 'string' ? s.schedule_date.slice(0, 10) : new Date(s.schedule_date).toISOString().slice(0, 10);
+      scheduleMap[dKey] = s;
+    });
+
+    const [y, m] = (data.month || new Date().toISOString().slice(0, 7)).split('-');
+    const daysInMonth = new Date(Number(y), Number(m), 0).getDate();
+    const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    let html = '';
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${y}-${m}-${String(day).padStart(2, '0')}`;
+      const dObj = new Date(Number(y), Number(m) - 1, day);
+      const dayName = dayNames[dObj.getDay()];
+      const isWeekend = dObj.getDay() === 0 || dObj.getDay() === 6;
+      const isToday = dateStr === todayStr;
+
+      const sched = scheduleMap[dateStr];
+      const isDayOff = sched ? (sched.is_day_off || sched.shift_code === 'L' || sched.shift_code === 'OFF') : false;
+      const shiftCode = sched?.shift_code || (isDayOff ? 'L' : '-');
+      const timeStr = sched?.start_time && sched?.end_time
+        ? `${sched.start_time.slice(0, 5)} - ${sched.end_time.slice(0, 5)} WIB`
+        : (isDayOff ? 'Libur Terjadwal' : (data.user_shift ? `${data.user_shift.start_time?.slice(0,5)} - ${data.user_shift.end_time?.slice(0,5)}` : 'Shift Reguler'));
+
+      const badgeStyle = getShiftBadgeClass(shiftCode);
+
+      html += `
+        <div class="p-3 rounded-2xl border transition-all ${isToday ? 'bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-400/20' : (isDayOff ? 'bg-rose-50/50 border-rose-100' : 'bg-slate-50/80 border-slate-100')} flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl ${isToday ? 'bg-indigo-600 text-white' : (isWeekend ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-700')} flex flex-col items-center justify-center shrink-0 font-mono font-bold leading-none">
+              <span class="text-[9px] uppercase">${dayName}</span>
+              <span class="text-sm mt-0.5">${day}</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold ${isToday ? 'text-indigo-900 font-extrabold' : 'text-slate-800'}">
+                  ${day} ${new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('id-ID', { month: 'short' })} ${y}
+                </span>
+                ${isToday ? '<span class="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-600 text-white font-extrabold uppercase">Hari Ini</span>' : ''}
+              </div>
+              <p class="text-[11px] text-slate-500 font-medium">${timeStr}</p>
+            </div>
+          </div>
+          <div>
+            <span class="px-2.5 py-1 rounded-xl text-xs font-black uppercase border ${badgeStyle}">
+              ${isDayOff ? 'OFF' : (shiftCode !== '-' ? shiftCode : 'REG')}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    myRosterContent.innerHTML = html;
+  } catch (err) {
+    console.error('Error loadMyRosterSchedule:', err);
+    myRosterContent.innerHTML = `<div class="p-6 text-center text-rose-500 text-xs">Terjadi kesalahan saat memuat jadwal.</div>`;
+  }
+}
+
+function openMyRosterModal() {
+  if (modalMyRoster) {
+    modalMyRoster.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    loadMyRosterSchedule(myRosterMonthInput?.value || curMonth);
+  }
+}
+
+function closeMyRosterModal() {
+  if (modalMyRoster) {
+    modalMyRoster.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+}
+
+if (btnOpenMyRoster) btnOpenMyRoster.addEventListener('click', openMyRosterModal);
+if (btnOpenRosterCal) btnOpenRosterCal.addEventListener('click', openMyRosterModal);
+if (btnCloseMyRoster) btnCloseMyRoster.addEventListener('click', closeMyRosterModal);
+if (modalMyRoster) {
+  modalMyRoster.addEventListener('click', (e) => {
+    if (e.target === modalMyRoster) closeMyRosterModal();
+  });
+}
+if (myRosterMonthInput) {
+  myRosterMonthInput.addEventListener('change', (e) => {
+    loadMyRosterSchedule(e.target.value);
+  });
+}
