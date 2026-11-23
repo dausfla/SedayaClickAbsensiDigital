@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: SedayaClick REST API
+  description: Dokumentasi spesifikasi OpenAPI 3.0.3 As-Built untuk Sistem Presensi & Penggajian PWA SedayaClick PT Rancang Bangun Sedaya.
+  version: 1.0.0
+servers:
+  - url: https://sedayaclick.cloud
+    description: Production Server VPS
+  - url: http://localhost:3000
+    description: Local Development Environment
+
+paths:
+  /api/auth/meta:
+    get:
+      summary: Ambil data master divisi & jabatan untuk form registrasi
+      tags: [Autentikasi]
+      responses:
+        '200':
+          description: Berhasil memuat data master
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  divisions: { type: array, items: { type: object } }
+                  positions: { type: array, items: { type: object } }
+
+  /api/auth/register:
+    post:
+      summary: Pendaftaran mandiri akun karyawan baru (status pending)
+      tags: [Autentikasi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, email, password, division_id, position_id, whatsapp, address]
+              properties:
+                full_name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6 }
+                division_id: { type: integer }
+                position_id: { type: integer }
+                whatsapp: { type: string }
+                address: { type: string }
+      responses:
+        '201':
+          description: Pendaftaran berhasil, menunggu aktivasi Super Admin
+        '400':
+          description: Field wajib belum lengkap atau password < 6 karakter
+        '409':
+          description: Email sudah terdaftar
+
+  /api/auth/login:
+    post:
+      summary: Login pengguna dan inisialisasi sesi cookie
+      tags: [Autentikasi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login berhasil, cookie sedayaclick_sid dibuat
+        '401':
+          description: Email atau password salah
+        '403':
+          description: Akun belum aktif
+        '429':
+          description: Terlalu banyak percobaan login
+
+  /api/auth/me:
+    get:
+      summary: Periksa status sesi login aktif dan profil user
+      tags: [Autentikasi]
+      responses:
+        '200':
+          description: Sesi aktif ditemukan
+        '401':
+          description: Belum login
+
+  /api/auth/logout:
+    post:
+      summary: Logout dan hancurkan sesi
+      tags: [Autentikasi]
+      responses:
+        '200':
+          description: Logout berhasil
+
+  /api/attendance/today:
+    get:
+      summary: Ambil status presensi hari ini dan shift karyawan aktif
+      tags: [Presensi Karyawan]
+      responses:
+        '200':
+          description: Data status absensi hari ini
+
+  /api/attendance/clock-in:
+    post:
+      summary: Transaksi Absen Masuk dengan Swafoto & GPS
+      tags: [Presensi Karyawan]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo, latitude, longitude]
+              properties:
+                photo: { type: string, format: binary }
+                latitude: { type: string }
+                longitude: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Clock In berhasil dicatat
+        '400':
+          description: Foto atau GPS tidak tersedia
+        '409':
+          description: Sudah melakukan Clock In hari ini
+
+  /api/attendance/clock-out:
+    post:
+      summary: Transaksi Absen Pulang dan Perhitungan Durasi Kerja
+      tags: [Presensi Karyawan]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo, latitude, longitude]
+              properties:
+                photo: { type: string, format: binary }
+                latitude: { type: string }
+                longitude: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Clock Out berhasil dicatat
+
+  /api/attendance/my-roster:
+    get:
+      summary: Ambil kalender roster bulanan milik karyawan login
+      tags: [Presensi Karyawan]
+      parameters:
+        - in: query
+          name: month
+          schema: { type: string, example: '2026-11' }
+      responses:
+        '200':
+          description: Data jadwal roster bulanan
+
+  /api/submissions:
+    post:
+      summary: Kirim formulir pengajuan izin, cuti, sakit, atau lembur
+      tags: [Pengajuan Karyawan]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [type, start_date, end_date, reason]
+              properties:
+                type: { type: string, enum: [izin, cuti, sakit, lembur] }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                start_time: { type: string }
+                end_time: { type: string }
+                reason: { type: string }
+                attachment: { type: string, format: binary }
+                handover_plan: { type: string }
+                handover_to_name: { type: string }
+                handover_to_position: { type: string }
+      responses:
+        '201':
+          description: Pengajuan berhasil dikirim
+        '400':
+          description: Validasi gagal (misal pengajuan cuti < H-3)
+
+  /api/admin/submissions/pending:
+    get:
+      summary: Ambil antrean pengajuan pending untuk direview manajer
+      tags: [Admin Manager]
+      parameters:
+        - in: query
+          name: division_id
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Daftar pengajuan pending
+
+  /api/admin/submissions/{id}/decision:
+    patch:
+      summary: Putuskan status pengajuan (approved, rejected, under_review)
+      tags: [Admin Manager]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approved, rejected, under_review] }
+                review_note: { type: string }
+      responses:
+        '200':
+          description: Keputusan berhasil disimpan
+
+  /api/superadmin/dashboard/summary:
+    get:
+      summary: Ambil metrik KPI organisasi dan grafik distribusi kehadiran
+      tags: [Super Admin]
+      parameters:
+        - in: query
+          name: period
+          schema: { type: string, enum: [daily, weekly, monthly] }
+      responses:
+        '200':
+          description: Metrik dashboard KPI
