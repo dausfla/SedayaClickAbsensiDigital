@@ -774,6 +774,32 @@
           </div>
         </div>
 
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <select id="sub-filter-period"
+            class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
+            <option value="all" selected>Semua Tanggal</option>
+            <option value="today">Hari Ini</option>
+            <option value="weekly">7 Hari Terakhir</option>
+            <option value="monthly">30 Hari Terakhir</option>
+            <option value="custom">Rentang Tanggal...</option>
+          </select>
+          <div id="sub-filter-range" class="hidden">
+            <div class="flex items-center gap-1.5">
+              <input type="date" id="sub-filter-start" aria-label="Tanggal mulai"
+                class="rounded-xl border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 dark:[color-scheme:dark]" />
+              <span class="text-xs text-slate-500">s/d</span>
+              <input type="date" id="sub-filter-end" aria-label="Tanggal akhir"
+                class="rounded-xl border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 dark:[color-scheme:dark]" />
+            </div>
+          </div>
+          <input type="search" id="sub-filter-name" placeholder="Cari nama karyawan..."
+            class="flex-1 min-w-[160px] sm:flex-none sm:w-56 rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200" />
+          <button id="sub-filter-reset" type="button"
+            class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
+            Reset Filter
+          </button>
+        </div>
+
         <div class="flex gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 mb-4 text-xs sm:text-sm font-semibold overflow-x-auto no-scrollbar pb-0.5">
           <button data-submissionstab="pending"
             class="subtab active py-2 border-b-2 border-transparent whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
@@ -822,11 +848,24 @@
               <option value="today">Hari Ini</option>
               <option value="weekly">Mingguan (7 Hari)</option>
               <option value="monthly">Bulanan (30 Hari)</option>
+              <option value="custom">Rentang Tanggal...</option>
             </select>
+            <div id="sa-ot-filter-range" class="hidden">
+              <div class="flex items-center gap-1.5">
+                <input type="date" id="sa-ot-filter-start" aria-label="Tanggal mulai"
+                  class="rounded-xl border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 dark:[color-scheme:dark]" />
+                <span class="text-xs text-slate-500">s/d</span>
+                <input type="date" id="sa-ot-filter-end" aria-label="Tanggal akhir"
+                  class="rounded-xl border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 dark:[color-scheme:dark]" />
+              </div>
+            </div>
             <select id="sa-ot-filter-division" class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200">
               <option value="">Semua Divisi</option>
             </select>
-            <input type="text" id="sa-ot-search-input" placeholder="Cari nama karyawan..." class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200" />
+            <input type="search" id="sa-ot-search-input" placeholder="Cari nama karyawan..." class="rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200" />
+            <button id="sa-ot-btn-reset" type="button" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
+              Reset Filter
+            </button>
             <button id="sa-ot-btn-refresh" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
               Refresh
             </button>

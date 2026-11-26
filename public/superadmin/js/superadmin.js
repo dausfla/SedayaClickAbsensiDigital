@@ -1070,6 +1070,74 @@ const TYPE_LABEL = { izin: 'Izin', cuti: 'Cuti', sakit: 'Sakit', lembur: 'Lembur
 const STATUS_STYLE = { approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700' };
 const STATUS_LABEL = { approved: 'Disetujui', rejected: 'Ditolak' };
 
+const SUB_FILTER_IDS = {
+  period: 'sub-filter-period', range: 'sub-filter-range', start: 'sub-filter-start',
+  end: 'sub-filter-end', name: 'sub-filter-name', division: 'submission-division-filter', reset: 'sub-filter-reset'
+};
+const OT_FILTER_IDS = {
+  period: 'sa-ot-filter-period', range: 'sa-ot-filter-range', start: 'sa-ot-filter-start',
+  end: 'sa-ot-filter-end', name: 'sa-ot-search-input', division: 'sa-ot-filter-division', reset: 'sa-ot-btn-reset'
+};
+
+function buildListFilterParams(ids) {
+  const params = {};
+  const division = document.getElementById(ids.division)?.value;
+  if (division) params.division_id = division;
+
+  const period = document.getElementById(ids.period)?.value || 'all';
+  if (period === 'custom') {
+    const start = document.getElementById(ids.start)?.value;
+    const end = document.getElementById(ids.end)?.value;
+    if (start && end) Object.assign(params, { period: 'custom', start_date: start, end_date: end });
+  } else if (period !== 'all') {
+    params.period = period;
+  }
+
+  const name = document.getElementById(ids.name)?.value.trim();
+  if (name) params.name = name;
+  return params;
+}
+
+function setupListFilter(ids, onChange) {
+  const periodEl = document.getElementById(ids.period);
+  const rangeEl = document.getElementById(ids.range);
+  const startEl = document.getElementById(ids.start);
+  const endEl = document.getElementById(ids.end);
+  const nameEl = document.getElementById(ids.name);
+  if (!periodEl || !rangeEl || !startEl || !endEl || !nameEl) return;
+
+  periodEl.addEventListener('change', () => {
+    const isCustom = periodEl.value === 'custom';
+    rangeEl.classList.toggle('hidden', !isCustom);
+    if (!isCustom || (startEl.value && endEl.value)) onChange();
+  });
+
+  [startEl, endEl].forEach((el) => el.addEventListener('change', () => {
+    endEl.min = startEl.value;
+    startEl.max = endEl.value;
+    if (startEl.value && endEl.value) onChange();
+  }));
+
+  let nameTimer = null;
+  nameEl.addEventListener('input', () => {
+    clearTimeout(nameTimer);
+    nameTimer = setTimeout(onChange, 400);
+  });
+
+  document.getElementById(ids.reset)?.addEventListener('click', () => {
+    periodEl.value = 'all';
+    startEl.value = '';
+    endEl.value = '';
+    startEl.max = '';
+    endEl.min = '';
+    nameEl.value = '';
+    const divisionEl = document.getElementById(ids.division);
+    if (divisionEl) divisionEl.value = '';
+    rangeEl.classList.add('hidden');
+    onChange();
+  });
+}
+
 async function loadSubmissionsNav() {
   if (!submissionsDivisionsLoaded) {
     try {
@@ -1091,6 +1159,7 @@ document.getElementById('submission-division-filter').addEventListener('change',
   lastSuperHistoryHash = '';
   loadSubmissionsData();
 });
+setupListFilter(SUB_FILTER_IDS, () => loadSubmissionsData());
 
 document.querySelectorAll('[data-submissionstab]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -1123,9 +1192,7 @@ function loadSubmissionsData(silent = false) {
 async function loadSubmissionsPending(silent = false) {
   const container = document.getElementById('submission-pending-list');
   if (!container) return;
-  const divisionId = document.getElementById('submission-division-filter').value;
-  const params = {};
-  if (divisionId) params.division_id = divisionId;
+  const params = buildListFilterParams(SUB_FILTER_IDS);
 
   try {
     const { submissions } = await apiGet('/admin/submissions/pending', params);
@@ -1222,9 +1289,7 @@ async function loadSubmissionsPending(silent = false) {
 async function loadSubmissionsHistory(silent = false) {
   const container = document.getElementById('submission-history-list');
   if (!container) return;
-  const divisionId = document.getElementById('submission-division-filter').value;
-  const params = {};
-  if (divisionId) params.division_id = divisionId;
+  const params = buildListFilterParams(SUB_FILTER_IDS);
 
   try {
     const { submissions } = await apiGet('/admin/submissions/history', params);
@@ -1397,16 +1462,12 @@ export async function loadSAOvertimeData(silent = false) {
   try {
     await populateSAOvertimeDivisions();
 
-    const divId = document.getElementById('sa-ot-filter-division')?.value || '';
-    const period = document.getElementById('sa-ot-filter-period')?.value || 'all';
-    const params = new URLSearchParams();
-    if (divId) params.append('division_id', divId);
-    if (period && period !== 'all') params.append('period', period);
-    const query = params.toString() ? `?${params.toString()}` : '';
+    // Subtab lembur di panel Pengajuan mengikuti filter panel Pengajuan.
+    const params = buildListFilterParams(currentNav === 'submissions' ? SUB_FILTER_IDS : OT_FILTER_IDS);
 
     const [resPending, resHistory] = await Promise.all([
-      apiGet(`/admin/overtime/pending${query}`),
-      apiGet(`/admin/overtime/history${query}`)
+      apiGet('/admin/overtime/pending', params),
+      apiGet('/admin/overtime/history', params)
     ]);
 
     saOtPendingList = resPending.overtimes || [];
@@ -1420,6 +1481,7 @@ export async function loadSAOvertimeData(silent = false) {
     renderSAOvertimeTables();
   } catch (err) {
     console.error('Gagal memuat data lembur super admin:', err);
+    if (!silent) showAlert(err.message || 'Gagal memuat data lembur.');
   }
 }
 
@@ -1584,9 +1646,7 @@ function renderSAOvertimePendingTable() {
   const tbody = document.getElementById('sa-ot-tbody-pending');
   if (!tbody) return;
 
-  const keyword = document.getElementById('sa-ot-search-input')?.value.toLowerCase().trim() || '';
-  let list = saOtPendingList;
-  if (keyword) list = list.filter(o => o.full_name && o.full_name.toLowerCase().includes(keyword));
+  const list = saOtPendingList;
 
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Tidak ada presensi lembur pending.</td></tr>`;
@@ -1635,9 +1695,7 @@ function renderSAOvertimeHistoryTable() {
   const tbody = document.getElementById('sa-ot-tbody-history');
   if (!tbody) return;
 
-  const keyword = document.getElementById('sa-ot-search-input')?.value.toLowerCase().trim() || '';
-  let list = saOtHistoryList;
-  if (keyword) list = list.filter(o => o.full_name && o.full_name.toLowerCase().includes(keyword));
+  const list = saOtHistoryList;
 
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">Belum ada riwayat presensi lembur.</td></tr>`;
@@ -1837,9 +1895,8 @@ document.getElementById('sa-ot-tab-history')?.addEventListener('click', () => {
   document.getElementById('sa-ot-panel-pending').classList.add('hidden');
 });
 
-document.getElementById('sa-ot-filter-period')?.addEventListener('change', () => loadSAOvertimeData());
+setupListFilter(OT_FILTER_IDS, () => loadSAOvertimeData());
 document.getElementById('sa-ot-filter-division')?.addEventListener('change', () => loadSAOvertimeData());
-document.getElementById('sa-ot-search-input')?.addEventListener('input', renderSAOvertimeTables);
 document.getElementById('sa-ot-btn-refresh')?.addEventListener('click', () => loadSAOvertimeData());
 
 document.getElementById('sa-ot-btn-export-xlsx')?.addEventListener('click', async () => {
@@ -1851,13 +1908,8 @@ document.getElementById('sa-ot-btn-export-xlsx')?.addEventListener('click', asyn
       btn.classList.add('opacity-75');
       btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Mengekspor...</span>`;
     }
-    const divId = document.getElementById('sa-ot-filter-division')?.value || '';
-    const period = document.getElementById('sa-ot-filter-period')?.value || 'monthly';
-    const params = { format: 'xlsx' };
-    if (divId) params.division_id = divId;
-    if (period) params.period = period;
-
-    await apiDownload('/reports/overtime/export', params, `rekap-presensi-lembur-${period}-${Date.now()}.xlsx`);
+    const params = { format: 'xlsx', ...buildListFilterParams(OT_FILTER_IDS) };
+    await apiDownload('/reports/overtime/export', params, `rekap-presensi-lembur-${Date.now()}.xlsx`);
   } catch (err) {
     showAlert(err.message || 'Gagal mengekspor data lembur.');
   } finally {
@@ -2003,18 +2055,14 @@ async function deleteSuperSubmission(id) {
 /* Export Submissions Event Listeners */
 document.getElementById('btn-export-submissions-csv').addEventListener('click', async () => {
   try {
-    const divisionId = document.getElementById('submission-division-filter').value;
-    const params = { format: 'csv' };
-    if (divisionId) params.division_id = divisionId;
+    const params = { format: 'csv', ...buildListFilterParams(SUB_FILTER_IDS) };
     await apiDownload('/reports/submissions/export', params, `rekap-pengajuan-${Date.now()}.csv`);
   } catch (err) { showAlert(err.message); }
 });
 
 document.getElementById('btn-export-submissions-xlsx').addEventListener('click', async () => {
   try {
-    const divisionId = document.getElementById('submission-division-filter').value;
-    const params = { format: 'xlsx' };
-    if (divisionId) params.division_id = divisionId;
+    const params = { format: 'xlsx', ...buildListFilterParams(SUB_FILTER_IDS) };
     await apiDownload('/reports/submissions/export', params, `rekap-pengajuan-${Date.now()}.xlsx`);
   } catch (err) { showAlert(err.message); }
 });

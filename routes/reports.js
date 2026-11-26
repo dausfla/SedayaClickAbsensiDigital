@@ -8,6 +8,7 @@ const pool = require('../config/db');
 const { requireAuth, requireRole, requireActiveAccount } = require('../middleware/auth');
 const { generateCSV, generateXLSX, prepareRows, generateSubmissionsCSV, generateSubmissionsXLSX, generateOvertimeCSV, generateOvertimeXLSX } = require('../utils/exportGenerator');
 const { secondsToHMS } = require('../utils/timeCalc');
+const { applySubmissionFilters, applyOvertimeFilters } = require('../utils/listFilters');
 
 const router = express.Router();
 const scoped = [requireAuth, requireRole('admin_manager', 'super_admin'), requireActiveAccount];
@@ -231,6 +232,7 @@ router.get('/submissions/export', ...scoped, async (req, res) => {
       conditions.push('s.status = ?');
       params.push(status);
     }
+    applySubmissionFilters(req.query, conditions, params);
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -271,18 +273,12 @@ router.get('/submissions/export', ...scoped, async (req, res) => {
 router.get('/overtime/export', ...scoped, async (req, res) => {
   try {
     const format = (req.query.format || 'xlsx').toLowerCase();
-    const { period, division_id, status } = req.query;
+    const { division_id, status } = req.query;
 
     const conditions = ["a.overtime_clock_in_time IS NOT NULL"];
     const params = [];
 
-    if (period === 'today') {
-      conditions.push('a.attendance_date = CURDATE()');
-    } else if (period === 'weekly') {
-      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
-    } else if (period === 'monthly') {
-      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
-    }
+    applyOvertimeFilters(req.query, conditions, params);
 
     if (division_id) {
       conditions.push('u.division_id = ?');
@@ -330,6 +326,7 @@ router.get('/overtime/export', ...scoped, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="rekap-presensi-lembur-${Date.now()}.xlsx"`);
     res.send(Buffer.from(buffer));
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error('Error export overtime:', err);
     res.status(500).json({ success: false, message: 'Gagal mengekspor data presensi lembur.' });
   }

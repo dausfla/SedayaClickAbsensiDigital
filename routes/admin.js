@@ -15,6 +15,7 @@ const {
   generateRosterMatrixXLSX,
   parseRosterXLSX
 } = require('../utils/rosterHelper');
+const { applySubmissionFilters, applyOvertimeFilters } = require('../utils/listFilters');
 
 const uploadExcel = multer({
   storage: multer.memoryStorage(),
@@ -54,6 +55,7 @@ router.get('/submissions/pending', ...scoped, async (req, res) => {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
+    applySubmissionFilters(req.query, conditions, params);
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -72,6 +74,7 @@ router.get('/submissions/pending', ...scoped, async (req, res) => {
     );
     res.json({ success: true, submissions: rows });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat pengajuan pending.' });
   }
@@ -99,6 +102,7 @@ router.get('/submissions/history', ...scoped, async (req, res) => {
       conditions.push('u.division_id = ?');
       params.push(division_id);
     }
+    applySubmissionFilters(req.query, conditions, params);
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -116,6 +120,7 @@ router.get('/submissions/history', ...scoped, async (req, res) => {
     );
     res.json({ success: true, submissions: rows });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat riwayat pengajuan.' });
   }
@@ -347,18 +352,11 @@ router.delete('/submissions/:id', ...scoped, async (req, res) => {
  */
 router.get('/overtime/pending', ...scoped, async (req, res) => {
   try {
-    const { division_id, period } = req.query;
+    const { division_id } = req.query;
     const conditions = ["a.overtime_clock_in_time IS NOT NULL", "(a.overtime_status IS NULL OR a.overtime_status IN ('pending', 'under_review'))"];
     const params = [];
 
-    // Filter periode tanggal
-    if (period === 'today') {
-      conditions.push('a.attendance_date = CURDATE()');
-    } else if (period === 'weekly') {
-      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
-    } else if (period === 'monthly') {
-      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
-    }
+    applyOvertimeFilters(req.query, conditions, params);
 
     // Filter divisi: jika ada parameter division_id, batasi ke divisi tersebut
     if (division_id) {
@@ -388,6 +386,7 @@ router.get('/overtime/pending', ...scoped, async (req, res) => {
     );
     res.json({ success: true, overtimes: rows });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat presensi lembur pending.' });
   }
@@ -399,7 +398,7 @@ router.get('/overtime/pending', ...scoped, async (req, res) => {
  */
 router.get('/overtime/history', ...scoped, async (req, res) => {
   try {
-    const { division_id, period, status } = req.query;
+    const { division_id, status } = req.query;
     const conditions = [];
     const params = [];
 
@@ -410,14 +409,7 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
       conditions.push("a.overtime_status IN ('approved','rejected','under_review')");
     }
 
-    // Filter periode tanggal
-    if (period === 'today') {
-      conditions.push('a.attendance_date = CURDATE()');
-    } else if (period === 'weekly') {
-      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 7 DAY');
-    } else if (period === 'monthly') {
-      conditions.push('a.attendance_date >= CURDATE() - INTERVAL 30 DAY');
-    }
+    applyOvertimeFilters(req.query, conditions, params);
 
     // Filter divisi: jika ada parameter division_id, batasi ke divisi tersebut
     if (division_id && division_id !== 'all') {
@@ -446,6 +438,7 @@ router.get('/overtime/history', ...scoped, async (req, res) => {
     );
     res.json({ success: true, overtimes: rows });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error(err);
     res.status(500).json({ success: false, message: 'Gagal memuat riwayat presensi lembur.' });
   }
